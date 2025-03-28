@@ -334,542 +334,43 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   }
 
   // UI Components
-  Widget _buildCustomInput({
-    required TextEditingController controller,
-    required String label,
-    bool isRequired = false,
-    TextInputType keyboardType = TextInputType.text,
-    int minLines = 1,
-    int maxLines = 1,
-    bool enabled = true,
-    bool obscureText = false,
-    String? Function(String?)? validator,
-    void Function(String)? onChanged,
-    String? hintText,
-    Widget? prefixIcon,
-    Widget? suffixIcon,
-    String? errorText,
-    double borderRadius = 10.0,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        decoration: InputDecoration(
-          labelText: isRequired ? '$label*' : label,
-          hintText: hintText,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          errorText: errorText,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(color: Colors.red, width: 1.5),
-          ),
-          filled: true,
-          fillColor: enabled ? Colors.white : Colors.grey[100],
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: maxLines > 1 ? 16 : 12,
-          ),
-          labelStyle: TextStyle(
-            color: AppColors.textPrimary.withOpacity(0.8),
-            fontSize: 16,
-          ),
-          hintStyle: TextStyle(
-            color: Colors.grey[500],
-            fontSize: 16,
-          ),
-          floatingLabelStyle: TextStyle(
-            color: AppColors.primary,
-            fontSize: 18,
-          ),
-        ),
-        keyboardType: keyboardType,
-        minLines: minLines,
-        maxLines: maxLines,
-        enabled: enabled,
-        validator: validator,
-        onChanged: onChanged,
-        style: TextStyle(
-          color: enabled ? AppColors.textPrimary : Colors.grey[600],
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDatePickerField() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: InkWell(
-        onTap: () => _selectDate(context),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: 'Date',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                style: const TextStyle(fontSize: 16),
-              ),
-              Icon(Icons.calendar_today, color: AppColors.primary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomDropdown<T>({
-    required T value,
-    required List<T> items,
-    required String label,
-    required void Function(T?) onChanged,
-    String Function(T)? displayText,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: DropdownButtonFormField<T>(
-        value: value,
-        items: items
-            .map((item) => DropdownMenuItem<T>(
-                  value: item,
-                  child: Text(
-                    displayText != null ? displayText(item) : item.toString(),
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ))
-            .toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadioGroup<T>({
-    required String label,
-    required T groupValue,
-    required List<MapEntry<T, String>> options,
-    required void Function(T?) onChanged,
-    bool isHorizontal = true,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          isHorizontal
-              ? Row(
-                  children: options.map((option) {
-                    return Expanded(
-                      child: RadioListTile<T>(
-                        title: Text(option.value),
-                        value: option.key,
-                        groupValue: groupValue,
-                        onChanged: onChanged,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      ),
-                    );
-                  }).toList(),
-                )
-              : Column(
-                  children: options.map((option) {
-                    return RadioListTile<T>(
-                      title: Text(option.value),
-                      value: option.key,
-                      groupValue: groupValue,
-                      onChanged: onChanged,
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    );
-                  }).toList(),
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, {int level = 1}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: level == 1 ? 22 : 18,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _getFileIcon(file['type']),
-            color: AppColors.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file['name'],
-                  style: const TextStyle(fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${file['size']} KB • ${file['type']}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _removeFile(reportType, file),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getFileIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return Icons.image;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  Widget _buildEnhancedUploadCard({
-    required String title,
-    required List<Map<String, dynamic>> files,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.folder, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Upload Button with Options
-            SizedBox(
-              width: double.infinity,
-              child: PopupMenuButton<String>(
-                onSelected: (value) => _handleFileSelection(title, value),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'camera',
-                    child: ListTile(
-                      leading: Icon(Icons.camera_alt),
-                      title: Text('Take Photo'),
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'gallery',
-                    child: ListTile(
-                      leading: Icon(Icons.photo_library),
-                      title: Text('Choose from Gallery'),
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'file',
-                    child: ListTile(
-                      leading: Icon(Icons.insert_drive_file),
-                      title: Text('Select File'),
-                    ),
-                  ),
-                ],
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.cloud_upload),
-                  label: const Text('Upload Document'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ),
-
-            // Uploaded Files List
-            if (files.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Uploaded Files:',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...files.map((file) => _buildFileItem(title, file)).toList(),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepNavigation() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildClickableStep(1, 'Personal', 0),
-          _buildStepConnector(_currentStep >= 0),
-          _buildClickableStep(2, 'Medical', 1),
-          _buildStepConnector(_currentStep >= 1),
-          _buildClickableStep(3, 'Reports', 2),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClickableStep(int number, String label, int step) {
-    return GestureDetector(
-      onTap: () {
-        if (step == 0 || (step > 0 && _formKey.currentState!.validate())) {
-          setState(() => _currentStep = step);
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      },
-      child: _buildStepIndicator(number, label, _currentStep >= step),
-    );
-  }
-
-  Widget _buildStepIndicator(int number, String label, bool isActive) {
-    return Column(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.grey[200],
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isActive ? AppColors.primary : Colors.grey[300]!,
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              number.toString(),
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey[700],
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.primary : Colors.grey,
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepConnector(bool isActive) {
-    return Container(
-      height: 2,
-      width: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : Colors.grey[300],
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  Widget _buildPersonalDetails() {
+  Widget _buildReportsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Personal Information'),
+        _buildSectionHeader('Reports & Documents'),
         const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: _buildCustomInput(
-                controller: _firstNameController,
-                label: 'First Name',
-                isRequired: true,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildCustomInput(
-                controller: _lastNameController,
-                label: 'Last Name',
-              ),
-            ),
-          ],
+        _buildEnhancedUploadCard(
+          title: 'Blood Reports',
+          files: _uploadedFiles['Blood Reports']!,
         ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'X-Ray Reports',
+          files: _uploadedFiles['X-Ray Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'CT Scan Reports',
+          files: _uploadedFiles['CT Scan Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'ECG Reports',
+          files: _uploadedFiles['ECG Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'Echocardiogram Reports',
+          files: _uploadedFiles['Echocardiogram Reports']!,
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Doctor Notes', level: 2),
         _buildCustomInput(
-          controller: _phoneController,
-          label: 'Phone Number',
-          isRequired: true,
-          keyboardType: TextInputType.phone,
-          validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-        ),
-        _buildCustomInput(
-          controller: _phIdController,
-          label: 'PH ID',
-          enabled: false,
-        ),
-        _buildCustomInput(
-          controller: _addressController,
-          label: 'Address',
-          minLines: 3,
-          maxLines: 5,
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _buildCustomInput(
-                controller: _ageController,
-                label: 'Age',
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildCustomDropdown<String>(
-                value: _gender,
-                items: ['Male', 'Female', 'Others'],
-                label: 'Gender',
-                onChanged: (value) => setState(() => _gender = value!),
-              ),
-            ),
-          ],
-        ),
-        _buildDatePickerField(),
-        _buildCustomInput(
-          controller: _referralController,
-          label: 'Referral By',
-        ),
-        _buildCustomDropdown<String>(
-          value: _location,
-          items: const [
-            'Pooja Healthcare',
-            'Pooja Nursing Home',
-            'Fortis Hospital, Mulund',
-            'Breach Candy Hospital',
-            'P D Hinduja Hospital, Mahim',
-            'Jupiter Hospital, Thane'
-          ],
-          label: 'Location',
-          onChanged: (value) => setState(() => _location = value!),
+          controller: _doctorNotesController,
+          label: 'Clinical findings and recommendations',
+          minLines: 5,
+          maxLines: 10,
         ),
       ],
     );
@@ -1121,46 +622,729 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
-  Widget _buildReportsSection() {
+  Widget _buildCustomInput({
+    required TextEditingController controller,
+    required String label,
+    bool isRequired = false,
+    TextInputType keyboardType = TextInputType.text,
+    int minLines = 1,
+    int maxLines = 1,
+    bool enabled = true,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+    void Function(String)? onChanged,
+    String? hintText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+    String? errorText,
+    double borderRadius = 12.0,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (label.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: RichText(
+                text: TextSpan(
+                  text: label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                  children: isRequired
+                      ? [
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: AppColors.error),
+                    )
+                  ]
+                      : [],
+                ),
+              ),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: controller,
+              obscureText: obscureText,
+              decoration: InputDecoration(
+                hintText: hintText,
+                prefixIcon: prefixIcon,
+                suffixIcon: suffixIcon,
+                errorText: errorText,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: const BorderSide(color: AppColors.error),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: const BorderSide(
+                    color: AppColors.error,
+                    width: 1.5,
+                  ),
+                ),
+                filled: true,
+                fillColor: enabled ? Colors.white : AppColors.background,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: maxLines > 1 ? 16 : 14,
+                ),
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withOpacity(0.6),
+                  fontSize: 16,
+                ),
+              ),
+              keyboardType: keyboardType,
+              minLines: minLines,
+              maxLines: maxLines,
+              enabled: enabled,
+              validator: validator,
+              onChanged: onChanged,
+              style: TextStyle(
+                color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePickerField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              'Date',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: () => _selectDate(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  Icon(Icons.calendar_today, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomDropdown<T>({
+    required T value,
+    required List<T> items,
+    required String label,
+    required void Function(T?) onChanged,
+    String Function(T)? displayText,
+    bool enabled = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: DropdownButtonFormField<T>(
+              value: value,
+              items: items
+                  .map((item) => DropdownMenuItem<T>(
+                value: item,
+                child: Text(
+                  displayText != null ? displayText(item) : item.toString(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                  ),
+                ),
+              ))
+                  .toList(),
+              onChanged: enabled ? onChanged : null,
+              style: TextStyle(
+                color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: enabled ? Colors.white : AppColors.background,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              ),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: enabled ? AppColors.primary : AppColors.textSecondary,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              isExpanded: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRadioGroup<T>({
+    required String label,
+    required T groupValue,
+    required List<MapEntry<T, String>> options,
+    required void Function(T?) onChanged,
+    bool isHorizontal = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: isHorizontal
+                ? Row(
+              children: options.map((option) {
+                return Expanded(
+                  child: RadioListTile<T>(
+                    title: Text(
+                      option.value,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    value: option.key,
+                    groupValue: groupValue,
+                    onChanged: onChanged,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    activeColor: AppColors.primary,
+                  ),
+                );
+              }).toList(),
+            )
+                : Column(
+              children: options.map((option) {
+                return RadioListTile<T>(
+                  title: Text(
+                    option.value,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  value: option.key,
+                  groupValue: groupValue,
+                  onChanged: onChanged,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  activeColor: AppColors.primary,
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {int level = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: level == 1 ? 20 : 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getFileIcon(file['type']),
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file['name'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${file['size']} KB • ${file['type']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+            onPressed: () => _removeFile(reportType, file),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedUploadCard({
+    required String title,
+    required List<Map<String, dynamic>> files,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.folder,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Upload Button with Options
+            SizedBox(
+              width: double.infinity,
+              child: PopupMenuButton<String>(
+                onSelected: (value) => _handleFileSelection(title, value),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading: Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'file',
+                    child: ListTile(
+                      leading: Icon(Icons.insert_drive_file, color: AppColors.primary),
+                      title: const Text('Select File'),
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cloud_upload, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Upload Document',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Uploaded Files List
+            if (files.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Uploaded Files:',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...files.map((file) => _buildFileItem(title, file)).toList(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepNavigation() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildClickableStep(1, 'Personal', 0),
+          _buildStepConnector(_currentStep >= 0),
+          _buildClickableStep(2, 'Medical', 1),
+          _buildStepConnector(_currentStep >= 1),
+          _buildClickableStep(3, 'Reports', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClickableStep(int number, String label, int step) {
+    return GestureDetector(
+      onTap: () {
+        if (step == 0 || (step > 0 && _formKey.currentState!.validate())) {
+          setState(() => _currentStep = step);
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: _buildStepIndicator(number, label, _currentStep >= step),
+    );
+  }
+
+  Widget _buildStepIndicator(int number, String label, bool isActive) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Reports & Documents'),
-        const SizedBox(height: 20),
-        _buildEnhancedUploadCard(
-          title: 'Blood Reports',
-          files: _uploadedFiles['Blood Reports']!,
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : AppColors.background,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive ? AppColors.primary : AppColors.textSecondary.withOpacity(0.2),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              number.toString(),
+              style: TextStyle(
+                color: isActive ? Colors.white : AppColors.textSecondary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildEnhancedUploadCard(
-          title: 'X-Ray Reports',
-          files: _uploadedFiles['X-Ray Reports']!,
-        ),
-        const SizedBox(height: 16),
-        _buildEnhancedUploadCard(
-          title: 'CT Scan Reports',
-          files: _uploadedFiles['CT Scan Reports']!,
-        ),
-        const SizedBox(height: 16),
-        _buildEnhancedUploadCard(
-          title: 'ECG Reports',
-          files: _uploadedFiles['ECG Reports']!,
-        ),
-        const SizedBox(height: 16),
-        _buildEnhancedUploadCard(
-          title: 'Echocardiogram Reports',
-          files: _uploadedFiles['Echocardiogram Reports']!,
-        ),
-        const SizedBox(height: 24),
-        _buildSectionHeader('Doctor Notes', level: 2),
-        _buildCustomInput(
-          controller: _doctorNotesController,
-          label: 'Clinical findings and recommendations',
-          minLines: 5,
-          maxLines: 10,
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppColors.primary : AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ],
     );
+  }
+
+  Widget _buildStepConnector(bool isActive) {
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.background,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  // Personal Details Section (same structure, but uses updated UI components)
+  Widget _buildPersonalDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Personal Information'),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCustomInput(
+                controller: _firstNameController,
+                label: 'First Name',
+                isRequired: true,
+                validator: (value) =>
+                value?.isEmpty ?? true ? 'Required' : null,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildCustomInput(
+                controller: _lastNameController,
+                label: 'Last Name',
+              ),
+            ),
+          ],
+        ),
+        _buildCustomInput(
+          controller: _phoneController,
+          label: 'Phone Number',
+          isRequired: true,
+          keyboardType: TextInputType.phone,
+          validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+        ),
+        _buildCustomInput(
+          controller: _phIdController,
+          label: 'PH ID',
+          enabled: false,
+        ),
+        _buildCustomInput(
+          controller: _addressController,
+          label: 'Address',
+          minLines: 3,
+          maxLines: 5,
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCustomInput(
+                controller: _ageController,
+                label: 'Age',
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildCustomDropdown<String>(
+                value: _gender,
+                items: ['Male', 'Female', 'Others'],
+                label: 'Gender',
+                onChanged: (value) => setState(() => _gender = value!),
+              ),
+            ),
+          ],
+        ),
+        _buildDatePickerField(),
+        _buildCustomInput(
+          controller: _referralController,
+          label: 'Referral By',
+        ),
+        _buildCustomDropdown<String>(
+          value: _location,
+          items: const [
+            'Pooja Healthcare',
+            'Pooja Nursing Home',
+            'Fortis Hospital, Mulund',
+            'Breach Candy Hospital',
+            'P D Hinduja Hospital, Mahim',
+            'Jupiter Hospital, Thane'
+          ],
+          label: 'Location',
+          onChanged: (value) => setState(() => _location = value!),
+        ),
+      ],
+    );
+  }
+
+  IconData _getFileIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 
   @override

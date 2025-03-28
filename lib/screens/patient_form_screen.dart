@@ -33,6 +33,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   // Medical Information Controllers
   final TextEditingController _heightFtController = TextEditingController();
+  // Remove _heightInController and keep only:
+  final TextEditingController _heightController = TextEditingController();
   final TextEditingController _heightInController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _bmiController = TextEditingController();
@@ -239,6 +241,39 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   // Form Methods
   void _calculateBMI() {
+    if (_heightController.text.isNotEmpty &&
+        _weightController.text.isNotEmpty) {
+      try {
+        // Split the height into feet and inches
+        List<String> parts = _heightController.text.split('.');
+        int feet = int.parse(parts[0]);
+        int inches = parts.length > 1 ? int.parse(parts[1]) : 0;
+
+        // Validate inches (should be <12)
+        if (inches >= 12) {
+          _bmiController.text = 'Invalid inches';
+          return;
+        }
+
+        // Calculate total height in meters
+        double heightInMeters = ((feet * 12) + inches) * 0.0254;
+        double weightKg = double.parse(_weightController.text);
+
+        // Calculate BMI (kg/m² formula)
+        if (heightInMeters > 0 && weightKg > 0) {
+          double bmi = weightKg / (heightInMeters * heightInMeters);
+          _bmiController.text = bmi.toStringAsFixed(1);
+        } else {
+          _bmiController.text = '';
+        }
+      } catch (e) {
+        _bmiController.text = 'Invalid format';
+      }
+    } else {
+      _bmiController.text = '';
+    }
+  }
+  /*void _calculateBMI() {
     if (_heightFtController.text.isNotEmpty &&
         _heightInController.text.isNotEmpty &&
         _weightController.text.isNotEmpty) {
@@ -254,7 +289,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     } else {
       _bmiController.text = '';
     }
-  }
+  }*/
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -284,8 +319,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           'location': _location,
         },
         'medicalInfo': {
-          'height':
-              '${_heightFtController.text}ft ${_heightInController.text}in',
+          //'height': '${_heightFtController.text}ft ${_heightInController.text}in',
+          'height': _heightController.text,
           'weight': _weightController.text,
           'bmi': _bmiController.text,
           'rbs': _rbsController.text,
@@ -376,6 +411,75 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
+  Widget _buildHeightInput({
+    required TextEditingController ftController,
+    required TextEditingController inController,
+    required void Function() onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8.0),
+          child: Text(
+            'Height',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: ftController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'ft',
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  onChanged: (value) => onChanged(),
+                ),
+              ),
+              Container(
+                height: 24,
+                width: 1,
+                color: Colors.grey[300],
+              ),
+              Expanded(
+                child: TextFormField(
+                  controller: inController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'in',
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  onChanged: (value) => onChanged(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMedicalDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,6 +489,22 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         Row(
           children: [
             Expanded(
+              child: _buildCustomInput(
+                controller: _heightController,
+                label: 'Height (ft.in)',
+                hintText: 'e.g. 5.11 for 5ft 11in',
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  if (!RegExp(r'^\d{1,2}\.\d{1,2}$').hasMatch(value)) {
+                    return 'Enter as ft.in (e.g. 5.11)';
+                  }
+                  return null;
+                },
+                onChanged: (_) => _calculateBMI(),
+              ),
+            ),
+            /*Expanded(
               child: _buildCustomInput(
                 controller: _heightFtController,
                 label: 'Height (ft)',
@@ -400,7 +520,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 keyboardType: TextInputType.number,
                 onChanged: (_) => _calculateBMI(),
               ),
-            ),
+            ),*/
           ],
         ),
         _buildCustomInput(

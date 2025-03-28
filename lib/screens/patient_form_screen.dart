@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class PatientFormScreen extends StatefulWidget {
   const PatientFormScreen({Key? key}) : super(key: key);
@@ -14,6 +16,8 @@ class PatientFormScreen extends StatefulWidget {
 class _PatientFormScreenState extends State<PatientFormScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final ImagePicker _picker = ImagePicker();
 
   // Personal Information Controllers
   final TextEditingController _firstNameController = TextEditingController();
@@ -74,15 +78,37 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
 
+  // File Management
+  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
+    'Blood Reports': [],
+    'X-Ray Reports': [],
+    'CT Scan Reports': [],
+    'ECG Reports': [],
+    'Echocardiogram Reports': [],
+  };
+
   @override
   void initState() {
     super.initState();
     _phIdController.text = 'PH-${DateTime.now().millisecondsSinceEpoch}';
     _ageController.text = '';
+
+    // Initialize some default values for testing
+    _firstNameController.text = 'John';
+    _lastNameController.text = 'Doe';
+    _phoneController.text = '9876543210';
+    _addressController.text = '123 Main St, City';
+    _ageController.text = '35';
+    _heightFtController.text = '5';
+    _heightInController.text = '10';
+    _weightController.text = '70';
+    _calculateBMI();
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    // Dispose all text controllers
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -121,16 +147,97 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     super.dispose();
   }
 
-  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    'Blood Reports': [],
-    'X-Ray Reports': [],
-    'CT Scan Reports': [],
-    'ECG Reports': [],
-    'Echocardiogram Reports': [],
-  };
+  // File Handling Methods
+  Future<void> _handleFileSelection(String reportType, String source) async {
+    try {
+      var pickedFile;
+      File? savedFile;
 
-  final ImagePicker _picker = ImagePicker();
+      if (source == 'camera' || source == 'gallery') {
+        pickedFile = await _picker.pickImage(
+          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+          maxWidth: 1800,
+          maxHeight: 1800,
+          imageQuality: 90,
+        );
 
+        if (pickedFile != null) {
+          savedFile = await _saveFile(reportType, pickedFile);
+        }
+      } else if (source == 'file') {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        );
+
+        if (result != null && result.files.single.path != null) {
+          final originalFile = File(result.files.single.path!);
+          savedFile = await _saveFile(reportType, originalFile,
+              originalName: result.files.single.name);
+        }
+      }
+
+      if (savedFile != null) {
+        final fileSize = (await savedFile.length()) / 1024;
+
+        setState(() {
+          _uploadedFiles[reportType]!.add({
+            'path': savedFile!.path,
+            'name': path.basename(savedFile.path),
+            'size': fileSize.toStringAsFixed(1),
+            'type': path
+                .extension(savedFile.path)
+                .replaceAll('.', '')
+                .toUpperCase(),
+          });
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<File> _saveFile(String reportType, File originalFile,
+      {String? originalName}) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final reportDir = Directory(path.join(appDir.path, reportType));
+
+    if (!await reportDir.exists()) {
+      await reportDir.create(recursive: true);
+    }
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final ext = originalName != null
+        ? path.extension(originalName)
+        : path.extension(originalFile.path);
+    final filename = '$timestamp$ext';
+
+    final savedFile = File(path.join(reportDir.path, filename));
+    await savedFile.writeAsBytes(await originalFile.readAsBytes());
+
+    return savedFile;
+  }
+
+  Future<void> _removeFile(String reportType, Map<String, dynamic> file) async {
+    try {
+      final fileToDelete = File(file['path']);
+      if (await fileToDelete.exists()) {
+        await fileToDelete.delete();
+      }
+
+      setState(() {
+        _uploadedFiles[reportType]!.remove(file);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
+      );
+    }
+  }
+
+  // Form Methods
   void _calculateBMI() {
     if (_heightFtController.text.isNotEmpty &&
         _heightInController.text.isNotEmpty &&
@@ -161,6 +268,72 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     }
   }
 
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      Map<String, dynamic> patientData = {
+        'personalInfo': {
+          'firstName': _firstNameController.text,
+          'lastName': _lastNameController.text,
+          'phone': _phoneController.text,
+          'phId': _phIdController.text,
+          'address': _addressController.text,
+          'age': _ageController.text,
+          'gender': _gender,
+          'date': _selectedDate.toString(),
+          'referral': _referralController.text,
+          'location': _location,
+        },
+        'medicalInfo': {
+          'height':
+              '${_heightFtController.text}ft ${_heightInController.text}in',
+          'weight': _weightController.text,
+          'bmi': _bmiController.text,
+          'rbs': _rbsController.text,
+          'complaints': _complaintsController.text,
+          'hasDM': _hasDM,
+          'dmSince': _dmSinceController.text,
+          'hasHypertension': _hasHypertension,
+          'hypertensionSince': _hypertensionSinceController.text,
+          'otherIllness': _otherIllnessController.text,
+          'surgicalHistory': _surgicalHistoryController.text,
+          'drugAllergy': _drugAllergyController.text,
+        },
+        'examination': {
+          'isFebrile': _isFebrile,
+          'pulse': _pulseController.text,
+          'bp': '${_bpSystolicController.text}/${_bpDiastolicController.text}',
+          'hasPallor': _hasPallor,
+          'hasIcterus': _hasIcterus,
+          'hasOedema': _hasOedema,
+          'oedemaDetails': _oedemaDetailsController.text,
+          'hasLymphadenopathy': _hasLymphadenopathy,
+          'lymphadenopathyDetails': _lymphadenopathyDetailsController.text,
+          'currentMedication': _currentMedicationController.text,
+        },
+        'systemsReview': {
+          'rs': _rsController.text,
+          'cvs': _cvsController.text,
+          'cns': _cnsController.text,
+          'paAbdomen': _paAbdomenController.text,
+          'prRectum': _prRectumController.text,
+          'localExam': _localExamController.text,
+          'diagnosis': _diagnosisController.text,
+          'comorbidities': _comorbiditiesController.text,
+          'plan': _planController.text,
+          'advise': _adviseController.text,
+        },
+        'doctorNotes': _doctorNotesController.text,
+        'files': _uploadedFiles,
+      };
+
+      print(patientData); // Replace with your submission logic
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Patient record saved successfully')),
+      );
+    }
+  }
+
+  // UI Components
   Widget _buildCustomInput({
     required TextEditingController controller,
     required String label,
@@ -191,38 +364,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           errorText: errorText,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(
-              color: AppColors.primary.withOpacity(0.3),
-              width: 1.0,
-            ),
+            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(
-              color: AppColors.primary.withOpacity(0.3),
-              width: 1.0,
-            ),
+            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: BorderSide(
-              color: AppColors.primary,
-              width: 1.5,
-            ),
+            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1.0,
-            ),
+            borderSide: const BorderSide(color: Colors.red),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1.5,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
           ),
           filled: true,
           fillColor: enabled ? Colors.white : Colors.grey[100],
@@ -381,6 +539,252 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
+      ),
+    );
+  }
+
+  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _getFileIcon(file['type']),
+            color: AppColors.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file['name'],
+                  style: const TextStyle(fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${file['size']} KB • ${file['type']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _removeFile(reportType, file),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  Widget _buildEnhancedUploadCard({
+    required String title,
+    required List<Map<String, dynamic>> files,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.folder, color: AppColors.primary),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Upload Button with Options
+            SizedBox(
+              width: double.infinity,
+              child: PopupMenuButton<String>(
+                onSelected: (value) => _handleFileSelection(title, value),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt),
+                      title: Text('Take Photo'),
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading: Icon(Icons.photo_library),
+                      title: Text('Choose from Gallery'),
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'file',
+                    child: ListTile(
+                      leading: Icon(Icons.insert_drive_file),
+                      title: Text('Select File'),
+                    ),
+                  ),
+                ],
+                child: ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text('Upload Document'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+
+            // Uploaded Files List
+            if (files.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Uploaded Files:',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...files.map((file) => _buildFileItem(title, file)).toList(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepNavigation() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildClickableStep(1, 'Personal', 0),
+          _buildStepConnector(_currentStep >= 0),
+          _buildClickableStep(2, 'Medical', 1),
+          _buildStepConnector(_currentStep >= 1),
+          _buildClickableStep(3, 'Reports', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClickableStep(int number, String label, int step) {
+    return GestureDetector(
+      onTap: () {
+        if (step == 0 || (step > 0 && _formKey.currentState!.validate())) {
+          setState(() => _currentStep = step);
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: _buildStepIndicator(number, label, _currentStep >= step),
+    );
+  }
+
+  Widget _buildStepIndicator(int number, String label, bool isActive) {
+    return Column(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.grey[200],
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive ? AppColors.primary : Colors.grey[300]!,
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              number.toString(),
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.grey[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppColors.primary : Colors.grey,
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepConnector(bool isActive) {
+    return Container(
+      height: 2,
+      width: 40,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.primary : Colors.grey[300],
+        borderRadius: BorderRadius.circular(2),
       ),
     );
   }
@@ -717,274 +1121,46 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
- Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            file['path'].toLowerCase().endsWith('.pdf')
-                ? Icons.picture_as_pdf
-                : Icons.image,
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file['name'],
-                  style: const TextStyle(fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${file['size']} KB',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _removeFile(reportType, file),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleFileSelection(String reportType, String source) async {
-    try {
-      XFile? pickedFile;
-      File? savedFile;
-      
-      if (source == 'camera' || source == 'gallery') {
-        pickedFile = await _picker.pickImage(
-          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
-          maxWidth: 1800,
-          maxHeight: 1800,
-          imageQuality: 90,
-        );
-        
-        if (pickedFile != null) {
-          // Create report-specific folder
-          final appDir = await getApplicationDocumentsDirectory();
-          final reportDir = Directory(path.join(appDir.path, reportType));
-          if (!await reportDir.exists()) {
-            await reportDir.create(recursive: true);
-          }
-          
-          // Generate unique filename
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final ext = path.extension(pickedFile.path);
-          final filename = '$timestamp$ext';
-          
-          // Save file to app directory
-          savedFile = File(path.join(reportDir.path, filename));
-          await savedFile.writeAsBytes(await pickedFile.readAsBytes());
-          
-          // Get file size in KB
-          final fileSize = (await savedFile.length()) / 1024;
-          
-          setState(() {
-            _uploadedFiles[reportType]!.add({
-              'path': savedFile!.path,
-              'name': filename,
-              'size': fileSize.toStringAsFixed(1),
-              'originalPath': pickedFile.path,
-            });
-          });
-        }
-      }
-      else if (source == 'file') {
-        // For PDFs or other documents
-        final result = await FilePicker.platform.pickFiles(
-          type: FileType.custom,
-          allowedExtensions: ['pdf', 'doc', 'docx'],
-        );
-        
-        if (result != null && result.files.single.path != null) {
-          final originalFile = File(result.files.single.path!);
-          
-          // Create report-specific folder
-          final appDir = await getApplicationDocumentsDirectory();
-          final reportDir = Directory(path.join(appDir.path, reportType));
-          if (!await reportDir.exists()) {
-            await reportDir.create(recursive: true);
-          }
-          
-          // Generate unique filename
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final ext = path.extension(result.files.single.name);
-          final filename = '$timestamp$ext';
-          
-          // Save file to app directory
-          savedFile = File(path.join(reportDir.path, filename));
-          await savedFile.writeAsBytes(await originalFile.readAsBytes());
-          
-          // Get file size in KB
-          final fileSize = (await savedFile.length()) / 1024;
-          
-          setState(() {
-            _uploadedFiles[reportType]!.add({
-              'path': savedFile!.path,
-              'name': filename,
-              'size': fileSize.toStringAsFixed(1),
-              'originalPath': originalFile.path,
-            });
-          });
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
-      );
-    }
-  }
-
-  Future<void> _removeFile(String reportType, Map<String, dynamic> file) async {
-    try {
-      final fileToDelete = File(file['path']);
-      if (await fileToDelete.exists()) {
-        await fileToDelete.delete();
-      }
-      
-      setState(() {
-        _uploadedFiles[reportType]!.remove(file);
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
-      );
-    }
-  }
-}
-  Widget _buildUploadCard(String title) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.upload),
-                  label: const Text('Upload'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Camera'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator(int number, String label, bool isActive) {
+  Widget _buildReportsSection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.grey[300],
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number.toString(),
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        _buildSectionHeader('Reports & Documents'),
+        const SizedBox(height: 20),
+        _buildEnhancedUploadCard(
+          title: 'Blood Reports',
+          files: _uploadedFiles['Blood Reports']!,
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.primary : Colors.grey,
-            fontSize: 12,
-          ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'X-Ray Reports',
+          files: _uploadedFiles['X-Ray Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'CT Scan Reports',
+          files: _uploadedFiles['CT Scan Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'ECG Reports',
+          files: _uploadedFiles['ECG Reports']!,
+        ),
+        const SizedBox(height: 16),
+        _buildEnhancedUploadCard(
+          title: 'Echocardiogram Reports',
+          files: _uploadedFiles['Echocardiogram Reports']!,
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Doctor Notes', level: 2),
+        _buildCustomInput(
+          controller: _doctorNotesController,
+          label: 'Clinical findings and recommendations',
+          minLines: 5,
+          maxLines: 10,
         ),
       ],
     );
-  }
-
-  Widget _buildStepConnector(bool isActive) {
-    return Container(
-      height: 1,
-      width: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: isActive ? AppColors.primary : Colors.grey[300],
-    );
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      Map<String, dynamic> patientData = {
-        'firstName': _firstNameController.text,
-        'lastName': _lastNameController.text,
-        'phone': _phoneController.text,
-        'phId': _phIdController.text,
-        'address': _addressController.text,
-        'age': _ageController.text,
-        'gender': _gender,
-        'date': _selectedDate.toString(),
-        'referral': _referralController.text,
-        'location': _location,
-        // Add all other fields...
-      };
-
-      print(patientData);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Patient record saved successfully')),
-      );
-    }
   }
 
   @override
@@ -994,34 +1170,15 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         title: const Text('Patient Record'),
         backgroundColor: AppColors.primary,
         elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildStepIndicator(1, 'Personal', _currentStep >= 0),
-                _buildStepConnector(_currentStep >= 0),
-                _buildStepIndicator(2, 'Medical', _currentStep >= 1),
-                _buildStepConnector(_currentStep >= 1),
-                _buildStepIndicator(3, 'Reports', _currentStep >= 2),
-              ],
-            ),
-          ),
+          _buildStepNavigation(),
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
@@ -1040,14 +1197,33 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (_currentStep > 0)
                   ElevatedButton(
-                    onPressed: () => setState(() => _currentStep--),
+                    onPressed: () {
+                      setState(() => _currentStep--);
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.primary,
@@ -1057,6 +1233,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 12),
+                      elevation: 0,
                     ),
                     child: const Text('BACK'),
                   )
@@ -1067,6 +1244,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     if (_formKey.currentState!.validate()) {
                       if (_currentStep < 2) {
                         setState(() => _currentStep++);
+                        _scrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
                       } else {
                         _submitForm();
                       }
@@ -1080,6 +1262,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
+                    elevation: 0,
                   ),
                   child: Text(_currentStep == 2 ? 'SUBMIT' : 'NEXT'),
                 ),

@@ -14,6 +14,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _lastNameController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -213,7 +214,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
                 const SizedBox(height: 24),
 
                 // Recent Patients Section
-                if (_showRecentPatients) _buildRecentPatientsSection(),
+                _buildRecentPatientsSection(),
               ],
             ),
           ),
@@ -247,14 +248,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
                 ),
               ],
             ),
-            IconButton(
-              icon: Icon(
-                Icons.expand_less,
-                color: AppColors.textSecondary,
-              ),
-              onPressed: () => setState(() => _showRecentPatients = false),
-              splashRadius: 20,
-            ),
+            TextButton(onPressed: () {}, child: Text('Viewall'))
           ],
         ),
         const SizedBox(height: 12),
@@ -264,17 +258,16 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             children: [
-              _buildRecentPatientCard(
-                  'John Doe', '+91 9876543210', '15 Jun 2023'),
+              _buildRecentPatientCard('John Doe', '9876543210', '15 Jun 2023'),
               const SizedBox(width: 12),
               _buildRecentPatientCard(
-                  'Jane Smith', '+91 8765432109', '10 Jun 2023'),
+                  'Jane Smith', '8765432109', '10 Jun 2023'),
               const SizedBox(width: 12),
               _buildRecentPatientCard(
-                  'Robert Johnson', '+91 7654321098', '5 Jun 2023'),
+                  'Robert Johnson', '7654321098', '5 Jun 2023'),
               const SizedBox(width: 12),
               _buildRecentPatientCard(
-                  'Sarah Williams', '+91 6543210987', '1 Jun 2023'),
+                  'Sarah Williams', '6543210987', '1 Jun 2023'),
             ],
           ),
         ),

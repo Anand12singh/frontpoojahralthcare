@@ -693,6 +693,16 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
                 ),
                 const SizedBox(height: 32),
                 _buildRecentPatientsSection(),
+                SizedBox(
+                  height: 100,
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Text(
+                    'App Version 1.0.0',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                )
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import '../utils/colors.dart';
 
 class RecentPatientsListScreen extends StatefulWidget {
@@ -228,7 +229,22 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                               return InkWell(
                                 borderRadius: BorderRadius.circular(12),
                                 onTap: () {
-                                  // Handle patient tap
+                                  // Navigate to PatientFormScreen with the patient's data
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PatientFormScreen(
+                                        firstName: patient['name'].split(' ')[0],
+                                        lastName: patient['name'].split(' ').length > 1
+                                            ? patient['name'].split(' ')[1]
+                                            : '',
+                                        phone: patient['phone'],
+                                        patientExist: 2, // Assuming existing patient
+                                        phid: patient['phid'],
+                                        patientId: patient['id'], // Pass the original ID
+                                      ),
+                                    ),
+                                  );
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
@@ -244,12 +260,10 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                   ),
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             patient['phid'],

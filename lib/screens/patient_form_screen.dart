@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,11 +9,16 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
+import '../constants/global_variable.dart';
+import '../services/auth_service.dart';
+import '../widgets/show_dialog.dart';
+
 class PatientFormScreen extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String phone;
   final int patientExist;
+  final int? patientId;
   final String phid;
   const PatientFormScreen(
       {Key? key,
@@ -18,7 +26,8 @@ class PatientFormScreen extends StatefulWidget {
       required this.lastName,
       required this.phone,
       required this.patientExist,
-      required this.phid})
+      required this.phid,
+      this.patientId})
       : super(key: key);
 
   @override
@@ -34,6 +43,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   List<Map<String, dynamic>> _prRectumFiles = [];
+  List<Map<String, dynamic>> _paAbdomenFiles = [];
   final ImagePicker _imagePicker = ImagePicker();
 
   // Personal Information Controllers
@@ -58,12 +68,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _rbsController = TextEditingController();
   final TextEditingController _complaintsController = TextEditingController();
   final TextEditingController _dmSinceController = TextEditingController();
-  final TextEditingController _hypertensionSinceController =
-      TextEditingController();
+  final TextEditingController _hypertensionSinceController = TextEditingController();
   final TextEditingController _otherIllnessController = TextEditingController();
-  final TextEditingController _surgicalHistoryController =
-      TextEditingController();
+  final TextEditingController _surgicalHistoryController = TextEditingController();
   final TextEditingController _drugAllergyController = TextEditingController();
+
   bool _hasDM = false;
   bool _hasHypertension = false;
 
@@ -82,6 +91,13 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
+  bool _isLoadingLocations = false;
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _locations = [];
+  String? locationId = '1';
+  Map<String, dynamic>? _patientData;
+  Map<String, dynamic>? _visitData;
+  Map<String, dynamic>? _documentData;
 
   // Systems Review Controllers
   final TextEditingController _rsController = TextEditingController();
@@ -91,11 +107,16 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _prRectumController = TextEditingController();
   final TextEditingController _localExamController = TextEditingController();
   final TextEditingController _diagnosisController = TextEditingController();
-  final TextEditingController _comorbiditiesController =
-      TextEditingController();
+  final TextEditingController _comorbiditiesController = TextEditingController();
   final TextEditingController _planController = TextEditingController();
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
+  final TextEditingController _altPhoneController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _copdDescriptionController = TextEditingController();
+  final TextEditingController _ihdDescriptionController = TextEditingController();
+  bool _hasIHD = false;
+  bool _hasCOPD = false;
 
   // File Management
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
@@ -108,6 +129,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   @override
   void initState() {
+    _fetchLocations();
+
     print('First Name: ${widget.firstName}');
     print('Last Name: ${widget.lastName}');
     print('Phone: ${widget.phone}');
@@ -121,6 +144,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _firstNameController.text = '${widget.firstName}';
     _lastNameController.text = '${widget.lastName}';
     _phoneController.text = '${widget.phone}';
+    if (widget.patientExist == 2 && widget.patientId != null) {
+      _fetchPatientDetails(widget.patientId!);
+    }
+    if (widget.patientExist == 2) {
+      _fetchPatientData();
+    }
     // _addressController.text = '123 Main St, City';
     // _ageController.text = '35';
     // _heightFtController.text = '5';
@@ -168,7 +197,584 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _planController.dispose();
     _adviseController.dispose();
     _doctorNotesController.dispose();
+    _altPhoneController.dispose();
+    _descriptionController.dispose();
     super.dispose();
+  }
+
+  // Helper functions to ensure valid values
+  String _ensureString(String? value) => value?.trim() ?? '';
+  String _ensureNumber(String? value) => value?.trim().isEmpty ?? true ? '0' : value!.trim();
+  String _ensureStatus(bool value) => value ? '1' : '0';
+  String _ensureGender(String gender) {
+    return gender == 'Male' ? '1' : gender == 'Female' ? '2' : '3';
+  }
+
+  Future<void> _fetchPatientData() async {
+    setState(() => _isLoading = true);
+    try {
+      final requestBody = {
+        'id': 1, // Convert phid to int
+      };
+      final response = await http.post(
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint('API Response: $data'); // Log the full response
+
+        if (data['status'] == true) {
+          // Safely handle the response structure
+          final responseData = data['data'];
+          if (responseData is List && responseData.isNotEmpty) {
+            final firstDataItem = responseData[0];
+            setState(() {
+              // Handle patient data
+              if (firstDataItem['patient'] is List && firstDataItem['patient'].isNotEmpty) {
+                _patientData = firstDataItem['patient'][0] as Map<String, dynamic>;
+              } else {
+                _patientData = {};
+              }
+
+              // Handle visit info
+              if (firstDataItem['PatientVisitInfo'] is List && firstDataItem['PatientVisitInfo'].isNotEmpty) {
+                _visitData = firstDataItem['PatientVisitInfo'][0] as Map<String, dynamic>;
+              } else {
+                _visitData = {};
+              }
+
+              // Handle documents
+              if (firstDataItem['PatientDocumentInfo'] is Map) {
+                _documentData = firstDataItem['PatientDocumentInfo'] as Map<String, dynamic>;
+              } else {
+                _documentData = {};
+              }
+
+              _populateFormFields();
+            });
+          } else if (responseData is Map) {
+            // Handle case where data is directly a Map
+            setState(() {
+              _patientData = responseData['patient'] ?? {};
+              _visitData = responseData['PatientVisitInfo'] ?? {};
+              _documentData = responseData['PatientDocumentInfo'] ?? {};
+              _populateFormFields();
+            });
+          } else {
+            throw Exception('Unexpected data format in response');
+          }
+        } else {
+          throw Exception('API returned false status');
+        }
+      } else {
+        throw Exception('Failed to load patient data: ${response.statusCode}');
+      }
+    } catch (error) {
+      debugPrint('Error fetching patient data: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading patient data: ${error.toString()}')),
+      );
+      _initializeWithEmptyData();
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _populateFormFields() {
+    try {
+      // Personal Info
+      _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
+      _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
+      _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
+      _altPhoneController.text = _patientData?['alternative_no']?.toString() ?? '';
+      _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
+      _addressController.text = _patientData?['address']?.toString() ?? '';
+      _descriptionController.text = _patientData?['description']?.toString() ?? '';
+      _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
+      try {
+        _selectedDate = DateTime.parse(_patientData?['date']?.toString() ?? DateTime.now().toString());
+      } catch (e) {
+        _selectedDate = DateTime.now();
+      }
+      _referralController.text = _patientData?['referral_by']?.toString() ?? '';
+
+      // Visit Info
+      _ageController.text = _visitData?['age']?.toString() ?? '';
+      _heightController.text = _visitData?['height']?.toString() ?? '';
+      _weightController.text = _visitData?['weight']?.toString() ?? '';
+      _bmiController.text = _visitData?['bmi']?.toString() ?? '';
+      _rbsController.text = _visitData?['rbs']?.toString() ?? '';
+      _complaintsController.text = _visitData?['chief_complaints']?.toString() ?? '';
+      _hasDM = _visitData?['history_of_dm_status'] == 1;
+      _dmSinceController.text = _visitData?['history_of_dm_description']?.toString() ?? '';
+      _hasHypertension = _visitData?['hypertension_status'] == 1;
+      _hypertensionSinceController.text = _visitData?['hypertension_description']?.toString() ?? '';
+      _hasIHD = _visitData?['IHD_status'] == 1;
+      _ihdDescriptionController.text = _visitData?['IHD_description']?.toString() ?? '';
+      _hasCOPD = _visitData?['COPD_status'] == 1;
+      _copdDescriptionController.text = _visitData?['COPD_description']?.toString() ?? '';
+      _otherIllnessController.text = _visitData?['any_other_illness']?.toString() ?? '';
+      _surgicalHistoryController.text = _visitData?['past_surgical_history']?.toString() ?? '';
+      _drugAllergyController.text = _visitData?['drug_allergy']?.toString() ?? '';
+      _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
+      _pulseController.text = _visitData?['pulse']?.toString() ?? '';
+      _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
+      _bpDiastolicController.text = _visitData?['bp_diastolic']?.toString() ?? '';
+      _hasPallor = _visitData?['pallor'] == 1;
+      _hasIcterus = _visitData?['icterus'] == 1;
+      _hasOedema = _visitData?['oedema_status'] == 1;
+      _oedemaDetailsController.text = _visitData?['oedema_description']?.toString() ?? '';
+      _hasLymphadenopathy = (_visitData?['lymphadenopathy']?.toString() ?? '') != '';
+      _lymphadenopathyDetailsController.text = _visitData?['lymphadenopathy']?.toString() ?? '';
+      _currentMedicationController.text = _visitData?['HO_present_medication']?.toString() ?? '';
+      _rsController.text = _visitData?['respiratory_system']?.toString() ?? '';
+      _cvsController.text = _visitData?['cardio_vascular_system']?.toString() ?? '';
+      _cnsController.text = _visitData?['central_nervous_system']?.toString() ?? '';
+      _paAbdomenController.text = _visitData?['pa_abdomen']?.toString() ?? '';
+      _prRectumController.text = _visitData?['pr_rectum']?.toString() ?? '';
+      _localExamController.text = _visitData?['local_examination']?.toString() ?? '';
+      _diagnosisController.text = _visitData?['clinical_diagnosis']?.toString() ?? '';
+      _comorbiditiesController.text = _visitData?['comorbidities']?.toString() ?? '';
+      _planController.text = _visitData?['plan']?.toString() ?? '';
+      _adviseController.text = _visitData?['advise']?.toString() ?? '';
+      _doctorNotesController.text = _patientData?['doctor_note']?.toString() ?? '';
+
+      // Load documents
+      _documentData?.forEach((typeId, files) {
+        try {
+          final typeIdInt = typeId.toString();
+          if (_uploadedFiles.containsKey(typeIdInt) && files is List) {
+            _uploadedFiles[typeIdInt] = files.map<Map<String, dynamic>>((file) {
+              return {
+                ...file is Map ? file as Map<String, dynamic> : {},
+                'typeId': typeIdInt,
+                'name': path.basename(file['media_url']?.toString() ?? ''),
+                'type': path.extension(file['media_url']?.toString() ?? '')
+                    .replaceAll('.', '')
+                    .toUpperCase(),
+                'size': 'N/A',
+                'path': file['media_url']?.toString(),
+              };
+            }).toList();
+          }
+        } catch (e) {
+          debugPrint('Error processing document type $typeId: $e');
+        }
+      });
+    } catch (e) {
+      debugPrint('Error populating form fields: $e');
+    }
+  }
+
+  void _initializeWithEmptyData() {
+    setState(() {
+      _patientData = {
+        'phid': widget.phid,
+        'first_name': widget.firstName,
+        'last_name': widget.lastName,
+        'mobile_no': widget.phone
+      };
+      _visitData = {};
+      _documentData = {};
+      _populateFormFields();
+    });
+  }
+
+  Future<void> _fetchPatientDetails(int patientId) async {
+    try {
+      final headers = {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ${await AuthService.getToken()}',
+      };
+
+      final response = await http.post(
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        headers: headers,
+        body: json.encode({'id': patientId}),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true && responseData['data'].isNotEmpty) {
+          final patientData = responseData['data'][0];
+          final patientInfo = patientData['patient'][0];
+          final visitInfo = patientData['PatientVisitInfo'].isNotEmpty
+              ? patientData['PatientVisitInfo'][0]
+              : null;
+          final documents = patientData['PatientDocumentInfo'];
+
+          // Update the UI with the fetched data
+          setState(() {
+            // Personal Information
+            _addressController.text = patientInfo['address'] ?? '';
+            _gender = patientInfo['gender'] == 1 ? 'Male'
+                : patientInfo['gender'] == 2 ? 'Female' : 'Others';
+            _referralController.text = patientInfo['referral_by'] ?? '';
+            _doctorNotesController.text = patientInfo['doctor_note'] ?? '';
+
+            // Format date
+            if (patientInfo['date'] != null) {
+              try {
+                _selectedDate = DateTime.parse(patientInfo['date']);
+              } catch (e) {
+                print('Error parsing date: $e');
+              }
+            }
+
+            // Set location if available
+            if (patientInfo['location'] != null) {
+              locationId = patientInfo['location'].toString();
+              final location = _locations.firstWhere(
+                      (loc) => loc['id'].toString() == locationId,
+                  orElse: () => _locations.first
+              );
+              _location = location['location'];
+            }
+
+            if (visitInfo != null) {
+              // Medical Information
+              _ageController.text = visitInfo['age']?.toString() ?? '';
+              _heightController.text = visitInfo['height']?.toString() ?? '';
+              _weightController.text = visitInfo['weight']?.toString() ?? '';
+              _bmiController.text = visitInfo['bmi']?.toString() ?? '';
+              _rbsController.text = visitInfo['rbs']?.toString() ?? '';
+              _complaintsController.text = visitInfo['chief_complaints'] ?? '';
+
+              // Medical History
+              _hasDM = visitInfo['history_of_dm_status'] == 1;
+              _dmSinceController.text = visitInfo['history_of_dm_description'] ?? '';
+              _hasHypertension = visitInfo['hypertension_status'] == 1;
+              _hypertensionSinceController.text = visitInfo['hypertension_description'] ?? '';
+              _otherIllnessController.text = visitInfo['any_other_illness'] ?? '';
+              _surgicalHistoryController.text = visitInfo['past_surgical_history'] ?? '';
+              _drugAllergyController.text = visitInfo['drug_allergy'] ?? '';
+
+              // Examination
+              _pulseController.text = visitInfo['pulse']?.toString() ?? '';
+              _bpSystolicController.text = visitInfo['bp_systolic']?.toString() ?? '';
+              _bpDiastolicController.text = visitInfo['bp_diastolic']?.toString() ?? '';
+              _isFebrile = visitInfo['temp'] == '1';
+              _hasPallor = visitInfo['pallor'] == 1;
+              _hasIcterus = visitInfo['icterus'] == 1;
+              _hasOedema = visitInfo['oedema_status'] == 1;
+              _oedemaDetailsController.text = visitInfo['oedema_description'] ?? '';
+              _lymphadenopathyDetailsController.text = visitInfo['lymphadenopathy'] ?? '';
+              _currentMedicationController.text = visitInfo['HO_present_medication'] ?? '';
+
+              // Systems Review
+              _rsController.text = visitInfo['respiratory_system'] ?? '';
+              _cvsController.text = visitInfo['cardio_vascular_system'] ?? '';
+              _cnsController.text = visitInfo['central_nervous_system'] ?? '';
+              _paAbdomenController.text = visitInfo['pa_abdomen'] ?? '';
+              _prRectumController.text = visitInfo['pr_rectum'] ?? '';
+              _localExamController.text = visitInfo['local_examination'] ?? '';
+              _diagnosisController.text = visitInfo['clinical_diagnosis'] ?? '';
+              _comorbiditiesController.text = visitInfo['comorbidities'] ?? '';
+              _planController.text = visitInfo['plan'] ?? '';
+              _adviseController.text = visitInfo['advise'] ?? '';
+            }
+
+            // Load documents if available
+            if (documents != null) {
+              _uploadedFiles.clear();
+
+              // Blood Reports (doc_type_id = 1)
+              if (documents['1'] != null) {
+                _uploadedFiles['Blood Reports'] = documents['1'].map<Map<String, dynamic>>((doc) {
+                  return {
+                    'path': doc['media_url'],
+                    'name': 'Blood Report ${doc['id']}',
+                    'type': path.extension(doc['media_url']).replaceAll('.', '').toUpperCase(),
+                  };
+                }).toList();
+              }
+
+              // X-Ray Reports (doc_type_id = 2)
+              if (documents['2'] != null) {
+                _uploadedFiles['X-Ray Reports'] = documents['2'].map<Map<String, dynamic>>((doc) {
+                  return {
+                    'path': doc['media_url'],
+                    'name': 'X-Ray Report ${doc['id']}',
+                    'type': path.extension(doc['media_url']).replaceAll('.', '').toUpperCase(),
+                  };
+                }).toList();
+              }
+
+              // ECG Reports (doc_type_id = 3)
+              if (documents['3'] != null) {
+                _uploadedFiles['ECG Reports'] = documents['3'].map<Map<String, dynamic>>((doc) {
+                  return {
+                    'path': doc['media_url'],
+                    'name': 'ECG Report ${doc['id']}',
+                    'type': path.extension(doc['media_url']).replaceAll('.', '').toUpperCase(),
+                  };
+                }).toList();
+              }
+
+              // CT Scan Reports (doc_type_id = 4)
+              if (documents['4'] != null) {
+                _uploadedFiles['CT Scan Reports'] = documents['4'].map<Map<String, dynamic>>((doc) {
+                  return {
+                    'path': doc['media_url'],
+                    'name': 'CT Scan Report ${doc['id']}',
+                    'type': path.extension(doc['media_url']).replaceAll('.', '').toUpperCase(),
+                  };
+                }).toList();
+              }
+
+              // Echocardiogram Reports (doc_type_id = 5)
+              if (documents['5'] != null) {
+                _uploadedFiles['Echocardiogram Reports'] = documents['5'].map<Map<String, dynamic>>((doc) {
+                  return {
+                    'path': doc['media_url'],
+                    'name': 'Echocardiogram Report ${doc['id']}',
+                    'type': path.extension(doc['media_url']).replaceAll('.', '').toUpperCase(),
+                  };
+                }).toList();
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching patient details: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load patient data: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchLocations() async {
+    setState(() => _isLoadingLocations = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getlocation'),
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _locations = List<Map<String, dynamic>>.from(data['locations']);
+            // Set default location if needed
+            if (_locations.isNotEmpty) {
+              _location = _locations.first['location'];
+            }
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load locations')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoadingLocations = false);
+    }
+  }
+
+  Future<void> _submitForm() async {
+    // Validate forms
+    bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
+    bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+    bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
+
+    if (!personalValid || !medicalValid || !reportsValid) {
+      ShowDialogs.showSnackBar(context, 'Please fill all required fields');
+      return;
+    }
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        ShowDialogs.showSnackBar(context, 'Authentication token not found. Please login again.');
+        return;
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+      );
+
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+
+      // Format date properly
+      //final formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+      Map<String, String> fields = {
+        'first_name': _ensureString(_firstNameController.text),
+        'last_name': _ensureString(_lastNameController.text),
+        'gender': _ensureGender(_gender),
+        'mobile_no': _ensureString(_phoneController.text),
+        'alternative_no': '',
+        'address': _ensureString(_addressController.text),
+        'date': '2025-03-28',
+        'referral_by': _ensureString(_referralController.text),
+        'location': locationId!, // Static value that works - replace with your location mapping
+        'age': _ensureNumber(_ageController.text),
+        'height': _ensureNumber(_heightController.text),
+        'weight': _ensureNumber(_weightController.text),
+        'bmi': _ensureNumber(_bmiController.text),
+        'rbs': _ensureNumber(_rbsController.text),
+        'chief_complaints': _ensureString(_complaintsController.text),
+        'history_of_dm_status': _ensureStatus(_hasDM),
+        'history_of_dm_description': _ensureString(_dmSinceController.text),
+        'hypertension_status': _ensureStatus(_hasHypertension),
+        'hypertension_description': _ensureString(_hypertensionSinceController.text),
+        'IHD_status': '0',
+        'IHD_description': '',
+        'COPD_status': '0',
+        'COPD_description': '',
+        'any_other_illness': _ensureString(_otherIllnessController.text),
+        'past_surgical_history': _ensureString(_surgicalHistoryController.text),
+        'drug_allergy': _ensureString(_drugAllergyController.text),
+        'temp': _ensureStatus(_isFebrile),
+        'pulse': _ensureNumber(_pulseController.text),
+        'bp_systolic': _ensureNumber(_bpSystolicController.text),
+        'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
+        'pallor': _ensureStatus(_hasPallor),
+        'icterus': _ensureStatus(_hasIcterus),
+        'oedema_status': _ensureStatus(_hasOedema),
+        'oedema_description': _ensureString(_oedemaDetailsController.text),
+        'lymphadenopathy': _ensureString(_lymphadenopathyDetailsController.text),
+        'HO_present_medication': _ensureString(_currentMedicationController.text),
+        'respiratory_system': _ensureString(_rsController.text),
+        'cardio_vascular_system': _ensureString(_cvsController.text),
+        'central_nervous_system': _ensureString(_cnsController.text),
+        'pa_abdomen': _ensureString(_paAbdomenController.text),
+        'pr_rectum': _ensureString(_prRectumController.text),
+        'local_examination': _ensureString(_localExamController.text),
+        'clinical_diagnosis': _ensureString(_diagnosisController.text),
+        'comorbidities': _ensureString(_comorbiditiesController.text),
+        'plan': _ensureString(_planController.text),
+        'advise': _ensureString(_adviseController.text),
+        'status': Global.status ?? widget.patientId.toString(),
+        'doctor_note': _ensureString(_doctorNotesController.text),
+      };
+
+      if (Global.status == '2') {
+        fields['patientId'] = widget.patientId.toString();
+      }
+
+      request.fields.addAll(fields);
+
+      // Add debug print
+      print('Request Fields: ${request.fields}');
+
+      // Handle file uploads
+      for (var reportType in _uploadedFiles.keys) {
+        for (var file in _uploadedFiles[reportType]!) {
+          try {
+            final fileToUpload = File(file['path']);
+            if (await fileToUpload.exists()) {
+              request.files.add(
+                await http.MultipartFile.fromPath(
+                  _getApiFieldNameForReportType(reportType),
+                  file['path'],
+                ),
+              );
+            }
+          } catch (e) {
+            print('Error adding file: $e');
+          }
+        }
+      }
+
+      // Handle PA Abdomen files
+      for (var file in _paAbdomenFiles) {
+        try {
+          final fileToUpload = File(file['path']);
+          if (await fileToUpload.exists()) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                'pa_abdomen_image', // API field name for PA Abdomen images
+                file['path'],
+              ),
+            );
+          }
+        } catch (e) {
+          print('Error adding PA Abdomen file: $e');
+        }
+      }
+
+      // Handle PR Rectum files
+      for (var file in _prRectumFiles) {
+        try {
+          final fileToUpload = File(file['path']);
+          if (await fileToUpload.exists()) {
+            request.files.add(
+              await http.MultipartFile.fromPath(
+                'pr_rectum_image', // API field name for PR Rectum images
+                file['path'],
+              ),
+            );
+          }
+        } catch (e) {
+          print('Error adding PR Rectum file: $e');
+        }
+      }
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(responseBody);
+        ShowDialogs.showSnackBar(context, responseData['message'] ?? 'Patient record saved successfully');
+        Navigator.of(context).pop();
+      } else {
+        print('Response Status: ${response.statusCode}');
+        print('Response Body: $responseBody');
+        ShowDialogs.showSnackBar(context, 'Failed to save patient record. Please try again.');
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      print('Submission Error: $e');
+      ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
+    }
+  }
+
+  String _getApiFieldNameForReportType(String reportType) {
+    switch (reportType) {
+      case 'Blood Reports':
+        return 'blood_report';
+      case 'X-Ray Reports':
+        return 'xray_report';
+      case 'CT Scan Reports':
+        return 'ct_scan_report';
+      case 'ECG Reports':
+        return 'ecg_report';
+      case 'Echocardiogram Reports':
+        return 'echocardiagram_report';
+      default:
+        return 'misc_report';
+    }
   }
 
   // File Handling Methods
@@ -308,7 +914,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     }
   }
 
-  void _submitForm() {
+  /*void _submitForm() {
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
     bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
@@ -379,7 +985,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         const SnackBar(content: Text('Please fill all required fields')),
       );
     }
-  }
+  }*/
 
   // UI Components
   Widget _buildReportsSection() {
@@ -474,8 +1080,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             : path.extension(savedFile.path);
         final filename = '$timestamp$ext';
 
-        final newFile =
-            await savedFile.copy(path.join(filesDir.path, filename));
+        final newFile = await savedFile.copy(path.join(filesDir.path, filename));
         final fileSize = (await newFile.length()) / 1024;
 
         setState(() {
@@ -488,9 +1093,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
-      );
+      ShowDialogs.showSnackBar(context, 'Failed to upload file: ${e.toString()}');
     }
   }
 
@@ -567,6 +1170,154 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
       setState(() {
         _prRectumFiles.remove(file);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _uploadPaAbdomenFile(String source) async {
+    try {
+      File? savedFile;
+      String? originalName;
+      String fileType = '';
+
+      if (source == 'camera' || source == 'gallery') {
+        final pickedFile = await _imagePicker.pickImage(
+          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+          maxWidth: 1800,
+          maxHeight: 1800,
+          imageQuality: 90,
+        );
+
+        if (pickedFile != null) {
+          savedFile = File(pickedFile.path);
+          fileType =
+              path.extension(pickedFile.path).replaceAll('.', '').toUpperCase();
+        }
+      } else if (source == 'file') {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        );
+
+        if (result != null && result.files.single.path != null) {
+          savedFile = File(result.files.single.path!);
+          originalName = result.files.single.name;
+          fileType = path
+              .extension(result.files.single.path!)
+              .replaceAll('.', '')
+              .toUpperCase();
+        }
+      }
+
+      if (savedFile != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final filesDir = Directory(path.join(appDir.path, 'pa_abdomen_files'));
+
+        if (!await filesDir.exists()) {
+          await filesDir.create(recursive: true);
+        }
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final ext = originalName != null
+            ? path.extension(originalName)
+            : path.extension(savedFile.path);
+        final filename = '$timestamp$ext';
+
+        final newFile =
+            await savedFile.copy(path.join(filesDir.path, filename));
+        final fileSize = (await newFile.length()) / 1024;
+
+        setState(() {
+          _paAbdomenFiles.add({
+            'path': newFile.path,
+            'name': originalName ?? filename,
+            'size': fileSize.toStringAsFixed(1),
+            'type': fileType,
+          });
+        });
+      }
+    } catch (e) {
+      ShowDialogs.showSnackBar(context, 'Failed to upload file: ${e.toString()}');
+    }
+  }
+
+  Widget _buildPaAbdomenFileItem(Map<String, dynamic> file) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getFileIcon(file['type']),
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file['name'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${file['size']} KB • ${file['type']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+            onPressed: () => _removePrRectumFile(file),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _removePaAbdomenFile(Map<String, dynamic> file) async {
+    try {
+      final fileToDelete = File(file['path']);
+      if (await fileToDelete.exists()) {
+        await fileToDelete.delete();
+      }
+
+      setState(() {
+        _paAbdomenFiles.remove(file);
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -809,6 +1560,100 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           minLines: 3,
           maxLines: 5,
         ),*/
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCustomInput(
+              controller: _prRectumController,
+              label: 'P/A Abdomen',
+              minLines: 3,
+              maxLines: 5,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'P/A Abdomen Documents',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // File upload button with options
+            SizedBox(
+              width: double.infinity,
+              child: PopupMenuButton<String>(
+                onSelected: (source) => _uploadPaAbdomenFile(source),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading:
+                      Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'file',
+                    child: ListTile(
+                      leading: Icon(Icons.insert_drive_file,
+                          color: AppColors.primary),
+                      title: const Text('Select File'),
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.upload_file,
+                          color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Upload Document',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Display uploaded files
+            if (_paAbdomenFiles.isNotEmpty)
+              Column(
+                children: [
+                  Text(
+                    'Uploaded Documents:',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._paAbdomenFiles
+                      .map((file) => _buildPrRectumFileItem(file))
+                      .toList(),
+                ],
+              ),
+          ],
+        ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1610,8 +2455,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 controller: _firstNameController,
                 label: 'First Name',
                 isRequired: true,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
               ),
             ),
             const SizedBox(width: 16),
@@ -1668,19 +2512,19 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         ),
         _buildCustomDropdown<String>(
           value: _location,
-          items: const [
-            'Pooja Healthcare',
-            'Pooja Nursing Home',
-            'Fortis Hospital, Mulund',
-            'Breach Candy Hospital',
-            'P D Hinduja Hospital, Mahim',
-            'Jupiter Hospital, Thane'
-          ],
+          items: _locations.map((loc) => loc['location'] as String).toList(),
           label: 'Location',
-          onChanged: (value) => setState(() => _location = value!),
+          onChanged: (value) {
+            setState(() {
+              _location = value!;
+              // Get and store the id based on the selected location
+              locationId = _locations
+                  .firstWhere((loc) => loc['location'] == value)['id']
+                  .toString();
+              print('Selected Location ID: $locationId');
+            });
+          },
         ),
-     
-     
       ],
     );
   }
@@ -1827,116 +2671,4 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       ),
     );
   }
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Patient Record'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          _buildStepNavigation(),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const ClampingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: IndexedStack(
-                    index: _currentStep,
-                    children: [
-                      _buildPersonalDetails(),
-                      _buildMedicalDetails(),
-                      _buildReportsSection(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: Colors.grey[200]!,
-                  width: 1,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentStep > 0)
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() => _currentStep--);
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: AppColors.primary),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      elevation: 0,
-                    ),
-                    child: const Text('BACK'),
-                  )
-                else
-                  const SizedBox(width: 120),
-                ElevatedButton(
-                  onPressed: () {
-                    // Skip validation for navigation (remove this if you want validation)
-                    if (_currentStep < 2) {
-                      setState(() => _currentStep++);
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      _submitForm();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    elevation: 0,
-                  ),
-                  child: Text(_currentStep == 2 ? 'SUBMIT' : 'NEXT'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }*/
 }

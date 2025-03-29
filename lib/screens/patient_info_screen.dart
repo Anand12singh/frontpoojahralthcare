@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_list.dart';
 import '../utils/colors.dart';
 import '../widgets/custom_text_field.dart';
@@ -175,8 +176,11 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
           if (responseData['status'] == true) {
             log('response $responseData');
             int patientExist = responseData['data'][0]['patientExist'] ?? 0;
-            String? phid =
-                responseData['data'][0]['patient_id']?.toString() ?? 'NA';
+            String? phid = responseData['data'][0]['patient_id']?.toString() ?? 'NA';
+
+            Global.status = patientExist.toString();
+            Global.patient_id = phid;
+            Global.phid = phid;
 
             log('Patient Exist: $patientExist'); // Should log 1
             log('PHID: ${phid}');

@@ -441,7 +441,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
         if (pickedFile != null) {
           savedFile = File(pickedFile.path);
-          fileType = path.extension(pickedFile.path).replaceAll('.', '').toUpperCase();
+          fileType =
+              path.extension(pickedFile.path).replaceAll('.', '').toUpperCase();
         }
       } else if (source == 'file') {
         final result = await FilePicker.platform.pickFiles(
@@ -452,7 +453,10 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         if (result != null && result.files.single.path != null) {
           savedFile = File(result.files.single.path!);
           originalName = result.files.single.name;
-          fileType = path.extension(result.files.single.path!).replaceAll('.', '').toUpperCase();
+          fileType = path
+              .extension(result.files.single.path!)
+              .replaceAll('.', '')
+              .toUpperCase();
         }
       }
 
@@ -470,7 +474,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             : path.extension(savedFile.path);
         final filename = '$timestamp$ext';
 
-        final newFile = await savedFile.copy(path.join(filesDir.path, filename));
+        final newFile =
+            await savedFile.copy(path.join(filesDir.path, filename));
         final fileSize = (await newFile.length()) / 1024;
 
         setState(() {
@@ -595,7 +600,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 onChanged: (_) => _calculateBMI(),
               ),
             ),
-            SizedBox(width: 10,),
+            SizedBox(
+              width: 10,
+            ),
             Expanded(
               child: _buildCustomInput(
                 controller: _weightController,
@@ -837,20 +844,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   PopupMenuItem(
                     value: 'gallery',
                     child: ListTile(
-                      leading: Icon(Icons.photo_library, color: AppColors.primary),
+                      leading:
+                          Icon(Icons.photo_library, color: AppColors.primary),
                       title: const Text('Choose from Gallery'),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'file',
                     child: ListTile(
-                      leading: Icon(Icons.insert_drive_file, color: AppColors.primary),
+                      leading: Icon(Icons.insert_drive_file,
+                          color: AppColors.primary),
                       title: const Text('Select File'),
                     ),
                   ),
                 ],
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
@@ -858,7 +868,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.upload_file, color: AppColors.primary, size: 20),
+                      Icon(Icons.upload_file,
+                          color: AppColors.primary, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Upload Document',
@@ -885,7 +896,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ..._prRectumFiles.map((file) => _buildPrRectumFileItem(file)).toList(),
+                  ..._prRectumFiles
+                      .map((file) => _buildPrRectumFileItem(file))
+                      .toList(),
                 ],
               ),
           ],
@@ -1225,48 +1238,51 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             ),
             child: isHorizontal
                 ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: options.map((option) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 30), // Space between options
-                  child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Radio<T>(
+                    children: options.map((option) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            right: 30), // Space between options
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Radio<T>(
+                              value: option.key,
+                              groupValue: groupValue,
+                              onChanged: onChanged,
+                              //materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity:
+                                  const VisualDensity(horizontal: -1),
+                            ),
+                            const SizedBox(
+                                width: 4), // Space between radio and text
+                            Text(
+                              option.value,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: options.map((option) {
+                      return RadioListTile<T>(
+                        title: Text(
+                          option.value,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                         value: option.key,
                         groupValue: groupValue,
                         onChanged: onChanged,
-                        //materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: const VisualDensity(horizontal: -1),
-                      ),
-                      const SizedBox(width: 4), // Space between radio and text
-                      Text(
-                        option.value,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ],
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        activeColor: AppColors.primary,
+                        visualDensity: const VisualDensity(vertical: -4),
+                      );
+                    }).toList(),
                   ),
-                );
-              }).toList(),
-            )
-                : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: options.map((option) {
-                return RadioListTile<T>(
-                  title: Text(
-                    option.value,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  value: option.key,
-                  groupValue: groupValue,
-                  onChanged: onChanged,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: AppColors.primary,
-                  visualDensity: const VisualDensity(vertical: -4),
-                );
-              }).toList(),
-            ),
           ),
         ],
       ),
@@ -1663,6 +1679,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Location',
           onChanged: (value) => setState(() => _location = value!),
         ),
+     
+     
       ],
     );
   }
@@ -1688,6 +1706,15 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Patient Record'),
+        leading: GestureDetector(
+          onTap: () {
+            Navigator.pop(context);
+          },
+          child: Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: AppColors.primary,
         elevation: 0,
         centerTitle: true,

@@ -104,7 +104,9 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       };
 
       final request = http.Request(
-          'GET', Uri.parse('http://192.168.1.132:3001/api/get_allpatients'));
+          'GET',
+          Uri.parse(
+              'https://pooja-healthcare.ortdemo.com/api/get_allpatients'));
       request.headers.addAll(headers);
 
       final response = await http.Response.fromStream(await request.send());
@@ -151,8 +153,10 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
               'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
         };
 
-        final request = http.Request('POST',
-            Uri.parse('http://192.168.1.132:3001/api/checkpatientinfo'));
+        final request = http.Request(
+            'POST',
+            Uri.parse(
+                'https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'));
 
         request.body = json.encode({
           "first_name": _nameController.text.trim(),
@@ -163,19 +167,19 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
         request.headers.addAll(headers);
 
         final response = await http.Response.fromStream(await request.send());
-        log('Full API Response: ${response.body}');
+
+        log('Full API Response: ${response.body}'); // Debugging
 
         if (response.statusCode == 200) {
           final responseData = json.decode(response.body);
-
           if (responseData['status'] == true) {
+            log('response $responseData');
             int patientExist = responseData['data'][0]['patientExist'] ?? 0;
-            String phid = responseData['data'][0].containsKey('phid')
-                ? responseData['data'][0]['phid']
-                : 'NA';
+            String? phid =
+                responseData['data'][0]['patient_id']?.toString() ?? 'NA';
 
-            log('response${responseData['data']}');
-            log('response${phid}');
+            log('Patient Exist: $patientExist'); // Should log 1
+            log('PHID: ${phid}');
 
             if (mounted) {
               Navigator.push(
@@ -185,8 +189,8 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
                     firstName: _nameController.text.trim(),
                     lastName: _lastnameController.text.trim(),
                     phone: _phoneController.text.trim(),
-                    patientExist: patientExist, // Retrieved from API response
-                    phid: phid, // Retrieved from API response
+                    patientExist: patientExist,
+                    phid: phid,
                   ),
                 ),
               );
@@ -200,10 +204,9 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
             );
           }
         } else {
-          final errorData = json.decode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorData['message'] ?? 'Submission failed'),
+              content: Text('API Error: ${response.statusCode}'),
               backgroundColor: Colors.red,
             ),
           );

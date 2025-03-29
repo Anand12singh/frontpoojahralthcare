@@ -35,7 +35,9 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       };
 
       final request = http.Request(
-          'GET', Uri.parse('http://192.168.1.101:3001/api/get_allpatients'));
+          'GET',
+          Uri.parse(
+              'https://pooja-healthcare.ortdemo.com/api/get_allpatients'));
       request.headers.addAll(headers);
 
       final response = await http.Response.fromStream(await request.send());

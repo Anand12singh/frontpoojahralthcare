@@ -163,13 +163,16 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
         request.headers.addAll(headers);
 
         final response = await http.Response.fromStream(await request.send());
+        log('Full API Response: ${response.body}');
 
         if (response.statusCode == 200) {
           final responseData = json.decode(response.body);
 
           if (responseData['status'] == true) {
             int patientExist = responseData['data'][0]['patientExist'] ?? 0;
-            String phid = responseData['data'][0]['phid'] ?? '';
+            String phid = responseData['data'][0].containsKey('phid')
+                ? responseData['data'][0]['phid']
+                : 'NA';
 
             log('response${responseData['data']}');
             log('response${phid}');

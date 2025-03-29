@@ -15,9 +15,14 @@ class PatientFormScreen extends StatefulWidget {
 
 class _PatientFormScreenState extends State<PatientFormScreen> {
   int _currentStep = 0;
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _personalInfoFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _medicalInfoFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _reportsFormKey = GlobalKey<FormState>();
+  //final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
+  List<Map<String, dynamic>> _prRectumFiles = [];
+  final ImagePicker _imagePicker = ImagePicker();
 
   // Personal Information Controllers
   final TextEditingController _firstNameController = TextEditingController();
@@ -273,23 +278,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       _bmiController.text = '';
     }
   }
-  /*void _calculateBMI() {
-    if (_heightFtController.text.isNotEmpty &&
-        _heightInController.text.isNotEmpty &&
-        _weightController.text.isNotEmpty) {
-      try {
-        double heightInInches = (double.parse(_heightFtController.text) * 12 +
-            double.parse(_heightInController.text));
-        double weight = double.parse(_weightController.text);
-        double bmi = (weight / (heightInInches * heightInInches)) * 703;
-        _bmiController.text = bmi.toStringAsFixed(1);
-      } catch (e) {
-        _bmiController.text = '';
-      }
-    } else {
-      _bmiController.text = '';
-    }
-  }*/
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -304,7 +292,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
+    bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
+    bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+    bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
+
+    if (personalValid && medicalValid && reportsValid) {
       Map<String, dynamic> patientData = {
         'personalInfo': {
           'firstName': _firstNameController.text,
@@ -365,6 +357,10 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Patient record saved successfully')),
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
     }
   }
 
@@ -372,6 +368,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   Widget _buildReportsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildSectionHeader('Reports & Documents'),
         const SizedBox(height: 20),
@@ -411,78 +408,155 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
-  Widget _buildHeightInput({
-    required TextEditingController ftController,
-    required TextEditingController inController,
-    required void Function() onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            'Height',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+  Future<void> _uploadPrRectumFile(String source) async {
+    try {
+      File? savedFile;
+      String? originalName;
+      String fileType = '';
+
+      if (source == 'camera' || source == 'gallery') {
+        final pickedFile = await _imagePicker.pickImage(
+          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+          maxWidth: 1800,
+          maxHeight: 1800,
+          imageQuality: 90,
+        );
+
+        if (pickedFile != null) {
+          savedFile = File(pickedFile.path);
+          fileType = path.extension(pickedFile.path).replaceAll('.', '').toUpperCase();
+        }
+      } else if (source == 'file') {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        );
+
+        if (result != null && result.files.single.path != null) {
+          savedFile = File(result.files.single.path!);
+          originalName = result.files.single.name;
+          fileType = path.extension(result.files.single.path!).replaceAll('.', '').toUpperCase();
+        }
+      }
+
+      if (savedFile != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final filesDir = Directory(path.join(appDir.path, 'pr_rectum_files'));
+
+        if (!await filesDir.exists()) {
+          await filesDir.create(recursive: true);
+        }
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final ext = originalName != null
+            ? path.extension(originalName)
+            : path.extension(savedFile.path);
+        final filename = '$timestamp$ext';
+
+        final newFile = await savedFile.copy(path.join(filesDir.path, filename));
+        final fileSize = (await newFile.length()) / 1024;
+
+        setState(() {
+          _prRectumFiles.add({
+            'path': newFile.path,
+            'name': originalName ?? filename,
+            'size': fileSize.toStringAsFixed(1),
+            'type': fileType,
+          });
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
+      );
+    }
+  }
+
+  Widget _buildPrRectumFileItem(Map<String, dynamic> file) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getFileIcon(file['type']),
+              color: AppColors.primary,
+              size: 20,
             ),
           ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: ftController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'ft',
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  file['name'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
-                  onChanged: (value) => onChanged(),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Container(
-                height: 24,
-                width: 1,
-                color: Colors.grey[300],
-              ),
-              Expanded(
-                child: TextFormField(
-                  controller: inController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'in',
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                const SizedBox(height: 4),
+                Text(
+                  '${file['size']} KB • ${file['type']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
                   ),
-                  onChanged: (value) => onChanged(),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+            onPressed: () => _removePrRectumFile(file),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _removePrRectumFile(Map<String, dynamic> file) async {
+    try {
+      final fileToDelete = File(file['path']);
+      if (await fileToDelete.exists()) {
+        await fileToDelete.delete();
+      }
+
+      setState(() {
+        _prRectumFiles.remove(file);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
+      );
+    }
   }
 
   Widget _buildMedicalDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildSectionHeader('Medical Information'),
         const SizedBox(height: 20),
@@ -504,6 +578,15 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 onChanged: (_) => _calculateBMI(),
               ),
             ),
+            SizedBox(width: 10,),
+            Expanded(
+              child: _buildCustomInput(
+                controller: _weightController,
+                label: 'Weight (kg)',
+                keyboardType: TextInputType.number,
+                onChanged: (_) => _calculateBMI(),
+              ),
+            ),
             /*Expanded(
               child: _buildCustomInput(
                 controller: _heightFtController,
@@ -522,12 +605,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
               ),
             ),*/
           ],
-        ),
-        _buildCustomInput(
-          controller: _weightController,
-          label: 'Weight (kg)',
-          keyboardType: TextInputType.number,
-          onChanged: (_) => _calculateBMI(),
         ),
         _buildCustomInput(
           controller: _bmiController,
@@ -702,11 +779,99 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           minLines: 3,
           maxLines: 5,
         ),
-        _buildCustomInput(
+        /*_buildCustomInput(
           controller: _prRectumController,
           label: 'P/R Rectum',
           minLines: 3,
           maxLines: 5,
+        ),*/
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCustomInput(
+              controller: _prRectumController,
+              label: 'P/R Rectum',
+              minLines: 3,
+              maxLines: 5,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'P/R Rectum Documents',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // File upload button with options
+            SizedBox(
+              width: double.infinity,
+              child: PopupMenuButton<String>(
+                onSelected: (source) => _uploadPrRectumFile(source),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading: Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'file',
+                    child: ListTile(
+                      leading: Icon(Icons.insert_drive_file, color: AppColors.primary),
+                      title: const Text('Select File'),
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.upload_file, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Upload Document',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Display uploaded files
+            if (_prRectumFiles.isNotEmpty)
+              Column(
+                children: [
+                  Text(
+                    'Uploaded Documents:',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._prRectumFiles.map((file) => _buildPrRectumFileItem(file)).toList(),
+                ],
+              ),
+          ],
         ),
         _buildCustomInput(
           controller: _localExamController,
@@ -1021,7 +1186,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -1035,24 +1201,32 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             ),
             child: isHorizontal
                 ? Row(
+              mainAxisSize: MainAxisSize.min,
               children: options.map((option) {
-                return Expanded(
-                  child: RadioListTile<T>(
-                    title: Text(
-                      option.value,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    value: option.key,
-                    groupValue: groupValue,
-                    onChanged: onChanged,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    activeColor: AppColors.primary,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 30), // Space between options
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Radio<T>(
+                        value: option.key,
+                        groupValue: groupValue,
+                        onChanged: onChanged,
+                        //materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: const VisualDensity(horizontal: -1),
+                      ),
+                      const SizedBox(width: 4), // Space between radio and text
+                      Text(
+                        option.value,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
                   ),
                 );
               }).toList(),
             )
                 : Column(
+              mainAxisSize: MainAxisSize.min,
               children: options.map((option) {
                 return RadioListTile<T>(
                   title: Text(
@@ -1065,6 +1239,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   activeColor: AppColors.primary,
+                  visualDensity: const VisualDensity(vertical: -4),
                 );
               }).toList(),
             ),
@@ -1300,7 +1475,17 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   Widget _buildClickableStep(int number, String label, int step) {
     return GestureDetector(
       onTap: () {
-        if (step == 0 || (step > 0 && _formKey.currentState!.validate())) {
+        // Validate the current form before navigating
+        bool isValid = true;
+
+        if (_currentStep == 0) {
+          isValid = _personalInfoFormKey.currentState?.validate() ?? false;
+        } else if (_currentStep == 1) {
+          isValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+        }
+        // No validation needed when navigating from Reports section
+
+        if (isValid) {
           setState(() => _currentStep = step);
           _scrollController.animateTo(
             0,
@@ -1368,6 +1553,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   Widget _buildPersonalDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildSectionHeader('Personal Information'),
         const SizedBox(height: 20),
@@ -1480,19 +1666,139 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         children: [
           _buildStepNavigation(),
           Expanded(
+            child: IndexedStack(
+              index: _currentStep,
+              children: [
+                // Personal Information
+                SingleChildScrollView(
+                  controller: ScrollController(),
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _personalInfoFormKey,
+                    child: _buildPersonalDetails(),
+                  ),
+                ),
+                // Medical Information
+                SingleChildScrollView(
+                  controller: ScrollController(),
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _medicalInfoFormKey,
+                    child: _buildMedicalDetails(),
+                  ),
+                ),
+                // Reports & Documents
+                SingleChildScrollView(
+                  controller: ScrollController(),
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _reportsFormKey,
+                    child: _buildReportsSection(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_currentStep > 0)
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentStep--);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: AppColors.primary),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: const Text('BACK'),
+                  )
+                else
+                  const SizedBox(width: 120),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_currentStep < 2) {
+                      setState(() => _currentStep++);
+                    } else {
+                      _submitForm();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    elevation: 0,
+                  ),
+                  child: Text(_currentStep == 2 ? 'SUBMIT' : 'NEXT'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /*@override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Patient Record'),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          _buildStepNavigation(),
+          Expanded(
             child: SingleChildScrollView(
               controller: _scrollController,
               physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: IndexedStack(
-                  index: _currentStep,
-                  children: [
-                    _buildPersonalDetails(),
-                    _buildMedicalDetails(),
-                    _buildReportsSection(),
-                  ],
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: IndexedStack(
+                    index: _currentStep,
+                    children: [
+                      _buildPersonalDetails(),
+                      _buildMedicalDetails(),
+                      _buildReportsSection(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1545,17 +1851,16 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   const SizedBox(width: 120),
                 ElevatedButton(
                   onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      if (_currentStep < 2) {
-                        setState(() => _currentStep++);
-                        _scrollController.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      } else {
-                        _submitForm();
-                      }
+                    // Skip validation for navigation (remove this if you want validation)
+                    if (_currentStep < 2) {
+                      setState(() => _currentStep++);
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      _submitForm();
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -1576,5 +1881,5 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         ],
       ),
     );
-  }
+  }*/
 }

@@ -73,6 +73,60 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
+      if (!mounted) return;
+      setState(() => _isLoading = true);
+
+      try {
+        final response = await http.post(
+          Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            "email": _emailController.text.trim(),
+            "password": _passwordController.text.trim()
+          }),
+        ).timeout(const Duration(seconds: 10));
+
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+
+        if (mounted) {
+          if (response.statusCode == 200 && responseData['status'] == true) {
+            final token = responseData['token'] ?? responseData['access_token'];
+            if (token != null) {
+              await AuthService.saveToken(token);
+            }
+            Navigator.pushReplacementNamed(context, '/patientInfo');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(responseData['message'] ?? 'Login failed'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  /*Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus();
       setState(() => _isLoading = true);
 
       // Check internet connection
@@ -139,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _isLoading = false);
       }
     }
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {

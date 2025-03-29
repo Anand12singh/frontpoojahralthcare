@@ -44,8 +44,8 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/patientInfo': (context) => const PatientInfoScreen(),
-        '/patientForm': (context) =>
-            const PatientFormScreen(), // You'll need to implement this
+        // '/patientForm': (context) =>
+        //     const PatientFormScreen(), // You'll need to implement this
       },
     );
   }

@@ -1,6 +1,11 @@
+import 'dart:developer';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/custom_text_field.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -12,8 +17,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'admin123@ggmail.com');
-  final _passwordController = TextEditingController(text: '123445');
+  final _emailController =
+      TextEditingController(text: 'poojahealthcare@gmail.com');
+  final _passwordController = TextEditingController(text: '123456');
   bool _isLoading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;
@@ -68,9 +74,65 @@ class _LoginScreenState extends State<LoginScreen>
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _isLoading = false);
-      Navigator.pushReplacementNamed(context, '/patientInfo');
+
+      // Check internet connection
+      var connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No internet connection. Please check your network.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      try {
+        final response = await http
+            .post(
+          Uri.parse('http://192.168.1.132:3001/api/login'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            "email": _emailController.text.trim(),
+            "password": _passwordController.text.trim()
+          }),
+        )
+            .timeout(Duration(seconds: 5), onTimeout: () {
+          throw Exception('Request timed out. Please try again.');
+        });
+
+        final responseData = json.decode(response.body);
+
+        if (response.statusCode == 200 && responseData['status'] == true) {
+          // Save token to secure storage
+          // await AuthService.saveToken(responseData['token']);
+
+          // Navigate to home screen
+          Navigator.pushReplacementNamed(context, '/patientInfo');
+        } else {
+          // Handle error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseData['message'] ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        log('Error $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

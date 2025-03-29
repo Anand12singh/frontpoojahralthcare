@@ -7,7 +7,19 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
 class PatientFormScreen extends StatefulWidget {
-  const PatientFormScreen({Key? key}) : super(key: key);
+  final String firstName;
+  final String lastName;
+  final String phone;
+  final int patientExist;
+  final String phid;
+  const PatientFormScreen(
+      {Key? key,
+      required this.firstName,
+      required this.lastName,
+      required this.phone,
+      required this.patientExist,
+      required this.phid})
+      : super(key: key);
 
   @override
   _PatientFormScreenState createState() => _PatientFormScreenState();
@@ -89,20 +101,25 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   @override
   void initState() {
+    print('First Name: ${widget.firstName}');
+    print('Last Name: ${widget.lastName}');
+    print('Phone: ${widget.phone}');
+    print('Patient Exist: ${widget.patientExist}');
+    print('PHID: ${widget.phid}');
     super.initState();
-    _phIdController.text = 'PH-${DateTime.now().millisecondsSinceEpoch}';
+    _phIdController.text = 'PH-${widget.phid}';
     _ageController.text = '';
 
     // Initialize some default values for testing
-    _firstNameController.text = 'John';
-    _lastNameController.text = 'Doe';
-    _phoneController.text = '9876543210';
-    _addressController.text = '123 Main St, City';
-    _ageController.text = '35';
-    _heightFtController.text = '5';
-    _heightInController.text = '10';
-    _weightController.text = '70';
-    _calculateBMI();
+    _firstNameController.text = '${widget.firstName}';
+    _lastNameController.text = '${widget.lastName}';
+    _phoneController.text = '${widget.phone}';
+    // _addressController.text = '123 Main St, City';
+    // _ageController.text = '35';
+    // _heightFtController.text = '5';
+    // _heightInController.text = '10';
+    // _weightController.text = '70';
+    // _calculateBMI();
   }
 
   @override
@@ -657,11 +674,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   ),
                   children: isRequired
                       ? [
-                    const TextSpan(
-                      text: ' *',
-                      style: TextStyle(color: AppColors.error),
-                    )
-                  ]
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: AppColors.error),
+                          )
+                        ]
                       : [],
                 ),
               ),
@@ -729,7 +746,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
               validator: validator,
               onChanged: onChanged,
               style: TextStyle(
-                color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                color:
+                    enabled ? AppColors.textPrimary : AppColors.textSecondary,
                 fontSize: 16,
               ),
             ),
@@ -827,19 +845,24 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
               value: value,
               items: items
                   .map((item) => DropdownMenuItem<T>(
-                value: item,
-                child: Text(
-                  displayText != null ? displayText(item) : item.toString(),
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
-                  ),
-                ),
-              ))
+                        value: item,
+                        child: Text(
+                          displayText != null
+                              ? displayText(item)
+                              : item.toString(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: enabled
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ))
                   .toList(),
               onChanged: enabled ? onChanged : null,
               style: TextStyle(
-                color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                color:
+                    enabled ? AppColors.textPrimary : AppColors.textSecondary,
                 fontSize: 16,
               ),
               decoration: InputDecoration(
@@ -864,7 +887,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 ),
                 filled: true,
                 fillColor: enabled ? Colors.white : AppColors.background,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
               ),
               icon: Icon(
                 Icons.arrow_drop_down,
@@ -915,39 +939,39 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             ),
             child: isHorizontal
                 ? Row(
-              children: options.map((option) {
-                return Expanded(
-                  child: RadioListTile<T>(
-                    title: Text(
-                      option.value,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    value: option.key,
-                    groupValue: groupValue,
-                    onChanged: onChanged,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    activeColor: AppColors.primary,
-                  ),
-                );
-              }).toList(),
-            )
+                    children: options.map((option) {
+                      return Expanded(
+                        child: RadioListTile<T>(
+                          title: Text(
+                            option.value,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          value: option.key,
+                          groupValue: groupValue,
+                          onChanged: onChanged,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          activeColor: AppColors.primary,
+                        ),
+                      );
+                    }).toList(),
+                  )
                 : Column(
-              children: options.map((option) {
-                return RadioListTile<T>(
-                  title: Text(
-                    option.value,
-                    style: const TextStyle(fontSize: 14),
+                    children: options.map((option) {
+                      return RadioListTile<T>(
+                        title: Text(
+                          option.value,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        value: option.key,
+                        groupValue: groupValue,
+                        onChanged: onChanged,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        activeColor: AppColors.primary,
+                      );
+                    }).toList(),
                   ),
-                  value: option.key,
-                  groupValue: groupValue,
-                  onChanged: onChanged,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: AppColors.primary,
-                );
-              }).toList(),
-            ),
           ),
         ],
       ),
@@ -1096,20 +1120,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   PopupMenuItem(
                     value: 'gallery',
                     child: ListTile(
-                      leading: Icon(Icons.photo_library, color: AppColors.primary),
+                      leading:
+                          Icon(Icons.photo_library, color: AppColors.primary),
                       title: const Text('Choose from Gallery'),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'file',
                     child: ListTile(
-                      leading: Icon(Icons.insert_drive_file, color: AppColors.primary),
+                      leading: Icon(Icons.insert_drive_file,
+                          color: AppColors.primary),
                       title: const Text('Select File'),
                     ),
                   ),
                 ],
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
@@ -1117,7 +1144,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.cloud_upload, color: AppColors.primary, size: 20),
+                      Icon(Icons.cloud_upload,
+                          color: AppColors.primary, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Upload Document',
@@ -1203,7 +1231,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             color: isActive ? AppColors.primary : AppColors.background,
             shape: BoxShape.circle,
             border: Border.all(
-              color: isActive ? AppColors.primary : AppColors.textSecondary.withOpacity(0.2),
+              color: isActive
+                  ? AppColors.primary
+                  : AppColors.textSecondary.withOpacity(0.2),
               width: 2,
             ),
           ),
@@ -1259,7 +1289,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 label: 'First Name',
                 isRequired: true,
                 validator: (value) =>
-                value?.isEmpty ?? true ? 'Required' : null,
+                    value?.isEmpty ?? true ? 'Required' : null,
               ),
             ),
             const SizedBox(width: 16),

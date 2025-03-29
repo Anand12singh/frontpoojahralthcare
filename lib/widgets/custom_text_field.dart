@@ -56,10 +56,11 @@ class CustomTextField extends StatelessWidget {
         ),
         prefixIcon: Icon(
           prefixIcon,
-          color: AppColors.textSecondary,
+          color: AppColors.primary.withOpacity(0.8),
           size: 20,
         ),
         suffixIcon: suffixIcon,
+        suffixIconColor: AppColors.primary.withOpacity(0.8),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
+import '../services/auth_service.dart'; // Import AuthService
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -37,9 +38,17 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _controller.forward().then((_) {
-      Navigator.pushReplacementNamed(context, '/login');
-    });
+    _controller.forward().then((_) => _checkLoginStatus());
+  }
+
+  Future<void> _checkLoginStatus() async {
+    bool isLoggedIn = await AuthService.isLoggedIn();
+    if (mounted) {
+      Navigator.pushReplacementNamed(
+        context,
+        isLoggedIn ? '/patientInfo' : '/login',
+      );
+    }
   }
 
   @override

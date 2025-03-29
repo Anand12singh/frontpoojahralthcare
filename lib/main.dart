@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
-import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
@@ -44,8 +43,6 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/patientInfo': (context) => const PatientInfoScreen(),
-        // '/patientForm': (context) =>
-        //     const PatientFormScreen(), // You'll need to implement this
       },
     );
   }

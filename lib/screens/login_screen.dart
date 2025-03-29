@@ -106,15 +106,20 @@ class _LoginScreenState extends State<LoginScreen>
         });
 
         final responseData = json.decode(response.body);
+        log('Login Response: $responseData');
 
         if (response.statusCode == 200 && responseData['status'] == true) {
-          // Save token to secure storage
-          // await AuthService.saveToken(responseData['token']);
+          // Save token securely
+          if (responseData.containsKey('token')) {
+            await AuthService.saveToken(responseData['token']);
+            log('Token saved successfully');
+          } else {
+            log('Token missing in response');
+          }
 
           // Navigate to home screen
           Navigator.pushReplacementNamed(context, '/patientInfo');
         } else {
-          // Handle error
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(responseData['message'] ?? 'Login failed'),
@@ -123,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
           );
         }
       } catch (e) {
-        log('Error $e');
+        log('Login Error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

@@ -44,9 +44,7 @@ class ConfigManager {
 enum API {
   // General
   getLocation,
-  userList,
-  updateUser,
-  deleteUser
+  addPatient
 
   // Other APIs as required...
 }
@@ -67,6 +65,9 @@ class APIManager {
       case API.getLocation:
         apiPathString = "api/getlocation";
         break;
+      case API.addPatient:
+        apiPathString = "api/storepatient";
+        break;
       default:
         apiPathString = "HomeheaderResponse";
     }
@@ -78,8 +79,7 @@ class APIManager {
 
   HTTPMethod apiHTTPMethod(API api) {
     switch (api) {
-      case API.updateUser:
-      case API.deleteUser:
+      case API.addPatient:
         return HTTPMethod.POST;
       default:
         return HTTPMethod.GET;

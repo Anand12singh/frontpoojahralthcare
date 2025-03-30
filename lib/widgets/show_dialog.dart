@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:poojaheakthcare/utils/colors.dart';
 
 
 class ShowDialogs {
@@ -13,13 +14,13 @@ class ShowDialogs {
       content: Text(
         message,
         style: TextStyle(
-          color: Color(0xFF393185), // Custom text color
+          color: AppColors.primary, // Custom text color
           fontSize: 14.0, // Font size
           fontFamily: 'Inter', // Assuming 'Inter' is your font
         ),
         textAlign:TextAlign.center , // Optional: center text on tablet
       ),
-      backgroundColor: Colors.white, // Background color
+      backgroundColor: AppColors.primaryLight, // Background color
       behavior: SnackBarBehavior.floating, // Makes the snackbar float above other content
       duration: Duration(seconds: 2), // Duration for which the snackbar will be displayed
 

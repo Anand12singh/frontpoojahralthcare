@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
@@ -17,9 +16,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController =
-      TextEditingController(text: 'poojahealthcare@gmail.com');
-  final _passwordController = TextEditingController(text: '123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;
@@ -77,17 +75,21 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _isLoading = true);
 
       try {
-        final response = await http.post(
-          Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            "email": _emailController.text.trim(),
-            "password": _passwordController.text.trim()
-          }),
-        ).timeout(const Duration(seconds: 10));
+        final response = await http
+            .post(
+              // Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
+              Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
+
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+              body: json.encode({
+                "email": _emailController.text.trim(),
+                "password": _passwordController.text.trim()
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
@@ -99,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen>
             }
             Navigator.pushReplacementNamed(context, '/patientInfo');
           } else {
+            log('error messgae ');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(responseData['message'] ?? 'Login failed'),
@@ -108,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen>
           }
         }
       } catch (e) {
+        log('error $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -124,77 +128,6 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  /*Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      FocusScope.of(context).unfocus();
-      setState(() => _isLoading = true);
-
-      // Check internet connection
-      var connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No internet connection. Please check your network.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      try {
-        final response = await http
-            .post(
-          Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            "email": _emailController.text.trim(),
-            "password": _passwordController.text.trim()
-          }),
-        )
-            .timeout(Duration(seconds: 5), onTimeout: () {
-          throw Exception('Request timed out. Please try again.');
-        });
-
-        final responseData = json.decode(response.body);
-        log('Login Response: $responseData');
-
-        if (response.statusCode == 200 && responseData['status'] == true) {
-          // Save token securely
-          if (responseData.containsKey('token')) {
-            await AuthService.saveToken(responseData['token']);
-            log('Token saved successfully');
-          } else {
-            log('Token missing in response');
-          }
-
-          // Navigate to home screen
-          Navigator.pushReplacementNamed(context, '/patientInfo');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(responseData['message'] ?? 'Login failed'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } catch (e) {
-        log('Login Error: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    }
-  }*/
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,35 +138,39 @@ class _LoginScreenState extends State<LoginScreen>
           builder: (context, constraints) {
             return SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: 24,
-                      right: 24,
-                      top:
-                          MediaQuery.of(context).viewInsets.bottom > 0 ? 24 : 0,
-                      bottom: 24,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        FadeTransition(
-                          opacity: _fadeInAnimation,
-                          child: _buildLogo(),
-                        ),
-                        const SizedBox(height: 40),
-                        ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: SlideTransition(
-                            position: _slideAnimation,
-                            child: _buildLoginCard(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 800,
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        top: MediaQuery.of(context).viewInsets.bottom > 0
+                            ? 24
+                            : 0,
+                        bottom: 24,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FadeTransition(
+                            opacity: _fadeInAnimation,
+                            child: _buildLogo(),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 40),
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: _buildLoginCard(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -275,10 +212,9 @@ class _LoginScreenState extends State<LoginScreen>
                 AppColors.primary.withOpacity(0.8),
               ],
             ).createShader(bounds),
-            child: Icon(
-              Icons.medical_services,
-              size: 40,
-              color: Colors.white,
+            child: Image.asset(
+              'assets/app_icon.png',
+              height: 70,
             ),
           ),
         ),

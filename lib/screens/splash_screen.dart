@@ -70,13 +70,18 @@ class _SplashScreenState extends State<SplashScreen>
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  // color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.medical_services,
-                  size: 80,
-                  color: AppColors.primary,
+                // child: Icon(
+                //   Icons.medical_services,
+                //   size: 80,
+                //   color: AppColors.primary,
+                // ),
+
+                child: Image.asset(
+                  'assets/app_icon.png',
+                  height: 80,
                 ),
               ),
             ),

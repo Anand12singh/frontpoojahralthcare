@@ -8,7 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-
+import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import '../constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../widgets/show_dialog.dart';
@@ -50,6 +51,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     10: 'doctor_note_image',
   };
 
+  final Map<String, List<String>> _deletedFiles = {};
   int _currentStep = 0;
   final GlobalKey<FormState> _personalInfoFormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> _medicalInfoFormKey = GlobalKey<FormState>();
@@ -57,7 +59,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   final ImagePicker _imagePicker = ImagePicker();
-
+  String? _selectedLocationId = '2'; // This will store the ID (like "4")
+  String _selectedLocationName = '';
   // Personal Information Controllers
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -130,10 +133,10 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   bool _isLoadingLocations = false;
   bool _isLoading = false;
   List<Map<String, dynamic>> _locations = [];
-  String? locationId = '1';
+  String? locationId = '2';
   Map<String, dynamic>? _patientData;
   Map<String, dynamic>? _visitData;
-  Map<String, dynamic>? _documentData;
+  var _documentData;
 
   // File Management
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
@@ -152,8 +155,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchLocations();
-    _phIdController.text = 'PH-${widget.phid}';
+    _phIdController.text = 'PH-${Global.phid1}';
     _firstNameController.text = widget.firstName;
     _lastNameController.text = widget.lastName;
     _phoneController.text = widget.phone;
@@ -161,6 +163,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     if (widget.patientExist == 2) {
       _fetchPatientData();
     }
+
+    _fetchLocations();
   }
 
   @override
@@ -345,13 +349,32 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       _adviseController.text = _visitData?['advise']?.toString() ?? '';
       _doctorNotesController.text =
           _patientData?['doctor_note']?.toString() ?? '';
+      // Replace this:
+      locationId = _patientData?['location']?.toString() ?? '2';
+
+// With this:
+      _selectedLocationId = _patientData?['location']?.toString() ?? '2';
+// Find the corresponding location name
+      final location = _locations.firstWhere(
+        (loc) => loc['id'].toString() == _selectedLocationId,
+        orElse: () => {'id': '2', 'location': 'Unknown'},
+      );
+      _selectedLocationName = location['location'] ?? 'Unknown';
 
       // Load documents
       _uploadedFiles.clear();
-      if (_documentData != null) {
-        _documentData!.forEach((docTypeId, files) {
-          final docType = _docTypeMapping[int.parse(docTypeId.toString())];
-          if (docType != null && files is List) {
+
+      if (_documentData != null && _documentData is Map) {
+        _documentData.forEach((docTypeId, files) {
+          try {
+            // Convert docTypeId to int (API might send it as string or int)
+            final typeId = int.tryParse(docTypeId.toString());
+            if (typeId == null) return;
+
+            // Get the corresponding document type key
+            final docType = _docTypeMapping[typeId];
+            if (docType == null || files is! List) return;
+
             _uploadedFiles[docType] = files.map<Map<String, dynamic>>((file) {
               return {
                 'id': file['id'],
@@ -366,6 +389,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 'isExisting': true,
               };
             }).toList();
+          } catch (e) {
+            log('error $e');
           }
         });
       }
@@ -377,7 +402,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   void _initializeWithEmptyData() {
     setState(() {
       _patientData = {
-        'phid': widget.phid,
+        'phid': Global.phid,
         'first_name': widget.firstName,
         'last_name': widget.lastName,
         'mobile_no': widget.phone
@@ -402,8 +427,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           setState(() {
             _locations = List<Map<String, dynamic>>.from(data['locations']);
             if (_locations.isNotEmpty) {
-              _location = _locations.first['location'];
-              locationId = _locations.first['id'].toString();
+              _selectedLocationId ??= _locations.first['id'].toString();
+              _selectedLocationName = _locations.first['location'].toString();
             }
           });
         }
@@ -420,6 +445,19 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       setState(() => _isLoadingLocations = false);
     }
   }
+
+  final Map<String, int> _reverseDocTypeMapping = {
+    'blood_reports': 1,
+    'xray_report': 2,
+    'ecg_report': 3,
+    'ct_scan_report': 4,
+    'echocardiagram_report': 5,
+    'misc_report': 6,
+    'pr_image': 7,
+    'pa_abdomen_image': 8,
+    'pr_rectum_image': 9,
+    'doctor_note_image': 10,
+  };
 
   Future<void> _submitForm() async {
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
@@ -456,7 +494,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
+      log('_doctorNotesController.text ${_doctorNotesController.text}');
 
+      // ✅ Add Form Fields
       Map<String, String> fields = {
         'first_name': _ensureString(_firstNameController.text),
         'last_name': _ensureString(_lastNameController.text),
@@ -466,7 +506,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'address': _ensureString(_addressController.text),
         'date': _selectedDate.toIso8601String().split('T')[0],
         'referral_by': _ensureString(_referralController.text),
-        'location': locationId!,
+        // 'location': locationId!,
+        'location': _selectedLocationId ?? '1',
         'age': _ensureNumber(_ageController.text),
         'height': _ensureNumber(_heightController.text),
         'weight': _ensureNumber(_weightController.text),
@@ -517,116 +558,167 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       }
 
       request.fields.addAll(fields);
+      log('Form Fields: ${jsonEncode(fields)}');
 
-      // Handle file uploads
+      // ✅ Handle File Uploads (New + Existing)
       for (var entry in _uploadedFiles.entries) {
         final docType = entry.key;
         final files = entry.value;
 
-        final docTypeId = _docTypeMapping.entries
-            .firstWhere(
-              (e) => e.value == docType,
-              orElse: () => MapEntry(0, ''),
-            )
-            .key;
+        String? fieldName = _mapDocTypeToField(docType);
+        if (fieldName == null) continue;
 
-        if (docTypeId == 0) continue;
+        List<String> existingFileIds = [];
 
         for (var file in files) {
-          try {
-            if (file['isExisting'] == true) {
-              request.fields['existing_${docType}_${file['id']}'] =
-                  file['id'].toString();
-            } else {
-              final fileToUpload = File(file['path']);
-              if (await fileToUpload.exists()) {
-                request.files.add(
-                  await http.MultipartFile.fromPath(
-                    docType,
-                    file['path'],
-                  ),
-                );
-              }
+          log('Processing file: ${jsonEncode(file)}');
+
+          if (file['isExisting'] == true) {
+            // ✅ File already exists (from API)
+            existingFileIds.add(file['id'].toString());
+          } else {
+            // ✅ New file uploaded by user
+            final fileToUpload = File(file['path']);
+            if (_deletedFiles.isNotEmpty) {
+              _deletedFiles.forEach((docType, fileIds) {
+                final fieldName = _mapDocTypeToField(docType);
+                if (fieldName != null && fileIds.isNotEmpty) {
+                  request.fields['deleted_$fieldName'] = fileIds.join(',');
+                }
+              });
             }
-          } catch (e) {
-            log('Error adding file: $e');
+            if (await fileToUpload.exists()) {
+              request.files.add(await http.MultipartFile.fromPath(
+                fieldName,
+                file['path'],
+                filename:
+                    '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file['path'])}',
+              ));
+            } else {
+              log('❌ File Not Found: ${file['path']}');
+            }
           }
+        }
+
+        if (existingFileIds.isNotEmpty) {
+          request.fields['existing_$fieldName'] = existingFileIds.join(',');
         }
       }
 
+      log('📤 Request Fields: ${jsonEncode(request.fields)}');
+      log('📂 Total Files to Upload: ${request.files.length}');
+
+      // ✅ Send Request
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
       Navigator.of(context).pop();
+      log('✅ Response Status: ${response.statusCode}');
+      log('📜 Response Body: $responseBody');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
-        if (responseData['status'] == true) {
-          ShowDialogs.showSnackBar(context,
-              responseData['message'] ?? 'Patient record saved successfully');
-          Navigator.of(context).pop();
-        } else {
-          ShowDialogs.showSnackBar(context,
-              responseData['message'] ?? 'Failed to save patient record');
-        }
+        showDialog(
+            context: context,
+            barrierDismissible: false, // Prevents closing without interaction
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Success'),
+                content: Text(responseData['message'] ??
+                    'Patient record saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PatientInfoScreen()),
+                      );
+                    },
+                    child: const Text('view'),
+                  ),
+                ],
+              );
+            });
+        // Navigator.of(context).pop();
       } else {
         ShowDialogs.showSnackBar(context,
-            'Failed to save patient record. Status code: ${response.statusCode}');
+            '❌ Failed to save patient record. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      Navigator.of(context).pop();
-      log('Submission Error: $e');
+      // Navigator.of(context).pop();s
+      log('🚨 Submission Error: $e');
       ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
     }
   }
 
-  Future<void> _handleFileSelection(String reportType, String source) async {
+  String? _mapDocTypeToField(String docType) {
+    switch (docType) {
+      case 'blood_reports':
+        return 'blood_report';
+      case 'xray_report':
+        return 'xray_report';
+      case 'ecg_report':
+        return 'ecg_report';
+      case 'ct_scan_report':
+        return 'ct_scan_report';
+      case 'echocardiagram_report':
+        return 'echocardiagram_report';
+      case 'misc_report':
+        return 'misc_report';
+      case 'doctor_note_image':
+        return 'doctor_note_image';
+      case 'pr_rectum_image':
+        return 'pr_rectum_image';
+      case 'pa_abdomen_image':
+        return 'pa_abdomen_image';
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _handleFileSelection(String fileType, String source) async {
     try {
-      var pickedFile;
-      File? savedFile;
-      String? originalName;
+      File? file;
+      String? fileName;
 
       if (source == 'camera' || source == 'gallery') {
-        pickedFile = await _picker.pickImage(
+        final XFile? image = await ImagePicker().pickImage(
           source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
-          maxWidth: 1800,
-          maxHeight: 1800,
-          imageQuality: 90,
         );
-
-        if (pickedFile != null) {
-          savedFile = File(pickedFile.path);
+        if (image != null) {
+          file = File(image.path);
+          fileName = path.basename(image.path);
+          log('fileName $fileName');
         }
       } else if (source == 'file') {
-        final result = await FilePicker.platform.pickFiles(
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
         );
-
-        if (result != null && result.files.single.path != null) {
-          savedFile = File(result.files.single.path!);
-          originalName = result.files.single.name;
+        if (result != null) {
+          file = File(result.files.single.path!);
+          fileName = result.files.single.name;
         }
       }
 
-      if (savedFile != null) {
-        final fileSize = (await savedFile.length()) / 1024;
-        final fileType =
-            path.extension(savedFile.path).replaceAll('.', '').toUpperCase();
+      if (file != null) {
+        final fileExtension =
+            path.extension(file.path).replaceAll('.', '').toUpperCase();
 
         setState(() {
-          _uploadedFiles[reportType] ??= [];
-          _uploadedFiles[reportType]!.add({
-            'path': savedFile!.path,
-            'name': originalName ?? path.basename(savedFile.path),
-            'size': fileSize.toStringAsFixed(1),
-            'type': fileType,
+          _uploadedFiles[fileType] ??= [];
+          _uploadedFiles[fileType]!.add({
+            'path': file!.path,
+            'name': fileName ?? 'Document',
+            'type': fileExtension,
             'isExisting': false,
           });
         });
       }
     } catch (e) {
-      log('Error uploading file: $e');
+      debugPrint('Error uploading file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
       );
@@ -635,7 +727,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   Future<void> _removeFile(String reportType, Map<String, dynamic> file) async {
     try {
-      if (file['isExisting'] != true) {
+      if (file['isExisting'] == true) {
+        // Track deleted existing files
+        _deletedFiles[reportType] ??= [];
+        _deletedFiles[reportType]!.add(file['id'].toString());
+      } else {
+        // Delete newly uploaded files
         final fileToDelete = File(file['path']);
         if (await fileToDelete.exists()) {
           await fileToDelete.delete();
@@ -754,6 +851,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     Widget? suffixIcon,
     String? errorText,
     double borderRadius = 12.0,
+    bool enableNewLines = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -833,9 +931,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   fontSize: 16,
                 ),
               ),
-              keyboardType: keyboardType,
+              keyboardType:
+                  enableNewLines ? TextInputType.multiline : keyboardType,
               minLines: minLines,
-              maxLines: maxLines,
+              maxLines: enableNewLines
+                  ? null
+                  : maxLines, // Allow unlimited lines if enableNewLines is true
               enabled: enabled,
               validator: validator,
               onChanged: onChanged,
@@ -901,6 +1002,101 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   }
 
   Widget _buildCustomDropdown<T>({
+    required T value,
+    required List<T> items,
+    required String label,
+    required void Function(T?) onChanged,
+    String Function(T)? displayText,
+    bool enabled = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: DropdownButtonFormField<T>(
+              value: value,
+              items: items
+                  .map((item) => DropdownMenuItem<T>(
+                        value: item,
+                        child: Text(
+                          displayText != null
+                              ? displayText(item)
+                              : item.toString(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: enabled
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ))
+                  .toList(),
+              onChanged: enabled ? onChanged : null,
+              style: TextStyle(
+                color:
+                    enabled ? AppColors.textPrimary : AppColors.textSecondary,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: enabled ? Colors.white : AppColors.background,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              ),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: enabled ? AppColors.primary : AppColors.textSecondary,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              isExpanded: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomDropdown1<T>({
     required T value,
     required List<T> items,
     required String label,
@@ -1080,89 +1276,192 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
-  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              _getFileIcon(file['type']),
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file['name'],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      '${file['size']} KB • ${file['type']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if (file['isExisting'] == true)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(4),
+  void _showFilePreview(String filePath, String fileType,
+      {bool isNetwork = false}) async {
+    if (['jpg', 'jpeg', 'png', "webp"].contains(fileType.toLowerCase())) {
+      // Show image preview
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.5,
+                  maxScale: 3.0,
+                  child: isNetwork
+                      ? Image.network(filePath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                                child: Text('Failed to load image',
+                                    style: TextStyle(color: Colors.red)),
+                              ))
+                      : Image.file(
+                          File(filePath),
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text('Failed to load image',
+                                style: TextStyle(color: Colors.red)),
                           ),
-                          child: Text(
-                            'Existing',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.success,
+                        )),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: IconButton(
+                  icon: Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (fileType.toLowerCase() == 'pdf') {
+      // Handle PDF preview
+      if (isNetwork) {
+        // For network PDFs, we need to download first
+        try {
+          final dir = await getTemporaryDirectory();
+          final file = File('${dir.path}/temp.pdf');
+          final response = await http.get(Uri.parse(filePath));
+          await file.writeAsBytes(response.bodyBytes);
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Scaffold(
+                appBar: AppBar(
+                  leading: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                    ),
+                  ),
+                  title: Text('PDF Preview'),
+                ),
+                body: PDFView(
+                  filePath: file.path,
+                ),
+              ),
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load PDF: ${e.toString()}')),
+          );
+        }
+      } else {
+        // For local PDFs
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              appBar: AppBar(
+                title: Text('PDF Preview'),
+              ),
+              body: PDFView(
+                filePath: filePath,
+              ),
+            ),
+          ),
+        );
+      }
+    } else {
+      // For other file types
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preview not available for $fileType files')),
+      );
+    }
+  }
+
+  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
+    final fileType = file['type'].toLowerCase();
+    final isImage = ['jpg', 'jpeg', 'png', "webp"].contains(fileType);
+    final isPdf = fileType == 'pdf';
+    final isExisting = file['isExisting'] == true;
+    final filePath = file['path'];
+    return GestureDetector(
+      onTap: () => _showFilePreview(filePath, fileType, isNetwork: isExisting),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getFileIcon(file['type']),
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    file['name'],
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (file['isExisting'] == true)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Existing',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.success,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
-            onPressed: () => _removeFile(reportType, file),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+              onPressed: () => _removeFile(reportType, file),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1170,6 +1469,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   Widget _buildEnhancedUploadCard({
     required String title,
     required List<Map<String, dynamic>> files,
+    required String fileType,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1217,7 +1517,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             SizedBox(
               width: double.infinity,
               child: PopupMenuButton<String>(
-                onSelected: (value) => _handleFileSelection(title, value),
+                onSelected: (source) => _handleFileSelection(fileType, source),
                 itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'camera',
@@ -1278,7 +1578,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...files.map((file) => _buildFileItem(title, file)).toList(),
+              ...files.map((file) => _buildFileItem(fileType, file)).toList(),
             ],
           ],
         ),
@@ -1432,6 +1732,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Address',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         Row(
           children: [
@@ -1459,18 +1760,22 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Referral By',
         ),
         _buildCustomDropdown<String>(
-          value: _location,
-          items: _locations.map((loc) => loc['location'] as String).toList(),
+          value: _selectedLocationName, // Show the name, not the ID
+          items: _locations.map((loc) => loc['location'].toString()).toList(),
           label: 'Location',
           onChanged: (value) {
-            setState(() {
-              _location = value!;
-              locationId = _locations
-                  .firstWhere((loc) => loc['location'] == value)['id']
-                  .toString();
-            });
+            if (value != null) {
+              final selectedLoc = _locations.firstWhere(
+                (loc) => loc['location'] == value,
+                orElse: () => {'id': '1', 'location': 'Unknown'},
+              );
+              setState(() {
+                _selectedLocationName = value;
+                _selectedLocationId = selectedLoc['id'].toString();
+              });
+            }
           },
-        ),
+        )
       ],
     );
   }
@@ -1523,6 +1828,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Chief Complaints',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
 
         // Medical History
@@ -1591,18 +1897,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Any other illness',
           minLines: 2,
           maxLines: 3,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _surgicalHistoryController,
           label: 'Past Surgical History',
           minLines: 2,
           maxLines: 3,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _drugAllergyController,
           label: 'H/O Drug Allergy',
           minLines: 2,
           maxLines: 3,
+          enableNewLines: true,
         ),
 
         // General Examination
@@ -1691,6 +2000,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'H/O Present Medication',
           minLines: 2,
           maxLines: 3,
+          enableNewLines: true,
         ),
 
         // Systems Review
@@ -1700,18 +2010,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Respiratory System (RS)',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _cvsController,
           label: 'Cardiovascular System (CVS)',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _cnsController,
           label: 'Central Nervous System (CNS)',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
 
         // PA Abdomen Section
@@ -1720,6 +2033,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'P/A Abdomen Findings',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1910,6 +2224,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Local Examination',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
 
         // Diagnosis and Plan
@@ -1918,24 +2233,28 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Clinical Diagnosis',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _comorbiditiesController,
           label: 'Comorbidities',
           minLines: 2,
           maxLines: 3,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _planController,
           label: 'Plan',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
         _buildCustomInput(
           controller: _adviseController,
           label: 'Advise',
           minLines: 3,
           maxLines: 5,
+          enableNewLines: true,
         ),
       ],
     );
@@ -1951,36 +2270,43 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         _buildEnhancedUploadCard(
           title: 'Blood Reports',
           files: _uploadedFiles['blood_reports'] ?? [],
+          fileType: 'blood_reports',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'X-Ray Reports',
           files: _uploadedFiles['xray_report'] ?? [],
+          fileType: 'xray_report',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'CT Scan Reports',
           files: _uploadedFiles['ct_scan_report'] ?? [],
+          fileType: 'ct_scan_report',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'ECG Reports',
           files: _uploadedFiles['ecg_report'] ?? [],
+          fileType: 'ecg_report',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'Echocardiogram Reports',
           files: _uploadedFiles['echocardiagram_report'] ?? [],
+          fileType: 'echocardiagram_report',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'Miscellaneous Reports',
           files: _uploadedFiles['misc_report'] ?? [],
+          fileType: 'misc_report',
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
           title: 'Doctor Note Images',
           files: _uploadedFiles['doctor_note_image'] ?? [],
+          fileType: 'doctor_note_image',
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Doctor Notes', level: 2),
@@ -1989,6 +2315,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Clinical findings and recommendations',
           minLines: 5,
           maxLines: 10,
+          enableNewLines: true,
         ),
       ],
     );

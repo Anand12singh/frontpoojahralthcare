@@ -36,7 +36,6 @@ class ConfigManager {
 
   static String getBaseURL() {
     return baseURL;
-
   }
 }
 
@@ -58,7 +57,8 @@ class APIManager {
     return _instance;
   }
   //String? userId =  UserManager().getUserId() ; // Modify the method as per your UserManager
-  Future<String> apiEndPoint(API api, {Map<String, dynamic>? queryParams}) async {
+  Future<String> apiEndPoint(API api,
+      {Map<String, dynamic>? queryParams}) async {
     var apiPathString = "";
 
     switch (api) {
@@ -87,15 +87,15 @@ class APIManager {
   }
 
   Future<void> apiRequest(
-      BuildContext context,
-      API api, {
-        required dynamic params,
-        required Function onSuccess,
-        required Function onFailure,
-        String? contactid,
-        Map<String, dynamic>? queryParams,
-        String? token,
-      }) async {
+    BuildContext context,
+    API api, {
+    required dynamic params,
+    required Function onSuccess,
+    required Function onFailure,
+    String? contactid,
+    Map<String, dynamic>? queryParams,
+    String? token,
+  }) async {
     final isConnected = await ConnectionDetector.checkInternetConnection();
 
     if (!isConnected) {
@@ -133,17 +133,21 @@ class APIManager {
       print("Request Headers: $headers");
       print("Request Params: $params");
 
-
       // Choose HTTP method based on the API type
       if (apiHTTPMethod(api) == HTTPMethod.GET) {
         // Send GET request with token in headers
-        response = await http.get(
-          Uri.parse(url),
-          headers: headers,
-        ).timeout(const Duration(seconds: 30));
+        response = await http
+            .get(
+              Uri.parse(url),
+              headers: headers,
+            )
+            .timeout(const Duration(seconds: 30));
       } else {
         // Check if any file is being uploaded
-        if (params != null && (params['adhaar_front_image'] != null || params['adhaar_back_image'] != null || params['pancard_image'] != null)) {
+        if (params != null &&
+            (params['adhaar_front_image'] != null ||
+                params['adhaar_back_image'] != null ||
+                params['pancard_image'] != null)) {
           var request = http.MultipartRequest("POST", Uri.parse(url));
 
           // Add headers to multipart request
@@ -151,34 +155,42 @@ class APIManager {
 
           // Add normal params to the request
           params.forEach((key, value) {
-            if (value != null && key != 'adhaar_front_image' && key != 'adhaar_back_image' && key != 'pancard_image') {
+            if (value != null &&
+                key != 'adhaar_front_image' &&
+                key != 'adhaar_back_image' &&
+                key != 'pancard_image') {
               request.fields[key] = value.toString();
             }
           });
 
           // Add Aadhaar image if present
           if (params['adhaar_front_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath('adhaar_front_image', params['adhaar_front_image']));
+            request.files.add(await http.MultipartFile.fromPath(
+                'adhaar_front_image', params['adhaar_front_image']));
           }
 
           if (params['adhaar_back_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath('adhaar_back_image', params['adhaar_back_image']));
+            request.files.add(await http.MultipartFile.fromPath(
+                'adhaar_back_image', params['adhaar_back_image']));
           }
 
           // Add Pancard image if present
           if (params['pancard_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath('pancard_image', params['pancard_image']));
+            request.files.add(await http.MultipartFile.fromPath(
+                'pancard_image', params['pancard_image']));
           }
 
           // Send the multipart request
           response = await http.Response.fromStream(await request.send());
         } else {
           // Send POST request without files
-          response = await http.post(
-            Uri.parse(url),
-            headers: headers,
-            body: body,
-          ).timeout(const Duration(seconds: 30));
+          response = await http
+              .post(
+                Uri.parse(url),
+                headers: headers,
+                body: body,
+              )
+              .timeout(const Duration(seconds: 30));
         }
       }
 
@@ -193,9 +205,9 @@ class APIManager {
         response = await http.post(
           Uri.parse(url),
           headers: headers,
-          *//*body: params != null
+          */ /*body: params != null
               ? Uri(queryParameters: params).query // Encode parameters as form-data
-              : null,*//*
+              : null,*/ /*
           body: body,
           //body: jsonEncode(params)
         ).timeout(const Duration(seconds: 30)); // Set the timeout to 30 seconds

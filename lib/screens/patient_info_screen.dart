@@ -178,10 +178,12 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
             int patientExist = responseData['data'][0]['patientExist'] ?? 0;
             String? phid =
                 responseData['data'][0]['patient_id']?.toString() ?? 'NA';
+            String? phid1 = responseData['data'][0]['phid']?.toString() ?? 'NA';
 
             Global.status = patientExist.toString();
             Global.patient_id = phid;
             Global.phid = phid;
+            Global.phid1 = phid1;
 
             log('Patient Exist: $patientExist'); // Should log 1
             log('PHID: ${phid}');

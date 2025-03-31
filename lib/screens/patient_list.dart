@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import '../utils/colors.dart';
 
@@ -229,19 +231,34 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                               return InkWell(
                                 borderRadius: BorderRadius.circular(12),
                                 onTap: () {
+                                  log('patient $patient');
+                                  setState(() {
+                                    Global.status = '2';
+                                    Global.patient_id = patient['patient_id'];
+                                    Global.phid = patient['phid'];
+
+                                    log(Global.patient_id.toString());
+                                    log(Global.phid.toString());
+                                    log(Global.status.toString());
+                                  });
                                   // Navigate to PatientFormScreen with the patient's data
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => PatientFormScreen(
-                                        firstName: patient['name'].split(' ')[0],
-                                        lastName: patient['name'].split(' ').length > 1
-                                            ? patient['name'].split(' ')[1]
-                                            : '',
+                                        firstName:
+                                            patient['name'].split(' ')[0],
+                                        lastName:
+                                            patient['name'].split(' ').length >
+                                                    1
+                                                ? patient['name'].split(' ')[1]
+                                                : '',
                                         phone: patient['phone'],
-                                        patientExist: 2, // Assuming existing patient
+                                        patientExist:
+                                            2, // Assuming existing patient
                                         phid: patient['phid'],
-                                        patientId: patient['id'], // Pass the original ID
+                                        patientId: patient[
+                                            'id'], // Pass the original ID
                                       ),
                                     ),
                                   );
@@ -260,10 +277,12 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                   ),
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             patient['phid'],

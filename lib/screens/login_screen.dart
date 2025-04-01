@@ -16,7 +16,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  // final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -62,7 +64,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
-    _emailController.dispose();
+    // _emailController.dispose();
+    _nameController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -85,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen>
                 'Content-Type': 'application/json',
               },
               body: json.encode({
-                "email": _emailController.text.trim(),
+                "name": _nameController.text.trim(),
                 "password": _passwordController.text.trim()
               }),
             )
@@ -141,8 +144,9 @@ class _LoginScreenState extends State<LoginScreen>
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: 800,
+                    maxWidth: 600,
                     minHeight: constraints.maxHeight,
+                    // minHeight: 500
                   ),
                   child: IntrinsicHeight(
                     child: Padding(
@@ -291,18 +295,18 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       children: [
         CustomTextField(
-          controller: _emailController,
-          label: 'Email Address',
-          prefixIcon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
+          controller: _nameController,
+          label: 'User Name',
+          prefixIcon: Icons.person,
+          keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter your email';
+              return 'Please enter your user name';
             }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-              return 'Enter a valid email';
-            }
+            // if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+            //   return 'Enter a valid email';
+            // }
             return null;
           },
         ),

@@ -16,9 +16,6 @@ import '../utils/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:flutter/foundation.dart' as foundation;
-
-// web_specific.dart
 
 class PatientFormScreen extends StatefulWidget {
   final String firstName;
@@ -466,11 +463,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
     bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
-    // if (!_validateFiles()) {
-    //   ShowDialogs.showSnackBar(
-    //       context, 'Some files are invalid. Please check your uploads.');
-    //   return;
-    // }
 
     if (!personalValid || !medicalValid || !reportsValid) {
       ShowDialogs.showSnackBar(context, 'Please fill all required fields');
@@ -568,7 +560,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       log('Form Fields: ${jsonEncode(fields)}');
       List<String> existingFileIds = [];
       // ✅ Handle File Uploads (New + Existing)
-      // ✅ Handle File Uploads (New + Existing)
       for (var entry in _uploadedFiles.entries) {
         final docType = entry.key;
         final files = entry.value;
@@ -577,52 +568,39 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         if (fieldName == null) continue;
 
         for (var file in files) {
+          log('Processing file: ${jsonEncode(file)}');
+
           if (file['isExisting'] == true) {
+            // ✅ File already exists (from API)
             existingFileIds.add(file['id'].toString());
+            log('existingFileIds $existingFileIds');
           } else {
-            if (kIsWeb) {
-              Uint8List? fileBytes = file['bytes'];
-              String? fileName = file['name'] ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (fileBytes != null && fileName != null) {
-                request.files.add(http.MultipartFile.fromBytes(
-                  fieldName,
-                  fileBytes,
-                  filename: fileName,
-                ));
-              } else {
-                log('❌ Web file data incomplete: bytes=${fileBytes != null}, name=${fileName != null}');
-                continue;
-              }
-            } else {
-              // Mobile handling
-              String? filePath = file['path'];
-              String? fileName = file['name'] ??
-                  path.basename(filePath ?? '') ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (filePath != null) {
-                final fileToUpload = File(filePath);
-                if (await fileToUpload.exists()) {
-                  request.files.add(await http.MultipartFile.fromPath(
-                    fieldName,
-                    filePath,
-                    filename: fileName,
-                  ));
-                } else {
-                  log('❌ File not found: $filePath');
+            // ✅ New file uploaded by user
+            final fileToUpload = File(file['path']);
+            if (_deletedFiles.isNotEmpty) {
+              _deletedFiles.forEach((docType, fileIds) {
+                final fieldName = _mapDocTypeToField(docType);
+                if (fieldName != null && fileIds.isNotEmpty) {
+                  request.fields['deleted_$fieldName'] = fileIds.join(',');
                 }
-              }
+              });
+            }
+            if (await fileToUpload.exists()) {
+              request.files.add(await http.MultipartFile.fromPath(
+                fieldName,
+                file['path'],
+                filename:
+                    '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file['path'])}',
+              ));
+            } else {
+              log('❌ File Not Found: ${file['path']}');
             }
           }
         }
       }
-
       if (existingFileIds.isNotEmpty) {
         request.fields['existing_file'] = existingFileIds.join(',');
       }
-      log("existingFileIds $existingFileIds");
 
       log('📤 Request Fields: ${jsonEncode(request.fields)}');
       log('📂 Total Files to Upload: ${request.files.length}');
@@ -665,11 +643,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         ShowDialogs.showSnackBar(context,
             '❌ Failed to save patient record. Status code: ${response.statusCode}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Navigator.of(context).pop();s
       log('🚨 Submission Error: $e');
-      log('Stack Trace: $stackTrace');
-
       ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
     }
   }
@@ -699,86 +675,47 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     }
   }
 
-  bool _validateFiles() {
-    for (var entry in _uploadedFiles.entries) {
-      for (var file in entry.value) {
-        if (file['isExisting'] != true) {
-          if (kIsWeb) {
-            if (file['bytes'] == null || file['name'] == null) {
-              return false;
-            }
-          } else {
-            if (file['path'] == null || !File(file['path']).existsSync()) {
-              return false;
-            }
-          }
-        }
-      }
-    }
-    return true;
-  }
-
   Future<void> _handleFileSelection(String fileType, String source) async {
     try {
-      if (!mounted) return;
+      File? file;
+      String? fileName;
 
-      if (kIsWeb) {
+      if (source == 'camera' || source == 'gallery') {
+        final XFile? image = await ImagePicker().pickImage(
+          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        );
+        if (image != null) {
+          file = File(image.path);
+          fileName = path.basename(image.path);
+          log('fileName $fileName');
+        }
+      } else if (source == 'file') {
         FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-          withData: true,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
         );
-
-        if (result != null && result.files.single.bytes != null) {
-          setState(() {
-            _uploadedFiles[fileType] ??= [];
-            _uploadedFiles[fileType]!.add({
-              'name': result.files.single.name,
-              'bytes': result.files.single.bytes!,
-              'type': path
-                  .extension(result.files.single.name)
-                  .replaceAll('.', '')
-                  .toLowerCase(),
-              'isExisting': false,
-            });
-          });
-        }
-      } else {
-        // Mobile handling
-        File? file;
-        String? fileName;
-
-        if (source == 'camera' || source == 'gallery') {
-          final XFile? image = await ImagePicker().pickImage(
-              source: source == 'camera'
-                  ? ImageSource.camera
-                  : ImageSource.gallery);
-          if (image != null) {
-            file = File(image.path);
-            fileName = path.basename(image.path);
-          }
-        } else if (source == 'file') {
-          FilePickerResult? result = await FilePicker.platform.pickFiles();
-          if (result != null && result.files.single.path != null) {
-            file = File(result.files.single.path!);
-            fileName = result.files.single.name;
-          }
-        }
-
-        if (file != null) {
-          setState(() {
-            _uploadedFiles[fileType] ??= [];
-            _uploadedFiles[fileType]!.add({
-              'path': file!.path,
-              'name': fileName ?? 'Document',
-              'type':
-                  path.extension(file.path).replaceAll('.', '').toLowerCase(),
-              'isExisting': false,
-            });
-          });
+        if (result != null) {
+          file = File(result.files.single.path!);
+          fileName = result.files.single.name;
         }
       }
+
+      if (file != null) {
+        final fileExtension =
+            path.extension(file.path).replaceAll('.', '').toUpperCase();
+
+        setState(() {
+          _uploadedFiles[fileType] ??= [];
+          _uploadedFiles[fileType]!.add({
+            'path': file!.path,
+            'name': fileName ?? 'Document',
+            'type': fileExtension,
+            'isExisting': false,
+          });
+        });
+      }
     } catch (e) {
+      debugPrint('Error uploading file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to upload file: ${e.toString()}')),
       );
@@ -871,7 +808,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       case 'jpg':
       case 'jpeg':
       case 'png':
-      case 'webp':
         return Icons.image;
       case 'doc':
       case 'docx':
@@ -1265,15 +1201,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                               style: TextStyle(color: Colors.red)),
                         ),
                       )
-                    : (kIsWeb
-                        ? Image.memory(
-                            base64Decode(filePath.split(',').last),
-                            fit: BoxFit.contain,
-                          )
-                        : Image.file(
-                            File(filePath),
-                            fit: BoxFit.contain,
-                          )),
+                    : Image.file(
+                        File(filePath),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Text('Failed to load image',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
               ),
               Positioned(
                 top: 10,
@@ -1335,32 +1270,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   }
 
   Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
-    final fileType = (file['type'] ?? '').toLowerCase();
+    final fileType = file['type'].toLowerCase();
+    final isImage = ['jpg', 'jpeg', 'png', "webp"].contains(fileType);
+    final isPdf = fileType == 'pdf';
     final isExisting = file['isExisting'] == true;
-    final filePath = file['path'] ?? '';
-    final fileName = file['name'] ?? 'Unknown';
-
+    final filePath = file['path'];
     return GestureDetector(
-      onTap: () {
-        if (isExisting) {
-          _showFilePreview(context, filePath, fileType, isNetwork: true);
-        } else {
-          if (kIsWeb) {
-            // For web, we might have the file data in bytes
-            if (file['bytes'] != null) {
-              final base64String = base64Encode(file['bytes']);
-              _showFilePreview(
-                  context,
-                  'data:application/octet-stream;base64,$base64String',
-                  fileType);
-            } else {
-              _showFilePreview(context, filePath, fileType);
-            }
-          } else {
-            _showFilePreview(context, filePath, fileType);
-          }
-        }
-      },
+      onTap: () =>
+          _showFilePreview(context, filePath, fileType, isNetwork: isExisting),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
@@ -1384,7 +1301,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                _getFileIcon(fileType),
+                _getFileIcon(file['type']),
                 color: AppColors.primary,
                 size: 20,
               ),
@@ -1395,7 +1312,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    fileName,
+                    file['name'],
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1405,21 +1322,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
-                        fileType.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (isExisting)
+                      if (file['isExisting'] == true)
                         Padding(
                           padding: const EdgeInsets.only(left: 8.0),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.green[50],
+                              color: Colors.blue,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1501,26 +1411,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
               child: PopupMenuButton<String>(
                 onSelected: (source) => _handleFileSelection(fileType, source),
                 itemBuilder: (context) => [
-                  if (!kIsWeb) ...[
-                    // Only show these options on mobile
-                    PopupMenuItem(
-                      value: 'camera',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.camera_alt, color: AppColors.primary),
-                        title: const Text('Take Photo'),
-                      ),
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
                     ),
-                    PopupMenuItem(
-                      value: 'gallery',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.photo_library, color: AppColors.primary),
-                        title: const Text('Choose from Gallery'),
-                      ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
                     ),
-                  ],
-                  // Show file option on both web and mobile
+                  ),
                   PopupMenuItem(
                     value: 'file',
                     child: ListTile(
@@ -2041,26 +1946,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 onSelected: (source) =>
                     _handleFileSelection('pa_abdomen_image', source),
                 itemBuilder: (context) => [
-                  if (!kIsWeb) ...[
-                    // Only show these options on mobile
-                    PopupMenuItem(
-                      value: 'camera',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.camera_alt, color: AppColors.primary),
-                        title: const Text('Take Photo'),
-                      ),
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
                     ),
-                    PopupMenuItem(
-                      value: 'gallery',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.photo_library, color: AppColors.primary),
-                        title: const Text('Choose from Gallery'),
-                      ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
                     ),
-                  ],
-                  // Show file option on both web and mobile
+                  ),
                   PopupMenuItem(
                     value: 'file',
                     child: ListTile(
@@ -2141,26 +2041,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 onSelected: (source) =>
                     _handleFileSelection('pr_rectum_image', source),
                 itemBuilder: (context) => [
-                  if (!kIsWeb) ...[
-                    // Only show these options on mobile
-                    PopupMenuItem(
-                      value: 'camera',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.camera_alt, color: AppColors.primary),
-                        title: const Text('Take Photo'),
-                      ),
+                  PopupMenuItem(
+                    value: 'camera',
+                    child: ListTile(
+                      leading: Icon(Icons.camera_alt, color: AppColors.primary),
+                      title: const Text('Take Photo'),
                     ),
-                    PopupMenuItem(
-                      value: 'gallery',
-                      child: ListTile(
-                        leading:
-                            Icon(Icons.photo_library, color: AppColors.primary),
-                        title: const Text('Choose from Gallery'),
-                      ),
+                  ),
+                  PopupMenuItem(
+                    value: 'gallery',
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.photo_library, color: AppColors.primary),
+                      title: const Text('Choose from Gallery'),
                     ),
-                  ],
-                  // Show file option on both web and mobile
+                  ),
                   PopupMenuItem(
                     value: 'file',
                     child: ListTile(

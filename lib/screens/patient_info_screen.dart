@@ -286,7 +286,9 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
         });
       },
       child: Container(
+        // width: kIsWeb ? 280 : 180,
         width: 180,
+
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -368,6 +370,11 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     }
 
     if (_recentPatients.isEmpty) return Container();
+    final patientCount = _recentPatients.length;
+    final showCount = kIsWeb
+        ? (patientCount > 8 ? 8 : patientCount)
+        : (patientCount > 3 ? 3 : patientCount);
+    final shouldCenter = kIsWeb && showCount < 5;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,17 +437,31 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
                 PointerDeviceKind.mouse,
               },
             ),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              children: _recentPatients
-                  .take(kIsWeb ? 6 : 3)
-                  .map((patient) => Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: _buildRecentPatientCard(patient),
-                      ))
-                  .toList(),
-            ),
+            child: shouldCenter
+                ? Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _recentPatients
+                          .take(showCount)
+                          .map((patient) => Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                child: _buildRecentPatientCard(patient),
+                              ))
+                          .toList(),
+                    ),
+                  )
+                : ListView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    children: _recentPatients
+                        .take(showCount)
+                        .map((patient) => Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _buildRecentPatientCard(patient),
+                            ))
+                        .toList(),
+                  ),
           ),
         ),
       ],
@@ -457,7 +478,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
           child: LayoutBuilder(builder: (context, constraints) {
             return ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 800,
+                maxWidth: kIsWeb ? constraints.maxWidth * 0.5 : 600,
               ),
               child: Container(
                 decoration: BoxDecoration(
@@ -594,18 +615,23 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       children: [
         Expanded(
           flex: 2,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 32),
-              child: Column(
-                children: [
-                  _buildPatientFormCard(),
-                  const SizedBox(height: 32),
-                  _buildRecentPatientsSection(),
-                ],
+          child: LayoutBuilder(builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 32),
+                  child: Column(
+                    children: [
+                      _buildPatientFormCard(),
+                      const SizedBox(height: 32),
+                      _buildRecentPatientsSection(),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ),
       ],
     );
@@ -622,7 +648,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
           const SizedBox(height: 100),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Text('App Version 1.0.0', style: TextStyle(fontSize: 14)),
+            child: Text('App Version 1.0.1', style: TextStyle(fontSize: 14)),
           ),
         ],
       ),
@@ -651,15 +677,21 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: kIsWeb && isLargeScreen
-                  ? _buildDesktopLayout()
-                  : _buildMobileLayout(),
-            ),
-          ),
+          child: LayoutBuilder(builder: (context, constraints) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Container(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: kIsWeb && isLargeScreen
+                      ? _buildDesktopLayout()
+                      : _buildMobileLayout(),
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );

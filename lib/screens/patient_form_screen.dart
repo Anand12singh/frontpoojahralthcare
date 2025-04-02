@@ -88,6 +88,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _dmSinceController = TextEditingController();
   final TextEditingController _hypertensionSinceController =
       TextEditingController();
+  final TextEditingController _tempController = TextEditingController();
   final TextEditingController _otherIllnessController = TextEditingController();
   final TextEditingController _surgicalHistoryController =
       TextEditingController();
@@ -189,6 +190,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _complaintsController.dispose();
     _dmSinceController.dispose();
     _hypertensionSinceController.dispose();
+    _tempController.dispose();
     _otherIllnessController.dispose();
     _surgicalHistoryController.dispose();
     _drugAllergyController.dispose();
@@ -322,7 +324,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _visitData?['past_surgical_history']?.toString() ?? '';
       _drugAllergyController.text =
           _visitData?['drug_allergy']?.toString() ?? '';
-      _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
+      _tempController.text = _visitData?['temp']?.toString() ?? '';
       _pulseController.text = _visitData?['pulse']?.toString() ?? '';
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
@@ -533,7 +535,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'any_other_illness': _ensureString(_otherIllnessController.text),
         'past_surgical_history': _ensureString(_surgicalHistoryController.text),
         'drug_allergy': _ensureString(_drugAllergyController.text),
-        'temp': _isFebrile ? '98.6' : '0',
+        'temp': _ensureString(_tempController.text),
         'pulse': _ensureNumber(_pulseController.text),
         'bp_systolic': _ensureNumber(_bpSystolicController.text),
         'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
@@ -1903,15 +1905,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
         // General Examination
         _buildSectionHeader('General Examination', level: 2),
-        _buildRadioGroup<bool>(
-          label: 'Temperature:',
-          groupValue: _isFebrile,
-          options: const [
-            MapEntry(true, 'Febrile'),
-            MapEntry(false, 'Afebrile'),
-          ],
-          onChanged: (value) => setState(() => _isFebrile = value!),
+        // _buildRadioGroup<bool>(
+        //   label: 'Temperature:',
+        //   groupValue: _isFebrile,
+        //   options: const [
+        //     MapEntry(true, 'Febrile'),
+        //     MapEntry(false, 'Afebrile'),
+        //   ],
+        //   onChanged: (value) => setState(() => _isFebrile = value!),
+        // ),
+
+        _buildCustomInput(
+          controller: _tempController,
+          label: 'Temperature',
+          keyboardType: TextInputType.number,
+          // p
         ),
+
         _buildCustomInput(
           controller: _pulseController,
           label: 'Pulse (bpm)',
@@ -2321,6 +2331,18 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomSheet: MediaQuery.of(context).viewInsets.bottom == 0
+          ? null
+          : Row(
+              children: [
+                const Spacer(),
+                TextButton(
+                    onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
+                    child: const Text("Done"))
+              ],
+            ),
       appBar: AppBar(
         title: const Text('Patient Record'),
         leading: GestureDetector(

@@ -147,7 +147,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1024;
+    final isDesktop = screenWidth >= 900;
     final isTablet = screenWidth >= 600;
 
     return Scaffold(

@@ -14,11 +14,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Proper Digin',
+      title: 'Pooja Healthcare',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
+        useMaterial3: false,
         appBarTheme: AppBarTheme(
           backgroundColor: AppColors.primary,
           titleTextStyle: TextStyle(

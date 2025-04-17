@@ -9,6 +9,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import 'package:poojaheakthcare/screens/video_open.dart';
 import '../constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../widgets/show_dialog.dart';
@@ -359,6 +360,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _patientData?['doctor_note']?.toString() ?? '';
       // Replace this:
       locationId = _patientData?['location']?.toString() ?? '2';
+      if (_visitData?['temp'] != null ||
+          _visitData?['temp'].isNotEmpty ||
+          _visitData?['temp'] != "null") {
+        _isFebrile = true;
+      }
 
 // With this:
       _selectedLocationId = _patientData?['location']?.toString() ?? '2';
@@ -729,6 +735,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           type: FileType.custom,
           allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
           withData: true,
+          allowMultiple: true,
         );
 
         if (result != null && result.files.single.bytes != null) {
@@ -760,7 +767,18 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             fileName = path.basename(image.path);
           }
         } else if (source == 'file') {
-          FilePickerResult? result = await FilePicker.platform.pickFiles();
+          FilePickerResult? result = await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: [
+                'pdf',
+                'jpg',
+                'jpeg',
+                'png',
+                // 'mp4',
+                // 'mov',
+                // 'avi'
+              ],
+              allowMultiple: true);
           if (result != null && result.files.single.path != null) {
             file = File(result.files.single.path!);
             fileName = result.files.single.name;
@@ -1246,6 +1264,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   void _showFilePreview(BuildContext context, String filePath, String fileType,
       {bool isNetwork = false}) async {
+    // final String lowerFileType = fileType.toLowerCase();
     if (['jpg', 'jpeg', 'png', "webp"].contains(fileType.toLowerCase())) {
       // Image Preview
       showDialog(
@@ -1328,6 +1347,48 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           );
         }
       }
+//     }
+//      else if (['mp4', 'mov', 'avi'].contains(lowerFileType)) {
+//       if (kIsWeb) {
+//         // Web handling - open in new tab
+//         if (await canLaunchUrl(Uri.parse(filePath))) {
+//           await launchUrl(Uri.parse(filePath),
+//               mode: LaunchMode.externalApplication);
+//         } else {
+//           ScaffoldMessenger.of(context).showSnackBar(
+//             SnackBar(content: Text('Could not open video')),
+//           );
+//         }
+//       } else {
+
+//         try {
+
+//           await Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (context) => Scaffold(
+//       appBar: AppBar(title: Text('Video Preview')),
+//       body: Center(
+//         child: VideoPlayerWidget(
+//           videoUrl: filePath,  // Use videoUrl instead of videoPath
+//           isNetwork: isNetwork, // Explicitly specify if it's a network URL
+//         ),
+//       ),
+//     ),
+//   ),
+// );
+//         } catch (e) {
+
+//           debugPrint('In-app video player failed: $e');
+//           if (await canLaunchUrl(Uri.parse(filePath))) {
+//             await launchUrl(Uri.parse(filePath));
+//           } else {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text('Could not open video')),
+//             );
+//           }
+//         }
+//       }
     } else {
       log('Preview not available for $fileType files');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1579,7 +1640,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            AppColors.primary.withOpacity(0.03),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1905,22 +1973,22 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
         // General Examination
         _buildSectionHeader('General Examination', level: 2),
-        // _buildRadioGroup<bool>(
-        //   label: 'Temperature:',
-        //   groupValue: _isFebrile,
-        //   options: const [
-        //     MapEntry(true, 'Febrile'),
-        //     MapEntry(false, 'Afebrile'),
-        //   ],
-        //   onChanged: (value) => setState(() => _isFebrile = value!),
-        // ),
-
-        _buildCustomInput(
-          controller: _tempController,
-          label: 'Temperature',
-          keyboardType: TextInputType.number,
-          // p
+        _buildRadioGroup<bool>(
+          label: 'Temperature:',
+          groupValue: _isFebrile,
+          options: const [
+            MapEntry(true, 'Febrile'),
+            MapEntry(false, 'Afebrile'),
+          ],
+          onChanged: (value) => setState(() => _isFebrile = value!),
         ),
+
+        if (_isFebrile)
+          _buildCustomInput(
+            controller: _tempController,
+            label: 'Temperature',
+            keyboardType: TextInputType.number,
+          ),
 
         _buildCustomInput(
           controller: _pulseController,
@@ -2401,7 +2469,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        AppColors.primary.withOpacity(0.03),
+                      ],
+                    ),
                     border: Border(
                       top: BorderSide(
                         color: Colors.grey[200]!,

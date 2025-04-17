@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:poojaheakthcare/constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/custom_text_field.dart';
@@ -29,6 +30,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void initState() {
+ 
+    log('fcm_token ${Global.fcm_token}, devive ${Global.device_info}');
     super.initState();
     _animationController = AnimationController(
       vsync: this,
@@ -89,7 +92,9 @@ class _LoginScreenState extends State<LoginScreen>
               },
               body: json.encode({
                 "name": _nameController.text.trim(),
-                "password": _passwordController.text.trim()
+                "password": _passwordController.text.trim(),
+                "device_info":Global.device_info,
+                "fcm_token":Global.fcm_token
               }),
             )
             .timeout(const Duration(seconds: 10));

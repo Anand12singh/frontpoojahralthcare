@@ -374,7 +374,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     final showCount = kIsWeb
         ? (patientCount > 8 ? 8 : patientCount)
         : (patientCount > 3 ? 3 : patientCount);
-    final shouldCenter = kIsWeb && showCount < 5;
+    final shouldCenter = kIsWeb && showCount < 6;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,8 +478,8 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
           child: LayoutBuilder(builder: (context, constraints) {
             return ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: kIsWeb ? constraints.maxWidth * 0.5 : 600,
-              ),
+                  // maxWidth: kIsWeb ? constraints.maxWidth * 0.5 : 600,
+                  maxWidth: 600),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

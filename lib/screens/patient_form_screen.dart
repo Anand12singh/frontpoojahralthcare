@@ -9,7 +9,6 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
-import 'package:poojaheakthcare/screens/video_open.dart';
 import '../constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../widgets/show_dialog.dart';
@@ -73,6 +72,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _phIdController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _tempController = TextEditingController();
   final TextEditingController _referralController = TextEditingController();
   final TextEditingController _altPhoneController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -89,7 +89,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _dmSinceController = TextEditingController();
   final TextEditingController _hypertensionSinceController =
       TextEditingController();
-  final TextEditingController _tempController = TextEditingController();
   final TextEditingController _otherIllnessController = TextEditingController();
   final TextEditingController _surgicalHistoryController =
       TextEditingController();
@@ -176,6 +175,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _tempController.dispose();
+
     // Dispose all controllers
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -191,7 +192,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _complaintsController.dispose();
     _dmSinceController.dispose();
     _hypertensionSinceController.dispose();
-    _tempController.dispose();
     _otherIllnessController.dispose();
     _surgicalHistoryController.dispose();
     _drugAllergyController.dispose();
@@ -300,6 +300,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       _referralController.text = _patientData?['referral_by']?.toString() ?? '';
 
       // Visit Info
+      _tempController.text = _visitData?['temp']?.toString() ?? '';
       _ageController.text = _visitData?['age']?.toString() ?? '';
       _heightController.text = _visitData?['height']?.toString() ?? '';
       _weightController.text = _visitData?['weight']?.toString() ?? '';
@@ -325,7 +326,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _visitData?['past_surgical_history']?.toString() ?? '';
       _drugAllergyController.text =
           _visitData?['drug_allergy']?.toString() ?? '';
-      _tempController.text = _visitData?['temp']?.toString() ?? '';
+      _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
       _pulseController.text = _visitData?['pulse']?.toString() ?? '';
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
@@ -360,11 +361,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _patientData?['doctor_note']?.toString() ?? '';
       // Replace this:
       locationId = _patientData?['location']?.toString() ?? '2';
-      if (_visitData?['temp'] != null ||
-          _visitData?['temp'].isNotEmpty ||
-          _visitData?['temp'] != "null") {
-        _isFebrile = true;
-      }
 
 // With this:
       _selectedLocationId = _patientData?['location']?.toString() ?? '2';
@@ -403,6 +399,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           } catch (e) {
             log('error $e');
           }
+        });
+      }
+
+      if (_tempController.text != null || _tempController.text.isNotEmpty) {
+        setState(() {
+          _isFebrile = true;
         });
       }
     } catch (e) {
@@ -735,7 +737,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           type: FileType.custom,
           allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
           withData: true,
-          allowMultiple: true,
         );
 
         if (result != null && result.files.single.bytes != null) {
@@ -767,18 +768,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             fileName = path.basename(image.path);
           }
         } else if (source == 'file') {
-          FilePickerResult? result = await FilePicker.platform.pickFiles(
-              type: FileType.custom,
-              allowedExtensions: [
-                'pdf',
-                'jpg',
-                'jpeg',
-                'png',
-                // 'mp4',
-                // 'mov',
-                // 'avi'
-              ],
-              allowMultiple: true);
+          FilePickerResult? result = await FilePicker.platform.pickFiles();
           if (result != null && result.files.single.path != null) {
             file = File(result.files.single.path!);
             fileName = result.files.single.name;
@@ -812,10 +802,18 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         _deletedFiles[reportType] ??= [];
         _deletedFiles[reportType]!.add(file['id'].toString());
       } else {
+        if (kIsWeb) {
+          setState(() {
+            _uploadedFiles[reportType]!.remove(file);
+          });
+        }
+
         // Delete newly uploaded files
-        final fileToDelete = File(file['path']);
-        if (await fileToDelete.exists()) {
-          await fileToDelete.delete();
+        else {
+          final fileToDelete = File(file['path']);
+          if (await fileToDelete.exists()) {
+            await fileToDelete.delete();
+          }
         }
       }
 
@@ -823,6 +821,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         _uploadedFiles[reportType]!.remove(file);
       });
     } catch (e) {
+      log('Failed to delete file: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
       );
@@ -1264,7 +1263,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   void _showFilePreview(BuildContext context, String filePath, String fileType,
       {bool isNetwork = false}) async {
-    // final String lowerFileType = fileType.toLowerCase();
     if (['jpg', 'jpeg', 'png', "webp"].contains(fileType.toLowerCase())) {
       // Image Preview
       showDialog(
@@ -1347,48 +1345,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           );
         }
       }
-//     }
-//      else if (['mp4', 'mov', 'avi'].contains(lowerFileType)) {
-//       if (kIsWeb) {
-//         // Web handling - open in new tab
-//         if (await canLaunchUrl(Uri.parse(filePath))) {
-//           await launchUrl(Uri.parse(filePath),
-//               mode: LaunchMode.externalApplication);
-//         } else {
-//           ScaffoldMessenger.of(context).showSnackBar(
-//             SnackBar(content: Text('Could not open video')),
-//           );
-//         }
-//       } else {
-
-//         try {
-
-//           await Navigator.push(
-//   context,
-//   MaterialPageRoute(
-//     builder: (context) => Scaffold(
-//       appBar: AppBar(title: Text('Video Preview')),
-//       body: Center(
-//         child: VideoPlayerWidget(
-//           videoUrl: filePath,  // Use videoUrl instead of videoPath
-//           isNetwork: isNetwork, // Explicitly specify if it's a network URL
-//         ),
-//       ),
-//     ),
-//   ),
-// );
-//         } catch (e) {
-
-//           debugPrint('In-app video player failed: $e');
-//           if (await canLaunchUrl(Uri.parse(filePath))) {
-//             await launchUrl(Uri.parse(filePath));
-//           } else {
-//             ScaffoldMessenger.of(context).showSnackBar(
-//               SnackBar(content: Text('Could not open video')),
-//             );
-//           }
-//         }
-//       }
     } else {
       log('Preview not available for $fileType files');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1656,6 +1612,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           ),
         ],
       ),
+     
+     
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1982,14 +1940,13 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           ],
           onChanged: (value) => setState(() => _isFebrile = value!),
         ),
-
         if (_isFebrile)
           _buildCustomInput(
             controller: _tempController,
             label: 'Temperature',
             keyboardType: TextInputType.number,
+            // p
           ),
-
         _buildCustomInput(
           controller: _pulseController,
           label: 'Pulse (bpm)',
@@ -2399,18 +2356,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomSheet: MediaQuery.of(context).viewInsets.bottom == 0
-          ? null
-          : Row(
-              children: [
-                const Spacer(),
-                TextButton(
-                    onPressed: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                    },
-                    child: const Text("Done"))
-              ],
-            ),
       appBar: AppBar(
         title: const Text('Patient Record'),
         leading: GestureDetector(
@@ -2547,6 +2492,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     ],
                   ),
                 ),
+             
+             
               ],
             ),
           ),

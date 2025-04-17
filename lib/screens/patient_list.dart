@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:developer';
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For PointerDeviceKind
@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import '../utils/colors.dart';
+import 'post_opration_page.dart';
 
 class RecentPatientsListScreen extends StatefulWidget {
   const RecentPatientsListScreen({super.key});
@@ -333,24 +334,25 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        PatientFormScreen(
-                                                      firstName: patient['name']
-                                                          .split(' ')[0],
-                                                      lastName: patient['name']
-                                                                  .split(' ')
-                                                                  .length >
-                                                              1
-                                                          ? patient['name']
-                                                              .split(' ')[1]
-                                                          : '',
-                                                      phone: patient['phone'],
-                                                      patientExist: 2,
-                                                      phid: patient['phid'],
-                                                      patientId:
-                                                          patient['patient_id'],
-                                                    ),
-                                                  ),
+                                                      builder: (context) =>
+                                                          //     PatientFormScreen(
+                                                          //   firstName: patient['name']
+                                                          //       .split(' ')[0],
+                                                          //   lastName: patient['name']
+                                                          //               .split(' ')
+                                                          //               .length >
+                                                          //           1
+                                                          //       ? patient['name']
+                                                          //           .split(' ')[1]
+                                                          //       : '',
+                                                          //   phone: patient['phone'],
+                                                          //   patientExist: 2,
+                                                          //   phid: patient['phid'],
+                                                          //   patientId:
+                                                          //       patient['patient_id'],
+                                                          // ),
+
+                                                          PostOperationPage()),
                                                 );
                                               },
                                               child: Padding(
@@ -502,12 +504,29 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                                       ),
                                                     ),
                                                     if (isDesktop || isTablet)
-                                                      Icon(
-                                                        Icons.chevron_right,
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                        size:
-                                                            isDesktop ? 32 : 24,
+                                                      Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.chevron_right,
+                                                            color: AppColors
+                                                                .textSecondary,
+                                                            size: isDesktop
+                                                                ? 32
+                                                                : 24,
+                                                          ),
+                                                          // GestureDetector(
+                                                          //   onTap: () {},
+                                                          //   child: Icon(
+                                                          //     Icons
+                                                          //         .chevron_right,
+                                                          //     color: AppColors
+                                                          //         .textSecondary,
+                                                          //     size: isDesktop
+                                                          //         ? 32
+                                                          //         : 24,
+                                                          //   ),
+                                                          // ),
+                                                        ],
                                                       ),
                                                   ],
                                                 ),

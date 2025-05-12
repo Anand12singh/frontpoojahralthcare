@@ -2,24 +2,28 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import 'package:poojaheakthcare/services/auth_service.dart';
+import 'package:poojaheakthcare/widgets/file_download.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-
+import '../constants/base_url.dart';
 import '../utils/colors.dart';
 import '../widgets/inputfild.dart';
+import '../widgets/show_dialog.dart';
 import 'dishcharge_page.dart';
 
 class PostOperationPage extends StatefulWidget {
-  const PostOperationPage({super.key});
+  var patient_id;
+  PostOperationPage({super.key, this.patient_id});
 
   @override
   State<PostOperationPage> createState() => _PostOperationPageState();
@@ -39,11 +43,17 @@ class _PostOperationPageState extends State<PostOperationPage> {
   final TextEditingController _implantsController = TextEditingController();
   final TextEditingController _treatmentController = TextEditingController();
   final TextEditingController _furtherPlanController = TextEditingController();
+  final TextEditingController _timetakenController = TextEditingController();
+  final TextEditingController _complicationsController =
+      TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   File? _implantImage;
-  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {};
+  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
+    "implants_image": []
+  };
   final Map<String, List<String>> _deletedFiles = {};
+  var postOperationId;
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -60,24 +70,25 @@ class _PostOperationPageState extends State<PostOperationPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await FilePicker.platform.pickFiles(
+    final pickedFiles = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
       withData: true,
     );
-    if (pickedFile != null) {
+
+    if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
       setState(() {
-        _uploadedFiles['implants_image'] = [
-          {
-            'bytes': pickedFile.files.single.bytes!,
-            'name': pickedFile.files.single.name,
-            'type': path
-                .extension(pickedFile.files.single.name)
-                .replaceAll('.', '')
-                .toLowerCase(),
+        // Append new files to existing ones instead of replacing
+        _uploadedFiles['implants_image'] ??= [];
+        _uploadedFiles['implants_image']!.addAll(pickedFiles.files.map((file) {
+          return {
+            'bytes': file.bytes!,
+            'name': file.name,
+            'type': path.extension(file.name).replaceAll('.', '').toLowerCase(),
             'isExisting': false,
-          }
-        ];
+          };
+        }).toList());
       });
     }
   }
@@ -195,7 +206,10 @@ class _PostOperationPageState extends State<PostOperationPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    hasImages ? 'image uploaded' : 'Click to upload images',
+                    // hasImages
+                    //     ? '${_uploadedFiles['implants_image']?.length ?? 0} image(s) uploaded'
+                    //     :
+                    'Click to upload images',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.textPrimary,
@@ -226,9 +240,7 @@ class _PostOperationPageState extends State<PostOperationPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Column(
               children: _uploadedFiles['implants_image']!
                   .map((file) => _buildFileItem('implants_image', file))
                   .toList(),
@@ -239,32 +251,113 @@ class _PostOperationPageState extends State<PostOperationPage> {
     );
   }
 
-  Widget _buildFileItem(String fileType, Map<String, dynamic> file) {
+  Widget _buildFileItem(String reportType, Map<String, dynamic> file) {
+    final fileType = (file['type'] ?? '').toLowerCase();
+    final isExisting = file['isExisting'] == true;
+    final filePath = file['path'] ?? '';
+    final fileName = file['name'] ?? 'Unknown';
+
     return GestureDetector(
-      onTap: () => _showFilePreview(context, file),
+      onTap: () {
+        if (isExisting) {
+          _showFilePreview(context, filePath, fileType, isNetwork: true);
+        } else {
+          if (kIsWeb) {
+            // For web, we might have the file data in bytes
+            if (file['bytes'] != null) {
+              final base64String = base64Encode(file['bytes']);
+              _showFilePreview(
+                  context,
+                  'data:application/octet-stream;base64,$base64String',
+                  fileType);
+            } else {
+              _showFilePreview(context, filePath, fileType);
+            }
+          } else {
+            _showFilePreview(context, filePath, fileType);
+          }
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(
-              _getFileIcon(file['type']),
-              color: AppColors.primary,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getFileIcon(fileType),
+                color: AppColors.primary,
+                size: 20,
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                file['name'],
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        fileType.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      if (isExisting)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Existing',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _removeFile(fileType, file),
+              icon: const Icon(Icons.delete, color: AppColors.error, size: 20),
+              onPressed: () => _removeFile(reportType, file),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
           ],
         ),
@@ -272,13 +365,9 @@ class _PostOperationPageState extends State<PostOperationPage> {
     );
   }
 
-  Future<void> _showFilePreview(
-      BuildContext context, Map<String, dynamic> file) async {
-    final fileType = file['type'];
-    final fileName = file['name'];
-
-    if (['jpg', 'jpeg', 'png'].contains(fileType.toLowerCase())) {
-      // Image Preview
+  void _showFilePreview(BuildContext context, String filePath, String fileType,
+      {bool isNetwork = false}) async {
+    if (['jpg', 'jpeg', 'png', 'webp'].contains(fileType.toLowerCase())) {
       showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -289,22 +378,66 @@ class _PostOperationPageState extends State<PostOperationPage> {
                 panEnabled: true,
                 minScale: 0.5,
                 maxScale: 3.0,
-                child: kIsWeb
-                    ? Image.memory(
-                        file['bytes'],
+                child: isNetwork
+                    ? Image.network(
+                        filePath,
                         fit: BoxFit.contain,
                       )
-                    : Image.file(
-                        File(file['path']),
-                        fit: BoxFit.contain,
-                      ),
+                    : (kIsWeb
+                        ? Image.memory(
+                            base64Decode(filePath.split(',').last),
+                            fit: BoxFit.contain,
+                          )
+                        : Image.file(
+                            File(filePath),
+                            fit: BoxFit.contain,
+                          )),
               ),
               Positioned(
                 top: 10,
                 right: 10,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      child: IconButton(
+                        icon: Icon(Icons.download, color: Colors.white),
+                        onPressed: () async {
+                          final fileName =
+                              'implant_${DateTime.now().millisecondsSinceEpoch}';
+                          if (isNetwork) {
+                            await FileDownloader.downloadFile(
+                              context: context,
+                              url: filePath,
+                              fileName: fileName,
+                              fileType: fileType,
+                            );
+                          } else if (kIsWeb) {
+                            final bytes =
+                                base64Decode(filePath.split(',').last);
+                            await FileDownloader.downloadFile(
+                              context: context,
+                              url: '', // Not needed when we have bytes
+                              fileName: fileName,
+                              fileType: fileType,
+                              bytes: bytes,
+                            );
+                          } else {
+                            await OpenFile.open(filePath);
+                          }
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    CircleAvatar(
+                      child: IconButton(
+                        icon: Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -312,63 +445,74 @@ class _PostOperationPageState extends State<PostOperationPage> {
         ),
       );
     } else if (fileType.toLowerCase() == 'pdf') {
-      // PDF Preview
-      if (kIsWeb) {
-        // For web, convert bytes to object URL
-        final bytes = file['bytes'] as Uint8List;
-        // final blob = Blob([bytes], 'application/pdf');
-        // final url = Url.createObjectUrlFromBlob(blob);
-
-        // if (await canLaunchUrl(Uri.parse(url))) {
-        //   await launchUrl(
-        //     Uri.parse(url),
-        //     mode: LaunchMode.externalApplication,
-        //   );
-        //   // Clean up the object URL after some time
-        //   Future.delayed(const Duration(seconds: 30), () {
-        //     Url.revokeObjectUrl(url);
-        //   });
-        // } else {
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     const SnackBar(content: Text('Could not open PDF')),
-        //   );
-        // }
-      } else {
-        // For mobile, use Syncfusion PDF Viewer
-        try {
-          if (file['path'] != null) {
-            // Local file
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => Scaffold(
-                  appBar: AppBar(title: Text(fileName)),
-                  body: SfPdfViewer.file(File(file['path'])),
-                ),
-              ),
-            );
-          } else if (file['bytes'] != null) {
-            // Bytes data (for web or cached files)
-            final tempDir = await getTemporaryDirectory();
-            final tempFile = File('${tempDir.path}/$fileName');
-            await tempFile.writeAsBytes(file['bytes']);
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => Scaffold(
-                  appBar: AppBar(title: Text(fileName)),
-                  body: SfPdfViewer.file(tempFile),
-                ),
-              ),
-            );
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to load PDF: ${e.toString()}')),
-          );
-        }
-      }
+      // PDF Preview with download option
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('PDF Options'),
+          content: Text('Would you like to view or download the PDF?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                if (isNetwork) {
+                  await launchUrl(Uri.parse(filePath));
+                } else if (kIsWeb) {
+                  final bytes = base64Decode(filePath.split(',').last);
+                  // For web, we can't create a blob URL without dart:html
+                  // So we'll just show a message to right-click and save
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Right-click on the image and select "Save as"'),
+                    ),
+                  );
+                } else {
+                  await OpenFile.open(filePath);
+                }
+              },
+              child: Text('View'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final fileName =
+                    'implant_${DateTime.now().millisecondsSinceEpoch}';
+                if (isNetwork) {
+                  await FileDownloader.downloadFile(
+                    context: context,
+                    url: filePath,
+                    fileName: fileName,
+                    fileType: 'pdf',
+                  );
+                } else if (kIsWeb) {
+                  final bytes = base64Decode(filePath.split(',').last);
+                  // On web without dart:html, we can't programmatically download
+                  // So we'll show a message to right-click and save
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Right-click on the image and select "Save as"'),
+                    ),
+                  );
+                } else {
+                  await FileDownloader.downloadFile(
+                    context: context,
+                    url: filePath,
+                    fileName: fileName,
+                    fileType: 'pdf',
+                  );
+                }
+              },
+              child: Text('Download'),
+            ),
+          ],
+        ),
+      );
     } else {
       log('Preview not available for $fileType files');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -517,25 +661,27 @@ class _PostOperationPageState extends State<PostOperationPage> {
               // flex: 1,
               child: _buildDatePickerField(),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: buildCustomInput(
-                controller: _surgeonController,
-                label: 'Surgeon',
-                // isRequired: true,
-                hintText: 'Enter surgeon name',
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: buildCustomInput(
-                controller: _assistantController,
-                label: 'Assistant',
-                hintText: 'Enter assistant name',
-              ),
-            ),
+            // const SizedBox(width: 10),
           ],
         ),
+        Row(children: [
+          Expanded(
+            child: buildCustomInput(
+              controller: _surgeonController,
+              label: 'Surgeon',
+              // isRequired: true,
+              hintText: 'Enter surgeon name',
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: buildCustomInput(
+              controller: _assistantController,
+              label: 'Assistant',
+              hintText: 'Enter assistant name',
+            ),
+          ),
+        ]),
 
         Row(
           children: [
@@ -556,7 +702,11 @@ class _PostOperationPageState extends State<PostOperationPage> {
             ),
           ],
         ),
-
+        buildCustomInput(
+          controller: _timetakenController,
+          label: 'Time Taken',
+          hintText: 'Enter Time Taken',
+        ),
         // Findings (multi-line)
         buildCustomInput(
           controller: _findingsController,
@@ -585,6 +735,15 @@ class _PostOperationPageState extends State<PostOperationPage> {
           enableNewLines: true,
           label: 'Implants used, if any',
           hintText: 'Enter implants details',
+        ),
+
+        buildCustomInput(
+          controller: _complicationsController,
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+          label: 'Complications, if any',
+          hintText: 'Enter Complications',
         ),
 
         _buildImageUploadField(),
@@ -676,7 +835,7 @@ class _PostOperationPageState extends State<PostOperationPage> {
                 if (_currentStep < 1) {
                   setState(() => _currentStep++);
                 } else {
-                  _submitForm();
+                  submitPostOperationNotes();
                 }
               }
             },
@@ -696,23 +855,249 @@ class _PostOperationPageState extends State<PostOperationPage> {
     );
   }
 
-  void _submitForm() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => DischargePage()),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Post-operation notes submitted successfully')),
-    );
+// Method to fetch post-operation notes
+  Future<Map<String, dynamic>?> fetchPostOperationNotes(var patientId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$localurl/get_post_operation'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          "patient_id": patientId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+            'Failed to load post-operation notes: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      log('Error fetching notes: ${e.toString()}');
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error fetching notes: ${e.toString()}')),
+      // );
+      return null;
+    }
+  }
+
+// Method to submit post-operation notes (updated version)
+  Future<void> submitPostOperationNotes() async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$localurl/postoperations'),
+      );
+
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        ShowDialogs.showSnackBar(
+          context,
+          'Authentication token not found. Please login again.',
+        );
+        return;
+      }
+
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+
+      Map<String, String> fields = {
+        'patient_id': '${widget.patient_id}',
+        'surgery': _surgeryController.text,
+        'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
+        'surgeon': _surgeonController.text,
+        'assistant': _assistantController.text,
+        'anaesthetists': _anaesthetistController.text,
+        'anaesthesia': _anaesthesiaController.text,
+        'findings': _findingsController.text,
+        'procedure': _procedureController.text,
+        'implants_used': _implantsController.text,
+        'treatment_advised': _treatmentController.text,
+        'further_plan': _furtherPlanController.text,
+        'time_take': _timetakenController.text,
+        'complications': _complicationsController.text
+      };
+      request.fields.addAll(fields);
+      log('Form Fields: ${jsonEncode(fields)}');
+
+      List<String> existingFileIds = [];
+      String fieldName = "implants_image";
+      log(_uploadedFiles.entries.toString());
+
+      for (var entry in _uploadedFiles.entries) {
+        final files = entry.value;
+
+        for (var file in files) {
+          if (file['isExisting'] == true && file['id'] != null) {
+            existingFileIds.add(file['id'].toString());
+          } else {
+            if (kIsWeb) {
+              Uint8List? fileBytes = file['bytes'];
+              String? fileName = file['name'] ??
+                  'file_${DateTime.now().millisecondsSinceEpoch}';
+
+              if (fileBytes != null && fileName != null) {
+                request.files.add(http.MultipartFile.fromBytes(
+                  fieldName,
+                  fileBytes,
+                  filename: fileName,
+                ));
+              } else {
+                log('❌ Web file data incomplete: bytes=${fileBytes != null}, name=${fileName != null}');
+                continue;
+              }
+            } else {
+              String? filePath = file['path'];
+              String? fileName = file['name'] ??
+                  path.basename(filePath ?? '') ??
+                  'file_${DateTime.now().millisecondsSinceEpoch}';
+
+              if (filePath != null) {
+                final fileToUpload = File(filePath);
+                if (await fileToUpload.exists()) {
+                  request.files.add(await http.MultipartFile.fromPath(
+                    fieldName,
+                    filePath,
+                    filename: fileName,
+                  ));
+                } else {
+                  log('❌ File not found: $filePath');
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (existingFileIds.isNotEmpty) {
+        request.fields['existing_file'] = existingFileIds.join(',');
+      }
+
+      log("existingFileIds: $existingFileIds");
+      log('📤 Request Fields: ${jsonEncode(request.fields)}');
+      log('📂 Total Files to Upload: ${request.files.length}');
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post-operation notes submitted successfully'),
+          ),
+        );
+        log('widget.patient_id ${widget.patient_id}');
+        log('postOperationId ${postOperationId}');
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => DischargePage(
+                    patientId: widget.patient_id,
+                    postOperationId: postOperationId,
+                  )),
+        );
+      } else {
+        log('Failed to submit: ${json.decode(responseBody)['message'] ?? 'Unknown error'}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Failed to submit: ${json.decode(responseBody)['message'] ?? 'Unknown error'}'),
+          ),
+        );
+      }
+    } catch (e) {
+      log('Error submitting form: ${e.toString()}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting form: ${e.toString()}'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadExistingData() async {
+    final notes = await fetchPostOperationNotes('${widget.patient_id}');
+    if (notes != null && notes['data'] != null) {
+      setState(() {
+        final data = notes['data'];
+
+        // Handle non-image data
+        _surgeryController.text = data['surgery'] ?? '';
+        _selectedDate = DateFormat('dd-MM-yyyy').parse(data['date']);
+        _surgeonController.text = data['surgeon'] ?? '';
+        _assistantController.text = data['assistant'] ?? '';
+        _anaesthetistController.text = data['anaesthetists'] ?? '';
+        _anaesthesiaController.text = data['anaesthesia'] ?? '';
+        _findingsController.text = data['findings'] ?? '';
+        _procedureController.text = data['procedure'] ?? '';
+        _implantsController.text = data['implants_used'] ?? '';
+        _treatmentController.text = data['treatment_advised'] ?? '';
+        _furtherPlanController.text = data['further_plan'] ?? '';
+        postOperationId = data['id'];
+        _timetakenController.text = data['time_take'] ?? "";
+        _complicationsController.text = data['complications'] ?? "";
+
+        log(_surgeryController.text.toString());
+
+        // Handle images if they exist
+        if (data['implants_image'] != null &&
+            data['implants_image'].isNotEmpty) {
+          _uploadedFiles['implants_image'] = List<Map<String, dynamic>>.from(
+            data['implants_image'].map((image) {
+              return {
+                'id': image['id'],
+                'path': image['image_path'],
+                'url': image['image_path'],
+                'name': path.basename(Uri.parse(image['image_path']).path),
+                'type': path.extension(image['image_path']).replaceAll('.', ''),
+                'isExisting': true,
+              };
+            }),
+          );
+        }
+      });
+    } else {
+      log('not is null');
+    }
+  }
+
+  @override
+  void initState() {
+    log(widget.patient_id.toString());
+    super.initState();
+    _loadExistingData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.medicalBlue.withOpacity(.2),
+      appBar: AppBar(
+        title: const Text('Post Operation Notes'),
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Center(
+            // child:
+            // Card(
+            // elevation: 4,
+            // shape: RoundedRectangleBorder(
+            //     borderRadius: BorderRadius.circular(10)),
+            // color: AppColors.card,
             child: ConstrainedBox(
                 constraints: BoxConstraints(
                     maxWidth: 1000, minHeight: constraints.maxHeight),
@@ -722,18 +1107,18 @@ class _PostOperationPageState extends State<PostOperationPage> {
                     child: Column(
                       children: [
                         // _buildStepNavigation(),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        Align(
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Post Operation Notes',
-                              style: TextStyle(
-                                  fontSize: 22,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold),
-                            )),
+                        // SizedBox(
+                        //   height: 20,
+                        // ),
+                        // Align(
+                        //     alignment: Alignment.center,
+                        //     child: Text(
+                        //       'Post Operation Notes',
+                        //       style: TextStyle(
+                        //           fontSize: 22,
+                        //           color: AppColors.primary,
+                        //           fontWeight: FontWeight.bold),
+                        //     )),
                         Padding(
                           padding: const EdgeInsets.all(24.0),
                           child: _buildCurrentStepContent(),
@@ -743,6 +1128,7 @@ class _PostOperationPageState extends State<PostOperationPage> {
                     ),
                   ),
                 )),
+            // ),
           );
         },
       ),

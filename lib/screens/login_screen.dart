@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/constants/global_variable.dart';
+import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/custom_text_field.dart';
@@ -30,7 +31,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void initState() {
- 
     log('fcm_token ${Global.fcm_token}, devive ${Global.device_info}');
     super.initState();
     _animationController = AnimationController(
@@ -83,9 +83,7 @@ class _LoginScreenState extends State<LoginScreen>
       try {
         final response = await http
             .post(
-              // Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
-              Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
-
+              Uri.parse('$localurl/login'),
               headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
@@ -93,8 +91,8 @@ class _LoginScreenState extends State<LoginScreen>
               body: json.encode({
                 "name": _nameController.text.trim(),
                 "password": _passwordController.text.trim(),
-                "device_info":Global.device_info,
-                "fcm_token":Global.fcm_token
+                "device_info": Global.device_info,
+                "fcm_token": Global.fcm_token
               }),
             )
             .timeout(const Duration(seconds: 10));
@@ -109,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen>
             }
             Navigator.pushReplacementNamed(context, '/patientInfo');
           } else {
-            log('error messgae ');
+            log('${responseData['message']}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(responseData['message'] ?? 'Login failed'),

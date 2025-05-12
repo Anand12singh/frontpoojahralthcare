@@ -1,20 +1,27 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-
+import 'dart:developer';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 
+import 'package:poojaheakthcare/screens/post_opration_page.dart';
+
+import '../constants/base_url.dart';
+import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/inputfild.dart';
+import '../widgets/show_dialog.dart';
 
 class DischargePage extends StatefulWidget {
-  const DischargePage({super.key});
+  var patientId;
+  var postOperationId;
+
+  DischargePage({
+    super.key,
+    this.patientId,
+    this.postOperationId,
+  });
 
   @override
   State<DischargePage> createState() => _DischargePageState();
@@ -31,6 +38,7 @@ class _DischargePageState extends State<DischargePage> {
   final TextEditingController _qualificationsController =
       TextEditingController();
   final TextEditingController _indoorRegNoController = TextEditingController();
+  DateTime _followupdateFindingController = DateTime.now();
 
   // Date/Time Controllers
   DateTime _admissionDate = DateTime.now();
@@ -40,12 +48,18 @@ class _DischargePageState extends State<DischargePage> {
 
   // Medical Info Controllers
   final TextEditingController _diagnosisController = TextEditingController();
+  final TextEditingController _tbSinceController = TextEditingController();
+
   final TextEditingController _drugAllergyController = TextEditingController();
   final TextEditingController _chiefComplaintsController =
       TextEditingController();
 
   // History Controllers
   bool _hasDM = false;
+  bool _hasTB = false;
+  bool _isLoading = false;
+  bool _isEditing = false;
+  int? _existingDischargeId;
   final TextEditingController _dmSinceController = TextEditingController();
   bool _hasHypertension = false;
   final TextEditingController _hypertensionSinceController =
@@ -53,6 +67,7 @@ class _DischargePageState extends State<DischargePage> {
   bool _hasIHD = false;
   final TextEditingController _ihdDescriptionController =
       TextEditingController();
+
   final TextEditingController _surgicalHistoryController =
       TextEditingController();
   final TextEditingController _personalHistoryController =
@@ -128,7 +143,7 @@ class _DischargePageState extends State<DischargePage> {
               ),
             ),
           ),
-          InkWell(
+          GestureDetector(
             onTap: () => _selectDate(context, isAdmission),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -147,7 +162,7 @@ class _DischargePageState extends State<DischargePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    DateFormat('dd/MM/yyyy').format(date),
+                    DateFormat('dd-MM-yyyy').format(date),
                     style: const TextStyle(fontSize: 16),
                   ),
                   Icon(Icons.calendar_today, color: AppColors.primary),
@@ -548,8 +563,23 @@ class _DischargePageState extends State<DischargePage> {
         if (_hasIHD)
           buildCustomInput(
             controller: _ihdDescriptionController,
-            label: 'IHD Description',
+            label: 'IHD Since When',
             hintText: 'Enter IHD details',
+          ),
+        _buildRadioGroup<bool>(
+          label: 'TB:',
+          groupValue: _hasTB,
+          options: const [
+            MapEntry(true, 'Yes'),
+            MapEntry(false, 'No'),
+          ],
+          onChanged: (value) => setState(() => _hasTB = value!),
+        ),
+        if (_hasTB)
+          buildCustomInput(
+            controller: _tbSinceController,
+            label: 'TB Since When',
+            hintText: 'Enter TB details',
           ),
         buildCustomInput(
           controller: _surgicalHistoryController,
@@ -584,7 +614,7 @@ class _DischargePageState extends State<DischargePage> {
           enableNewLines: true,
         ),
         buildCustomInput(
-          controller: _otherIllnessController,
+          controller: _familyHistoryControllers,
           label: 'Family History',
           hintText: 'Enter Family History',
           minLines: 2,
@@ -615,14 +645,92 @@ class _DischargePageState extends State<DischargePage> {
           enableNewLines: true,
         ),
         buildCustomInput(
-          controller: _otherIllnessController,
+          controller: _hospitalizationCourseControllers,
           label: 'Course during hospitalization',
           hintText: 'Enter Course during hospitalization',
           minLines: 2,
           maxLines: 4,
           enableNewLines: true,
         ),
+        buildDatePickerField(
+            label: 'Follow Up Date',
+            selectedDate: _followupdateFindingController,
+            onTap: () => _selectDateGeneric1(
+                  context: context,
+                  currentDate: _followupdateFindingController,
+                  onDateSelected: (picked) =>
+                      _followupdateFindingController = picked,
+                )),
       ],
+    );
+  }
+
+  Future<void> _selectDateGeneric1({
+    required BuildContext context,
+    required DateTime currentDate,
+    required Function(DateTime) onDateSelected,
+  }) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2050),
+    );
+    if (picked != null && picked != currentDate) {
+      setState(() => onDateSelected(picked));
+    }
+  }
+
+  Widget buildDatePickerField({
+    required String label,
+    required DateTime selectedDate,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  Icon(Icons.calendar_today, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -632,28 +740,33 @@ class _DischargePageState extends State<DischargePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (_currentStep > 0)
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  setState(() => _currentStep--);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: AppColors.primary),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                elevation: 0,
+          // if (_currentStep > 0)
+          ElevatedButton(
+            onPressed: () {
+              if (_currentStep == 0) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PostOperationPage()),
+                );
+              }
+              if (_formKey.currentState!.validate()) {
+                setState(() => _currentStep--);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: AppColors.primary),
               ),
-              child: const Text('BACK'),
-            )
-          else
-            const SizedBox(width: 120),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              elevation: 0,
+            ),
+            child: const Text('BACK'),
+          ),
+          // else
+          const SizedBox(width: 120),
           ElevatedButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
@@ -680,17 +793,271 @@ class _DischargePageState extends State<DischargePage> {
     );
   }
 
-  void _submitForm() {
-    // Process form submission
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Discharge information submitted successfully')),
-    );
+  Future<void> _fetchDischargeData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      final request =
+          http.Request('POST', Uri.parse('$localurl/get_discharge'));
+
+      request.body = json.encode({
+        "patient_id": widget.patientId.toString(),
+        // "post_operation_id": widget.postOperationId.toString(),
+      });
+      request.headers.addAll(headers);
+
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      final jsonResponse = json.decode(responseData);
+
+      if (response.statusCode == 200 &&
+          jsonResponse['status'] == true &&
+          jsonResponse['data'].isNotEmpty) {
+        final dischargeData = jsonResponse['data'][0];
+        log('dischargeData ${dischargeData}');
+        _populateFormFields(dischargeData);
+      }
+    } catch (e) {
+      log(' error $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _populateFormFields(Map<String, dynamic> data) {
+    try {
+      // Basic Info
+      _consultantController.text = data['consultant']?.toString() ?? '';
+      _contactController.text = data['contact']?.toString() ?? '';
+      _uhIdController.text = data['uh_id']?.toString() ?? '';
+      _qualificationsController.text = data['qualifications']?.toString() ?? '';
+      _indoorRegNoController.text = data['indoor_reg_no']?.toString() ?? '';
+      _followupdateFindingController = DateTime.parse(
+          data['follow_up']?.toString() ?? DateTime.now().toString());
+
+      // Dates
+      if (data['admission_date'] != null) {
+        try {
+          _admissionDate = DateTime.parse(data['admission_date'].toString());
+        } catch (e) {
+          log('Error parsing admission_date: $e');
+        }
+      }
+      if (data['discharge_date'] != null) {
+        try {
+          _dischargeDate = DateTime.parse(data['discharge_date'].toString());
+        } catch (e) {
+          log('Error parsing discharge_date: $e');
+        }
+      }
+
+      // Times
+      if (data['admission_time'] != null) {
+        try {
+          final timeParts = data['admission_time'].toString().split(':');
+          _admissionTime = TimeOfDay(
+            hour: int.tryParse(timeParts[0]) ?? 0,
+            minute: int.tryParse(timeParts[1]) ?? 0,
+          );
+        } catch (e) {
+          log('Error parsing admission_time: $e');
+        }
+      }
+      if (data['discharge_time'] != null) {
+        try {
+          final timeParts = data['discharge_time'].toString().split(':');
+          _dischargeTime = TimeOfDay(
+            hour: int.tryParse(timeParts[0]) ?? 0,
+            minute: int.tryParse(timeParts[1]) ?? 0,
+          );
+        } catch (e) {
+          log('Error parsing discharge_time: $e');
+        }
+      }
+
+      // Medical Info
+      _diagnosisController.text = data['diagnosis']?.toString() ?? '';
+      _drugAllergyController.text = data['drug_allergy']?.toString() ?? '';
+      _chiefComplaintsController.text =
+          data['chief_complaints']?.toString() ?? '';
+
+      // History
+      _hasDM = data['history_of_dm_status'] == 1;
+      _dmSinceController.text =
+          data['history_of_dm_description']?.toString() ?? '';
+      _hasTB = data['tb'] == 1;
+      _tbSinceController.text = data['tb_since']?.toString() ?? '';
+
+      _hasHypertension = data['hypertension_status'] == 1;
+      _hypertensionSinceController.text =
+          data['hypertension_description']?.toString() ?? '';
+      _hasIHD = data['IHD_status'] == 1;
+      _ihdDescriptionController.text =
+          data['IHD_description']?.toString() ?? '';
+      _surgicalHistoryController.text =
+          data['surgical_history']?.toString() ?? '';
+      _personalHistoryController.text =
+          data['personal_history']?.toString() ?? '';
+      _otherIllnessController.text = data['other_illness']?.toString() ?? '';
+      _presentMedicationController.text =
+          data['history_of_present_medication']?.toString() ?? '';
+      _familyHistoryControllers.text = data['family_history']?.toString() ?? '';
+
+      // Examination/Treatment
+      _onExaminationController.text = data['on_examination']?.toString() ?? '';
+      _treatmentGivenController.text =
+          data['treatment_given']?.toString() ?? '';
+      _hospitalizationCourseControllers.text =
+          data['course_during_hospitalization']?.toString() ?? '';
+
+      log('Form fields populated successfully');
+    } catch (e) {
+      log('Error populating form fields: $e');
+    }
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        ShowDialogs.showSnackBar(
+          context,
+          'Authentication token not found. Please login again.',
+        );
+        return;
+      }
+
+      final headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final body = json.encode({
+        "id": widget.patientId,
+        "patient_id": widget.patientId,
+        "post_operation_id": widget.postOperationId,
+        "consultant": _consultantController.text,
+        "contact": _contactController.text,
+        "uh_id": int.tryParse(_uhIdController.text),
+        "qualifications": _qualificationsController.text,
+        "indoor_reg_no": _indoorRegNoController.text,
+        "admission_date": DateFormat('yyyy-MM-dd').format(_admissionDate),
+        "admission_time": '${_admissionTime.hour}:${_admissionTime.minute}:00',
+        "discharge_date": DateFormat('yyyy-MM-dd').format(_dischargeDate),
+        "discharge_time": '${_dischargeTime.hour}:${_dischargeTime.minute}:00',
+        "diagnosis": _diagnosisController.text,
+        "drug_allergy": _drugAllergyController.text,
+        "chief_complaints": _chiefComplaintsController.text,
+        "tb": _hasTB ? 1 : 0,
+        "tb_since": _hasTB ? _tbSinceController.text : "",
+        "surgical_history": _surgicalHistoryController.text,
+        "personal_history": _personalHistoryController.text,
+        "other_illness": _otherIllnessController.text,
+        "history_of_present_medication": _presentMedicationController.text,
+        "family_history": _familyHistoryControllers.text,
+        "on_examination": _onExaminationController.text,
+        "treatment_given": _treatmentGivenController.text,
+        "course_during_hospitalization": _hospitalizationCourseControllers.text,
+        "history_of_dm_status": _hasDM ? 1 : 0,
+        "history_of_dm_description": _hasDM ? _dmSinceController.text : "",
+        "hypertension_status": _hasHypertension ? 1 : 0,
+        "hypertension_description":
+            _hasHypertension ? _hypertensionSinceController.text : "",
+        "IHD_status": _hasIHD ? 1 : 0,
+        "IHD_description": _hasIHD ? _ihdDescriptionController.text : "",
+        'follow_up':
+            _followupdateFindingController.toIso8601String().split('T')[0]
+      });
+      log("body  $body");
+
+      final response = await http.post(
+        Uri.parse('$localurl/post_discharge'),
+        headers: headers,
+        body: body,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Success'),
+                content: Text(responseData['message'] ??
+                    'Dishcharge record saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PatientInfoScreen()),
+                      );
+                    },
+                    child: const Text('view'),
+                  ),
+                ],
+              );
+            });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${responseData['message']}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    log(widget.patientId.toString());
+    log(widget.postOperationId.toString());
+    // TODO: implement initState
+    super.initState();
+    _fetchDischargeData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.medicalBlue.withOpacity(.2),
+      appBar: AppBar(
+        title: const Text('Discharge Information'),
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Center(
@@ -705,18 +1072,18 @@ class _DischargePageState extends State<DischargePage> {
                   child: Column(
                     children: [
                       // _buildStepNavigation(),
-                      const SizedBox(height: 20),
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Discharge Information',
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      // const SizedBox(height: 20),
+                      // Align(
+                      //   alignment: Alignment.center,
+                      //   child: Text(
+                      //     'Discharge Information',
+                      //     style: TextStyle(
+                      //       fontSize: 22,
+                      //       color: AppColors.primary,
+                      //       fontWeight: FontWeight.bold,
+                      //     ),
+                      //   ),
+                      // ),
                       Padding(
                         padding: const EdgeInsets.all(24.0),
                         child: _buildCurrentStepContent(),

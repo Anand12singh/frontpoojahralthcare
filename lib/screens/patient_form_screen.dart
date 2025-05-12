@@ -4,11 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:poojaheakthcare/constants/base_url.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import 'package:poojaheakthcare/screens/video_open.dart';
+import 'package:poojaheakthcare/widgets/file_download.dart';
 import '../constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../widgets/show_dialog.dart';
@@ -54,6 +58,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     8: 'pa_abdomen_image',
     9: 'pr_rectum_image',
     10: 'doctor_note_image',
+    11: 'mri_report',
+    12: 'pet_scan',
+    13: 'pft_report'
   };
 
   final Map<String, List<String>> _deletedFiles = {};
@@ -78,7 +85,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   String _gender = 'Male';
   DateTime _selectedDate = DateTime.now();
-  String _location = 'Pooja Healthcare';
+  String _location = '';
 
   // Medical Information Controllers
   final TextEditingController _heightController = TextEditingController();
@@ -123,6 +130,85 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
 
+  //add new filds
+
+  final TextEditingController _otherLocationController =
+      TextEditingController();
+  final TextEditingController _hemoglobinController = TextEditingController();
+  final TextEditingController _totalLeucocyteCountController =
+      TextEditingController();
+  final TextEditingController _esrController = TextEditingController();
+  final TextEditingController _plateletsController = TextEditingController();
+  final TextEditingController _urineRoutineController = TextEditingController();
+  final TextEditingController _urineCultureController = TextEditingController();
+  final TextEditingController _bunController = TextEditingController();
+  final TextEditingController _serumCreatinineController =
+      TextEditingController();
+  final TextEditingController _serumElectrolytesController =
+      TextEditingController();
+  final TextEditingController _lftController = TextEditingController();
+  final TextEditingController _prothrombinTimController =
+      TextEditingController();
+  final TextEditingController _bloodSugarFastingController =
+      TextEditingController();
+  final TextEditingController _bloodSugarPostPrandialController =
+      TextEditingController();
+  final TextEditingController _hBA1CController = TextEditingController();
+  final TextEditingController _hBSAGController = TextEditingController();
+  final TextEditingController _hivController = TextEditingController();
+  final TextEditingController _hcvController = TextEditingController();
+//Thyroid Function tes
+  final TextEditingController _t3Controller = TextEditingController();
+  final TextEditingController _t4Controller = TextEditingController();
+  final TextEditingController _tshController = TextEditingController();
+  final TextEditingController _miscController = TextEditingController();
+  final TextEditingController _xRayLaboratoryController =
+      TextEditingController();
+  DateTime _dateofXRayController = DateTime.now();
+  final TextEditingController _xRayFindingController = TextEditingController();
+//ctscan
+  final TextEditingController _ctscanLaboratoryController =
+      TextEditingController();
+  DateTime _dateofctscanController = DateTime.now();
+  final TextEditingController _ctscanFindingController =
+      TextEditingController();
+//mri
+  final TextEditingController _mriLaboratoryController =
+      TextEditingController();
+  DateTime _dateofmriController = DateTime.now();
+  final TextEditingController _mriFindingController = TextEditingController();
+
+//petscan
+  final TextEditingController _petscanLaboratoryController =
+      TextEditingController();
+  DateTime _dateofpetscanController = DateTime.now();
+  final TextEditingController _petscanFindingController =
+      TextEditingController();
+
+//ecg
+  final TextEditingController _ecgLaboratoryController =
+      TextEditingController();
+  DateTime _dateofecgController = DateTime.now();
+  final TextEditingController _ecgFindingController = TextEditingController();
+
+//2d
+  final TextEditingController _a2dLaboratoryController =
+      TextEditingController();
+  DateTime _dateofe2dController = DateTime.now();
+  final TextEditingController _a2dFindingController = TextEditingController();
+//pet
+  final TextEditingController _pftLaboratoryController =
+      TextEditingController();
+  DateTime _dateofpftController = DateTime.now();
+  final TextEditingController _pftFindingController = TextEditingController();
+//folow
+  DateTime _followupdateFindingController = DateTime.now();
+  //misc
+  final TextEditingController _miscLaboratoryController =
+      TextEditingController();
+  DateTime _dateofmiscController = DateTime.now();
+  final TextEditingController _miscFindingController = TextEditingController();
+
   // Medical Conditions
   bool _hasDM = false;
   bool _hasHypertension = false;
@@ -155,6 +241,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     'pa_abdomen_image': [],
     'pr_rectum_image': [],
     'doctor_note_image': [],
+    'mri_report': [],
+    'pet_scan': [],
+    'pft_report': [],
   };
 
   @override
@@ -164,12 +253,14 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _firstNameController.text = widget.firstName;
     _lastNameController.text = widget.lastName;
     _phoneController.text = widget.phone;
+    _initializePage();
+  }
 
+  Future<void> _initializePage() async {
+    await _fetchLocations(); // ensure this completes first
     if (widget.patientExist == 2) {
-      _fetchPatientData();
+      await _fetchPatientData(); // now it's safe to fetch and populate data
     }
-
-    _fetchLocations();
   }
 
   @override
@@ -224,7 +315,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     try {
       final requestBody = {'id': Global.phid};
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        Uri.parse('$localurl/getpatientbyid'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -254,8 +345,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 : responseData['PatientVisitInfo'] ?? {};
 
             _documentData = responseData['PatientDocumentInfo'] ?? {};
-
-            log('_documentData $_documentData');
 
             _populateFormFields();
           });
@@ -290,14 +379,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _patientData?['description']?.toString() ?? '';
       _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
 
-      try {
-        _selectedDate = DateTime.parse(
-            _patientData?['date']?.toString() ?? DateTime.now().toString());
-      } catch (e) {
-        _selectedDate = DateTime.now();
-      }
+      _selectedDate = DateTime.parse(
+          _patientData?['date']?.toString() ?? DateTime.now().toString());
 
       _referralController.text = _patientData?['referral_by']?.toString() ?? '';
+      _otherLocationController.text =
+          _patientData?['other_location']?.toString() ?? '';
+
+      _selectedLocationId = _patientData?['location']?.toString() ?? '';
+      log('_selectedLocationId $_selectedLocationId');
+      final location = _locations.firstWhere(
+        (loc) => loc['id'].toString() == _selectedLocationId,
+        orElse: () => {}, // return empty map if not found
+      );
+
+      log('locationlocation: $location');
 
       // Visit Info
       _tempController.text = _visitData?['temp']?.toString() ?? '';
@@ -359,17 +455,105 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       _adviseController.text = _visitData?['advise']?.toString() ?? '';
       _doctorNotesController.text =
           _patientData?['doctor_note']?.toString() ?? '';
-      // Replace this:
-      locationId = _patientData?['location']?.toString() ?? '2';
 
-// With this:
-      _selectedLocationId = _patientData?['location']?.toString() ?? '2';
-// Find the corresponding location name
-      final location = _locations.firstWhere(
-        (loc) => loc['id'].toString() == _selectedLocationId,
-        orElse: () => {'id': '2', 'location': 'Unknown'},
-      );
-      _selectedLocationName = location['location'] ?? 'Unknown';
+      _hemoglobinController.text = _visitData?['heamoglobin']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _esrController.text = _visitData?['esr']?.toString() ?? '';
+      _plateletsController.text = _visitData?['platelets']?.toString() ?? '';
+      _urineRoutineController.text =
+          _visitData?['urine_routine']?.toString() ?? '';
+      _urineCultureController.text =
+          _visitData?['urine_culture']?.toString() ?? '';
+      _bunController.text = _visitData?['bun']?.toString() ?? '';
+      _serumCreatinineController.text =
+          _visitData?['serum_creatinine']?.toString() ?? '';
+      _serumElectrolytesController.text =
+          _visitData?['serum_electrolytes']?.toString() ?? '';
+      _lftController.text = _visitData?['lft']?.toString() ?? '';
+      _prothrombinTimController.text =
+          _visitData?['prothrombin_time_inr']?.toString() ?? '';
+      _bloodSugarFastingController.text =
+          _visitData?['blood_sugar_fasting']?.toString() ?? '';
+      _bloodSugarPostPrandialController.text =
+          _visitData?['blood_sugar_post_prandial']?.toString() ?? '';
+      _hBA1CController.text = _visitData?['hba1c']?.toString() ?? '';
+      _hBSAGController.text = _visitData?['hbsag']?.toString() ?? '';
+      _hivController.text = _visitData?['hiv']?.toString() ?? '';
+      _hcvController.text = _visitData?['hcv']?.toString() ?? '';
+      _t3Controller.text = _visitData?['t3']?.toString() ?? '';
+      _t4Controller.text = _visitData?['t4']?.toString() ?? '';
+      _tshController.text = _visitData?['tsh']?.toString() ?? '';
+      _miscController.text = _visitData?['misc']?.toString() ?? '';
+      _xRayLaboratoryController.text =
+          _visitData?['x_ray_laboratory']?.toString() ?? '';
+      if (location.isNotEmpty) {
+        _selectedLocationName = location['location'] ?? '';
+        log('_selectedLocationName $_selectedLocationName');
+      } else {
+        _selectedLocationName = '';
+        log('Location not found for ID $_selectedLocationId');
+      }
+
+      _dateofXRayController = DateTime.parse(
+          _visitData?['date_of_x_ray']?.toString() ??
+              DateTime.now().toString());
+
+      _xRayFindingController.text =
+          _visitData?['x_ray_finding']?.toString() ?? '';
+      _ctscanLaboratoryController.text =
+          _visitData?['ct_scan_laboratory']?.toString() ?? '';
+
+      _dateofctscanController = DateTime.parse(
+          _visitData?['date_of_ct_scan']?.toString() ??
+              DateTime.now().toString());
+
+      _ctscanFindingController.text =
+          _visitData?['ct_scan_finding']?.toString() ?? '';
+
+      _mriLaboratoryController.text =
+          _visitData?['mri_laboratory']?.toString() ?? '';
+
+      _dateofmriController = DateTime.parse(
+          _visitData?['date_of_mri']?.toString() ?? DateTime.now().toString());
+
+      _mriFindingController.text = _visitData?['mri_finding']?.toString() ?? '';
+      _petscanLaboratoryController.text =
+          _visitData?['pet_scan_laboratory']?.toString() ?? '';
+      _dateofpetscanController = DateTime.parse(
+          _visitData?['date_of_pet_scan']?.toString() ??
+              DateTime.now().toString());
+      _petscanFindingController.text =
+          _visitData?['pet_scan_finding']?.toString() ?? '';
+      _ecgLaboratoryController.text =
+          _visitData?['ecg_laboratory']?.toString() ?? '';
+      _dateofecgController = DateTime.parse(
+          _visitData?['date_of_ecg']?.toString() ?? DateTime.now().toString());
+      _ecgFindingController.text = _visitData?['ecg_finding']?.toString() ?? '';
+      _a2dLaboratoryController.text =
+          _visitData?['a2d_echo_laboratory']?.toString() ?? '';
+      _a2dFindingController.text =
+          _visitData?['a2d_echo_finding']?.toString() ?? '';
+      _dateofe2dController = DateTime.parse(
+          _visitData?['date_of_a2d_echo']?.toString() ??
+              DateTime.now().toString());
+
+      _pftLaboratoryController.text =
+          _visitData?['pft_laboratory']?.toString() ?? '';
+      _pftFindingController.text = _visitData?['pft_finding']?.toString() ?? '';
+      _dateofpftController = DateTime.parse(
+          _visitData?['date_of_pft']?.toString() ?? DateTime.now().toString());
+      _miscLaboratoryController.text =
+          _visitData?['msic_laboratory']?.toString() ?? '';
+      _miscFindingController.text =
+          _visitData?['msic_finding']?.toString() ?? '';
+      _dateofmiscController = DateTime.parse(
+          _visitData?['date_of_msic']?.toString() ?? DateTime.now().toString());
+      _followupdateFindingController = DateTime.parse(
+          _visitData?['follow_up_date']?.toString() ??
+              DateTime.now().toString());
 
       // Load documents
       _uploadedFiles.clear();
@@ -402,13 +586,13 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         });
       }
 
-      if (_tempController.text != null || _tempController.text.isNotEmpty) {
+      if (_tempController.text.isNotEmpty) {
         setState(() {
           _isFebrile = true;
         });
       }
     } catch (e) {
-      debugPrint('Error populating form fields: $e');
+      log('Error populating form fields: $e');
     }
   }
 
@@ -430,7 +614,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     setState(() => _isLoadingLocations = true);
     try {
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getlocation'),
+        Uri.parse('$localurl/getlocation'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -470,17 +654,15 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     'pa_abdomen_image': 8,
     'pr_rectum_image': 9,
     'doctor_note_image': 10,
+    'mri_report': 11,
+    'pet_scan': 12,
+    'pft_report': 13
   };
 
   Future<void> _submitForm() async {
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
     bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
-    // if (!_validateFiles()) {
-    //   ShowDialogs.showSnackBar(
-    //       context, 'Some files are invalid. Please check your uploads.');
-    //   return;
-    // }
 
     if (!personalValid || !medicalValid || !reportsValid) {
       ShowDialogs.showSnackBar(context, 'Please fill all required fields');
@@ -505,7 +687,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+        Uri.parse('$localurl/storepatient'),
       );
 
       request.headers.addAll({
@@ -513,6 +695,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'Authorization': 'Bearer $token',
       });
       log('_doctorNotesController.text ${_doctorNotesController.text}');
+      log('_selectedLocationId $_selectedLocationId');
 
       // ✅ Add Form Fields
       Map<String, String> fields = {
@@ -568,6 +751,65 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'status': Global.status ?? widget.patientId.toString(),
         'doctor_note': _ensureString(_doctorNotesController.text),
         'description': _ensureString(_descriptionController.text),
+        'other_location': _ensureString(_otherLocationController.text),
+        //add
+        'follow_up_date':
+            _followupdateFindingController.toIso8601String().split('T')[0],
+        'heamoglobin': _ensureString(_hemoglobinController.text),
+        'total_leucocyte_count':
+            _ensureString(_totalLeucocyteCountController.text),
+        'esr': _ensureString(_esrController.text),
+        'platelets': _ensureString(_plateletsController.text),
+        'urine_routine': _ensureString(_urineRoutineController.text),
+        'urine_culture': _ensureString(_urineCultureController.text),
+        'bun': _ensureString(_bunController.text),
+        'serum_creatinine': _ensureString(_serumCreatinineController.text),
+        'serum_electrolytes': _ensureString(_serumElectrolytesController.text),
+        'lft': _ensureString(_lftController.text),
+        'prothrombin_time_inr': _ensureString(_prothrombinTimController.text),
+        'blood_sugar_fasting': _ensureString(_bloodSugarFastingController.text),
+        'blood_sugar_post_prandial':
+            _ensureString(_bloodSugarPostPrandialController.text),
+        'hba1c': _ensureString(_hBA1CController.text),
+        'hbsag': _ensureString(_hBSAGController.text),
+        'hiv': _ensureString(_hivController.text),
+        'hcv': _ensureString(_hcvController.text),
+        't3': _ensureString(_t3Controller.text),
+        't4': _ensureString(_t4Controller.text),
+        'tsh': _ensureString(_tshController.text),
+        'misc': _ensureString(_miscController.text),
+        'x_ray_laboratory': _ensureString(_xRayLaboratoryController.text),
+        'date_of_x_ray': _dateofXRayController.toIso8601String().split('T')[0],
+        'x_ray_finding': _ensureString(_xRayFindingController.text),
+        'ct_scan_laboratory': _ensureString(_ctscanLaboratoryController.text),
+        'date_of_ct_scan':
+            _dateofctscanController.toIso8601String().split('T')[0],
+
+        'ct_scan_finding': _ensureString(_ctscanFindingController.text),
+
+        'mri_laboratory': _ensureString(_mriLaboratoryController.text),
+        'date_of_mri': _dateofmriController.toIso8601String().split('T')[0],
+        'mri_finding': _ensureString(_mriFindingController.text),
+        'pet_scan_laboratory': _ensureString(_petscanLaboratoryController.text),
+        'date_of_pet_scan':
+            _dateofpetscanController.toIso8601String().split('T')[0],
+        'pet_scan_finding': _ensureString(_petscanFindingController.text),
+
+        'ecg_laboratory': _ensureString(_ecgLaboratoryController.text),
+        'date_of_ecg': _dateofecgController.toIso8601String().split('T')[0],
+
+        'ecg_finding': _ensureString(_ecgFindingController.text),
+        'a2d_echo_laboratory': _ensureString(_a2dLaboratoryController.text),
+        'date_of_a2d_echo':
+            _dateofe2dController.toIso8601String().split('T')[0],
+
+        'a2d_echo_finding': _ensureString(_a2dFindingController.text),
+        'pft_laboratory': _ensureString(_pftLaboratoryController.text),
+        'date_of_pft': _dateofpftController.toIso8601String().split('T')[0],
+        'pft_finding': _ensureString(_pftFindingController.text),
+        'msic_laboratory': _ensureString(_miscLaboratoryController.text),
+        'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
+        'msic_finding': _ensureString(_miscFindingController.text),
       };
 
       if (Global.status == '2') {
@@ -577,8 +819,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       request.fields.addAll(fields);
       log('Form Fields: ${jsonEncode(fields)}');
       List<String> existingFileIds = [];
-      // ✅ Handle File Uploads (New + Existing)
-      // ✅ Handle File Uploads (New + Existing)
+
       for (var entry in _uploadedFiles.entries) {
         final docType = entry.key;
         final files = entry.value;
@@ -704,6 +945,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         return 'pr_rectum_image';
       case 'pa_abdomen_image':
         return 'pa_abdomen_image';
+      case 'mri_report':
+        return 'mri_report';
+      case 'pet_scan':
+        return 'pet_scan';
+      case 'pft_report':
+        return 'pft_report';
       default:
         return null;
     }
@@ -735,7 +982,17 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       if (kIsWeb) {
         FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+          allowedExtensions: [
+            'pdf',
+            'jpg',
+            'jpeg',
+            'png',
+            'heic',
+            'heif',
+            'mp4',
+            'mov',
+            'avi'
+          ],
           withData: true,
         );
 
@@ -832,19 +1089,11 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     if (_heightController.text.isNotEmpty &&
         _weightController.text.isNotEmpty) {
       try {
-        List<String> parts = _heightController.text.split('.');
-        int feet = int.parse(parts[0]);
-        int inches = parts.length > 1 ? int.parse(parts[1]) : 0;
-
-        if (inches >= 12) {
-          _bmiController.text = 'Invalid inches';
-          return;
-        }
-
-        double heightInMeters = ((feet * 12) + inches) * 0.0254;
+        double heightCm = double.parse(_heightController.text);
         double weightKg = double.parse(_weightController.text);
 
-        if (heightInMeters > 0 && weightKg > 0) {
+        if (heightCm > 0 && weightKg > 0) {
+          double heightInMeters = heightCm / 100;
           double bmi = weightKg / (heightInMeters * heightInMeters);
           _bmiController.text = bmi.toStringAsFixed(1);
         } else {
@@ -870,6 +1119,103 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     }
   }
 
+  Future<void> _selectDatexray(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dateofXRayController,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _dateofXRayController) {
+      setState(() => _dateofXRayController = picked);
+    }
+  }
+
+  Future<void> _selectDateGeneric({
+    required BuildContext context,
+    required DateTime currentDate,
+    required Function(DateTime) onDateSelected,
+  }) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != currentDate) {
+      setState(() => onDateSelected(picked));
+    }
+  }
+
+  Future<void> _selectDateGeneric1({
+    required BuildContext context,
+    required DateTime currentDate,
+    required Function(DateTime) onDateSelected,
+  }) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2050),
+    );
+    if (picked != null && picked != currentDate) {
+      setState(() => onDateSelected(picked));
+    }
+  }
+
+  Widget buildDatePickerField({
+    required String label,
+    required DateTime selectedDate,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  Icon(Icons.calendar_today, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Helper functions
   String _ensureString(String? value) => value?.trim() ?? '';
   String _ensureNumber(String? value) =>
@@ -891,10 +1237,17 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       case 'jpeg':
       case 'png':
       case 'webp':
+      case 'heif':
+      case "heic":
         return Icons.image;
       case 'doc':
       case 'docx':
         return Icons.description;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return Icons.videocam;
+
       default:
         return Icons.insert_drive_file;
     }
@@ -1041,7 +1394,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8.0),
             child: Text(
-              'Date',
+              'Consultation Date',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1069,6 +1422,56 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 children: [
                   Text(
                     '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  Icon(Icons.calendar_today, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+//xraydatewidet
+  Widget _buildDatePickerFieldxray() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              'Date of X-Ray',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: () => _selectDatexray(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_dateofXRayController.day}/${_dateofXRayController.month}/${_dateofXRayController.year}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   Icon(Icons.calendar_today, color: AppColors.primary),
@@ -1263,8 +1666,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
   void _showFilePreview(BuildContext context, String filePath, String fileType,
       {bool isNetwork = false}) async {
-    if (['jpg', 'jpeg', 'png', "webp"].contains(fileType.toLowerCase())) {
-      // Image Preview
+    final imageTypes = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
+    final videoTypes = {'mp4', 'mov', 'avi'};
+
+    final fileExtension = fileType.toLowerCase();
+
+    if (imageTypes.contains(fileExtension)) {
       showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -1276,79 +1683,162 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 minScale: 0.5,
                 maxScale: 3.0,
                 child: isNetwork
-                    ? Image.network(
-                        filePath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Text('Failed to load image',
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                      )
+                    ? Image.network(filePath, fit: BoxFit.contain)
                     : (kIsWeb
                         ? Image.memory(
                             base64Decode(filePath.split(',').last),
                             fit: BoxFit.contain,
                           )
-                        : Image.file(
-                            File(filePath),
-                            fit: BoxFit.contain,
-                          )),
+                        : Image.file(File(filePath), fit: BoxFit.contain)),
               ),
               Positioned(
                 top: 10,
                 right: 10,
-                child: IconButton(
-                  icon: Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      child: IconButton(
+                        icon: Icon(Icons.download, color: Colors.white),
+                        onPressed: () async {
+                          final fileName =
+                              'document_${DateTime.now().millisecondsSinceEpoch}';
+                          if (isNetwork) {
+                            await FileDownloader.downloadFile(
+                              context: context,
+                              url: filePath,
+                              fileName: fileName,
+                              fileType: fileExtension,
+                            );
+                          } else if (kIsWeb) {
+                            final bytes =
+                                base64Decode(filePath.split(',').last);
+                            await FileDownloader.downloadFile(
+                              context: context,
+                              url: '',
+                              fileName: fileName,
+                              fileType: fileExtension,
+                              bytes: bytes,
+                            );
+                          } else {
+                            await FileDownloader.downloadFile(
+                              context: context,
+                              url: filePath,
+                              fileName: fileName,
+                              fileType: fileExtension,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    CircleAvatar(
+                      child: IconButton(
+                        icon: Icon(Icons.close, color: Colors.blueAccent),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       );
-    } else if (fileType.toLowerCase() == 'pdf') {
-      // PDF Preview
-      if (kIsWeb) {
-        // Web: Use url_launcher instead of html.window.open
-        if (await canLaunchUrl(Uri.parse(filePath))) {
-          await launchUrl(Uri.parse(filePath),
-              mode: LaunchMode.externalApplication);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not open PDF')),
-          );
-        }
-      } else {
-        // Mobile: Use Syncfusion PDF Viewer
-        try {
-          String localPath = filePath;
-          if (isNetwork) {
-            final dir = await getTemporaryDirectory();
-            final file = File('${dir.path}/temp.pdf');
-            final response = await http.get(Uri.parse(filePath));
-            await file.writeAsBytes(response.bodyBytes);
-            localPath = file.path;
-          }
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Scaffold(
-                appBar: AppBar(title: Text('PDF Preview')),
-                body: SfPdfViewer.file(File(localPath)),
+    } else if (videoTypes.contains(fileExtension) && isNetwork) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            children: [
+              VideoPlayerWidget(
+                videoUrl: filePath,
+                isLocalFile: !isNetwork,
+                isNetwork: isNetwork,
               ),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: CircleAvatar(
+                  child: IconButton(
+                    icon: Icon(Icons.close, color: Colors.blueAccent),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (fileExtension == 'pdf') {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('PDF Options'),
+          content: Text('Would you like to view or download the PDF?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
             ),
-          );
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to load PDF: ${e.toString()}')),
-          );
-        }
-      }
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                if (isNetwork) {
+                  await launchUrl(Uri.parse(filePath));
+                } else if (kIsWeb) {
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   SnackBar(
+                  //     content: Text(
+                  //         'Right-click on the displayed PDF and select "Save as"'),
+                  //   ),
+                  // );
+                } else {
+                  await OpenFile.open(filePath);
+                }
+              },
+              child: Text('View'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final fileName =
+                    'document_${DateTime.now().millisecondsSinceEpoch}';
+                if (isNetwork) {
+                  await FileDownloader.downloadFile(
+                    context: context,
+                    url: filePath,
+                    fileName: fileName,
+                    fileType: 'pdf',
+                  );
+                } else if (kIsWeb) {
+                  final bytes = base64Decode(filePath.split(',').last);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'Right-click on the displayed PDF and select "Save as"'),
+                    ),
+                  );
+                } else {
+                  await FileDownloader.downloadFile(
+                    context: context,
+                    url: filePath,
+                    fileName: fileName,
+                    fileType: 'pdf',
+                  );
+                }
+              },
+              child: Text('Download'),
+            ),
+          ],
+        ),
+      );
     } else {
-      log('Preview not available for $fileType files');
+      log('Preview not available for $fileExtension files');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Preview not available for $fileType files')),
+        SnackBar(
+            content: Text('Preview not available for $fileExtension files')),
       );
     }
   }
@@ -1538,7 +2028,16 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                         title: const Text('Choose from Gallery'),
                       ),
                     ),
+                    PopupMenuItem(
+                      value: 'file',
+                      child: ListTile(
+                        leading: Icon(Icons.insert_drive_file,
+                            color: AppColors.primary),
+                        title: const Text('Select File'),
+                      ),
+                    ),
                   ],
+
                   // Show file option on both web and mobile
                   PopupMenuItem(
                     value: 'file',
@@ -1612,8 +2111,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           ),
         ],
       ),
-     
-     
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1775,14 +2272,13 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           label: 'Referral By',
         ),
         _buildCustomDropdown<String>(
-          value: _selectedLocationName, // Show the name, not the ID
+          value: _selectedLocationName.toString(), // Show the name, not the ID
           items: _locations.map((loc) => loc['location'].toString()).toList(),
           label: 'Location',
           onChanged: (value) {
             if (value != null) {
               final selectedLoc = _locations.firstWhere(
                 (loc) => loc['location'] == value,
-                orElse: () => {'id': '1', 'location': 'Unknown'},
               );
               setState(() {
                 _selectedLocationName = value;
@@ -1790,7 +2286,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
               });
             }
           },
-        )
+        ),
+        if (_selectedLocationId == "7")
+          _buildCustomInput(
+            controller: _otherLocationController,
+            label: 'Other Location',
+          ),
       ],
     );
   }
@@ -1809,9 +2310,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             Expanded(
               child: _buildCustomInput(
                 controller: _heightController,
-                label: 'Height (ft.in)',
-                hintText: 'e.g. 5.11 for 5ft 11in',
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                label: 'Height (cm)',
+                hintText: 'e.g. 180 for 180cm',
+                keyboardType: TextInputType.number,
                 onChanged: (_) => _calculateBMI(),
               ),
             ),
@@ -1826,6 +2327,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             ),
           ],
         ),
+
         _buildCustomInput(
           controller: _bmiController,
           label: 'BMI',
@@ -2297,42 +2799,334 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSectionHeader('Reports & Documents'),
+        _buildSectionHeader('Blood Report'),
         const SizedBox(height: 20),
-        _buildEnhancedUploadCard(
-          title: 'Blood Reports',
-          files: _uploadedFiles['blood_reports'] ?? [],
-          fileType: 'blood_reports',
+
+        _buildCustomInput(
+          controller: _hemoglobinController,
+          label: 'Heamoglobin',
         ),
-        const SizedBox(height: 16),
+        _buildCustomInput(
+          controller: _totalLeucocyteCountController,
+          label: 'Total Leucocyte Count',
+        ),
+        _buildCustomInput(
+          controller: _esrController,
+          label: 'ESR',
+        ),
+        _buildCustomInput(
+          controller: _plateletsController,
+          label: 'Platelets',
+        ),
+        _buildCustomInput(
+          controller: _urineRoutineController,
+          label: 'Urine Routine',
+        ),
+        _buildCustomInput(
+          controller: _urineCultureController,
+          label: 'Urine Culture',
+        ),
+        _buildCustomInput(
+          controller: _bunController,
+          label: 'BUN',
+        ),
+        _buildCustomInput(
+          controller: _serumCreatinineController,
+          label: 'Serum Creatinine',
+        ),
+        _buildCustomInput(
+          controller: _serumElectrolytesController,
+          label: 'Serum Electrolytes',
+        ),
+        _buildCustomInput(
+          controller: _lftController,
+          label: 'LFT',
+        ),
+        _buildCustomInput(
+          controller: _prothrombinTimController,
+          label: 'Prothrombin Time/INR',
+        ),
+
+        _buildCustomInput(
+          controller: _bloodSugarFastingController,
+          label: 'Blood Sugar Fasting',
+        ),
+        _buildCustomInput(
+          controller: _bloodSugarPostPrandialController,
+          label: 'Blood Sugar Post Prandial',
+        ),
+        _buildCustomInput(
+          controller: _hBA1CController,
+          label: 'HBA1C',
+        ),
+        _buildCustomInput(
+          controller: _hBSAGController,
+          label: 'HBSAG',
+        ),
+        _buildCustomInput(
+          controller: _hivController,
+          label: 'HIV',
+        ),
+        _buildCustomInput(
+          controller: _hcvController,
+          label: 'HCV',
+        ),
+        _buildSectionHeader('Thyroid Function test:'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _t3Controller,
+          label: 'T3',
+        ),
+        _buildCustomInput(
+          controller: _t4Controller,
+          label: 'T4',
+        ),
+        _buildCustomInput(
+          controller: _tshController,
+          label: 'TSH',
+        ),
+        _buildCustomInput(
+          controller: _miscController,
+          label: 'Misc',
+        ),
+
+        // _buildEnhancedUploadCard(
+        //   title: 'Blood Reports',
+        //   files: _uploadedFiles['blood_reports'] ?? [],
+        //   fileType: 'blood_reports',
+        // ),
+        // const SizedBox(height: 16),
+        _buildSectionHeader('X-Ray Reports:'),
+        const SizedBox(height: 20),
+
+        _buildCustomInput(
+          controller: _xRayLaboratoryController,
+          label: 'X-Ray Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of X-Ray',
+          selectedDate: _dateofXRayController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofXRayController,
+            onDateSelected: (picked) => _dateofXRayController = picked,
+          ),
+        ),
+
         _buildEnhancedUploadCard(
           title: 'X-Ray Reports',
           files: _uploadedFiles['xray_report'] ?? [],
           fileType: 'xray_report',
         ),
-        const SizedBox(height: 16),
+
+        _buildCustomInput(
+          controller: _xRayFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+        _buildSectionHeader('CT Scan Reports:'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _ctscanLaboratoryController,
+          label: 'CT Scan Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of CT Scan',
+          selectedDate: _dateofctscanController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofctscanController,
+            onDateSelected: (picked) => _dateofctscanController = picked,
+          ),
+        ),
+
         _buildEnhancedUploadCard(
           title: 'CT Scan Reports',
           files: _uploadedFiles['ct_scan_report'] ?? [],
           fileType: 'ct_scan_report',
         ),
-        const SizedBox(height: 16),
+
+        _buildCustomInput(
+          controller: _ctscanFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+        _buildSectionHeader('ECG Reports:'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _ecgLaboratoryController,
+          label: 'ECG Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of ECG',
+          selectedDate: _dateofecgController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofecgController,
+            onDateSelected: (picked) => _dateofecgController = picked,
+          ),
+        ),
+
         _buildEnhancedUploadCard(
           title: 'ECG Reports',
           files: _uploadedFiles['ecg_report'] ?? [],
           fileType: 'ecg_report',
         ),
-        const SizedBox(height: 16),
+        _buildCustomInput(
+          controller: _ecgFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+        //mri
+        _buildSectionHeader('MRI :'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _mriLaboratoryController,
+          label: 'MRI Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of MRI',
+          selectedDate: _dateofmriController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofmriController,
+            onDateSelected: (picked) => _dateofmriController = picked,
+          ),
+        ),
+
         _buildEnhancedUploadCard(
-          title: 'Echocardiogram Reports',
+          title: 'MRI Reports',
+          files: _uploadedFiles['mri_report'] ?? [],
+          fileType: 'mri_report',
+        ),
+        _buildCustomInput(
+          controller: _mriFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+
+        //PET SCAN
+
+        _buildSectionHeader('PET SCAN :'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _petscanLaboratoryController,
+          label: 'PET SCAN Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of PET SCAN ',
+          selectedDate: _dateofpetscanController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofpetscanController,
+            onDateSelected: (picked) => _dateofpetscanController = picked,
+          ),
+        ),
+
+        _buildEnhancedUploadCard(
+          title: 'PET SCAN',
+          files: _uploadedFiles['pet_scan'] ?? [],
+          fileType: 'pet_scan',
+        ),
+        _buildCustomInput(
+          controller: _petscanFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+//Echocardiogram
+        _buildSectionHeader('2D Echo Reports:'),
+        const SizedBox(height: 20),
+        _buildCustomInput(
+          controller: _a2dLaboratoryController,
+          label: '2D Echo Laboratory',
+        ),
+        buildDatePickerField(
+          label: 'Date of 2D Echo',
+          selectedDate: _dateofe2dController,
+          onTap: () => _selectDateGeneric(
+            context: context,
+            currentDate: _dateofe2dController,
+            onDateSelected: (picked) => _dateofe2dController = picked,
+          ),
+        ),
+        _buildEnhancedUploadCard(
+          title: '2D Echo Reports',
           files: _uploadedFiles['echocardiagram_report'] ?? [],
           fileType: 'echocardiagram_report',
         ),
-        const SizedBox(height: 16),
+        _buildCustomInput(
+          controller: _a2dFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+        //pft
+        _buildSectionHeader('PFT Reports:'),
+        const SizedBox(height: 20),
+
+        _buildCustomInput(
+          controller: _pftLaboratoryController,
+          label: 'PFT Laboratory',
+        ),
+        buildDatePickerField(
+            label: 'Date of PFT',
+            selectedDate: _dateofpftController,
+            onTap: () => _selectDateGeneric(
+                  context: context,
+                  currentDate: _dateofpftController,
+                  onDateSelected: (picked) => _dateofpftController = picked,
+                )),
+        _buildEnhancedUploadCard(
+          title: 'PFT Reports',
+          files: _uploadedFiles['pft_report'] ?? [],
+          fileType: 'pft_report',
+        ),
+        _buildCustomInput(
+          controller: _pftFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
+        ),
+
+        //Miscellaneous
+        _buildSectionHeader('Miscellaneous Reports:'),
+        const SizedBox(height: 20),
+
+        _buildCustomInput(
+          controller: _miscLaboratoryController,
+          label: 'Miscellaneous Laboratory',
+        ),
+        buildDatePickerField(
+            label: 'Date of Miscellaneous',
+            selectedDate: _dateofmiscController,
+            onTap: () => _selectDateGeneric(
+                  context: context,
+                  currentDate: _dateofmiscController,
+                  onDateSelected: (picked) => _dateofmiscController = picked,
+                )),
         _buildEnhancedUploadCard(
           title: 'Miscellaneous Reports',
           files: _uploadedFiles['misc_report'] ?? [],
           fileType: 'misc_report',
+        ),
+        _buildCustomInput(
+          controller: _miscFindingController,
+          label: 'Findings',
+          minLines: 3,
+          maxLines: 5,
+          enableNewLines: true,
         ),
         const SizedBox(height: 16),
         _buildEnhancedUploadCard(
@@ -2344,11 +3138,21 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         _buildSectionHeader('Doctor Notes', level: 2),
         _buildCustomInput(
           controller: _doctorNotesController,
-          label: 'Clinical findings and recommendations',
+          label: 'Diagnosis findings and recommendations',
           minLines: 5,
           maxLines: 10,
           enableNewLines: true,
         ),
+
+        buildDatePickerField(
+            label: 'Follow Up Date',
+            selectedDate: _followupdateFindingController,
+            onTap: () => _selectDateGeneric1(
+                  context: context,
+                  currentDate: _followupdateFindingController,
+                  onDateSelected: (picked) =>
+                      _followupdateFindingController = picked,
+                )),
       ],
     );
   }
@@ -2356,6 +3160,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.medicalBlue.withOpacity(.2),
       appBar: AppBar(
         title: const Text('Patient Record'),
         leading: GestureDetector(
@@ -2492,8 +3297,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                     ],
                   ),
                 ),
-             
-             
               ],
             ),
           ),

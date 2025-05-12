@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For PointerDeviceKind
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/constants/base_url.dart';
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import '../utils/colors.dart';
@@ -41,7 +43,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       };
 
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/get_allpatients'),
+        Uri.parse('$localurl/get_allpatients'),
         headers: headers,
       );
 
@@ -69,6 +71,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   List<Map<String, dynamic>> _transformApiData(List<dynamic> apiData) {
     return apiData.map((patient) {
       return {
+        'id': patient['id'] ?? "",
         'phid': patient['phid'] ?? 'N/A',
         'name': '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}',
         'age': patient['age']?.toString() ?? 'N/A',
@@ -152,6 +155,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
     final isTablet = screenWidth >= 600;
 
     return Scaffold(
+      backgroundColor: AppColors.medicalBlue.withOpacity(.2),
       appBar: AppBar(
         title: const Text('Recent Patients'),
         backgroundColor: AppColors.primary,
@@ -162,7 +166,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
         ),
       ),
       body: Container(
-        color: AppColors.background,
+        // color: AppColors.background,
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -308,233 +312,305 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                     itemCount: filteredPatients.length,
                                     itemBuilder: (context, index) {
                                       final patient = filteredPatients[index];
+                                      log(patient.toString());
                                       return MouseRegion(
-                                        cursor: SystemMouseCursors.click,
-                                        child: Container(
-                                          // color: Colors.white,
-                                          margin: EdgeInsets.only(
-                                              bottom: isDesktop ? 16 : 12),
-                                          child: Card(
-                                            color: Colors.white,
-                                            elevation: 2,
-                                            shape: RoundedRectangleBorder(
+                                          cursor: SystemMouseCursors.click,
+                                          child: Container(
+                                            margin: EdgeInsets.only(
+                                                bottom: isDesktop ? 16 : 12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(16),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black12,
+                                                  blurRadius: 8,
+                                                  offset: Offset(0, 4),
+                                                ),
+                                              ],
                                             ),
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              onTap: () {
-                                                setState(() {
-                                                  Global.status = '2';
-                                                  Global.patient_id =
-                                                      patient['patient_id'];
-                                                  Global.phid = patient['phid'];
-                                                });
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          //     PatientFormScreen(
-                                                          //   firstName: patient['name']
-                                                          //       .split(' ')[0],
-                                                          //   lastName: patient['name']
-                                                          //               .split(' ')
-                                                          //               .length >
-                                                          //           1
-                                                          //       ? patient['name']
-                                                          //           .split(' ')[1]
-                                                          //       : '',
-                                                          //   phone: patient['phone'],
-                                                          //   patientExist: 2,
-                                                          //   phid: patient['phid'],
-                                                          //   patientId:
-                                                          //       patient['patient_id'],
-                                                          // ),
-
-                                                          PostOperationPage()),
-                                                );
-                                              },
-                                              child: Padding(
-                                                padding: EdgeInsets.all(
-                                                    isDesktop ? 24 : 16),
-                                                child: Row(
-                                                  children: [
-                                                    // Gender Icon
-                                                    Container(
-                                                      padding: EdgeInsets.all(
-                                                          isDesktop ? 14 : 10),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.primary
-                                                            .withOpacity(0.1),
-                                                        shape: BoxShape.circle,
+                                            child: Padding(
+                                              padding: EdgeInsets.all(isDesktop
+                                                  ? 20
+                                                  : 14), // reduced padding
+                                              child: Column(
+                                                children: [
+                                                  Row(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      // Icon
+                                                      Container(
+                                                        padding: EdgeInsets.all(
+                                                            isDesktop ? 12 : 8),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: AppColors
+                                                              .primary
+                                                              .withOpacity(0.1),
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                        child: Icon(
+                                                          patient['gender'],
+                                                          color:
+                                                              AppColors.primary,
+                                                          size: isDesktop
+                                                              ? 24
+                                                              : 20,
+                                                        ),
                                                       ),
-                                                      child: Icon(
-                                                        patient['gender'],
-                                                        color:
-                                                            AppColors.primary,
-                                                        size:
-                                                            isDesktop ? 28 : 24,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                        width: isDesktop
-                                                            ? 20
-                                                            : 16),
-                                                    // Patient Details
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceBetween,
-                                                            children: [
-                                                              Flexible(
-                                                                child: Text(
+                                                      SizedBox(
+                                                          width: isDesktop
+                                                              ? 16
+                                                              : 12),
+                                                      // Info
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            // Name and visit
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                Flexible(
+                                                                  child: Text(
+                                                                    patient[
+                                                                        'name'],
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontSize:
+                                                                          isDesktop
+                                                                              ? 18
+                                                                              : 14,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w600,
+                                                                    ),
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  ),
+                                                                ),
+                                                                Text(
                                                                   patient[
-                                                                      'name'],
+                                                                      'lastVisit'],
                                                                   style:
                                                                       TextStyle(
                                                                     fontSize:
                                                                         isDesktop
-                                                                            ? 20
-                                                                            : 16,
+                                                                            ? 13
+                                                                            : 11,
+                                                                    color: AppColors
+                                                                        .textSecondary,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            SizedBox(height: 6),
+                                                            // PHID, Age, Phone
+                                                            Wrap(
+                                                              spacing: 16,
+                                                              runSpacing: 4,
+                                                              children: [
+                                                                Text(
+                                                                  'PHID: ${patient['phid']}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        isDesktop
+                                                                            ? 13
+                                                                            : 11,
+                                                                    color: AppColors
+                                                                        .primary,
                                                                     fontWeight:
                                                                         FontWeight
-                                                                            .w600,
+                                                                            .w500,
                                                                   ),
-                                                                  overflow:
-                                                                      TextOverflow
-                                                                          .ellipsis,
                                                                 ),
-                                                              ),
-                                                              Text(
-                                                                patient[
-                                                                    'lastVisit'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize:
-                                                                      isDesktop
-                                                                          ? 14
-                                                                          : 12,
-                                                                  color: AppColors
-                                                                      .textSecondary,
+                                                                Text(
+                                                                  'Age: ${patient['age']}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        isDesktop
+                                                                            ? 13
+                                                                            : 11,
+                                                                    color: AppColors
+                                                                        .textSecondary,
+                                                                  ),
                                                                 ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          SizedBox(
-                                                              height: isDesktop
-                                                                  ? 12
-                                                                  : 6),
-                                                          Row(
-                                                            children: [
-                                                              Text(
-                                                                'PHID: ${patient['phid']}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize:
-                                                                      isDesktop
-                                                                          ? 14
-                                                                          : 12,
-                                                                  color: AppColors
-                                                                      .primary,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
+                                                                Text(
+                                                                  'Phone: ${patient['phone']}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        isDesktop
+                                                                            ? 13
+                                                                            : 11,
+                                                                    color: AppColors
+                                                                        .textSecondary,
+                                                                  ),
                                                                 ),
-                                                              ),
-                                                              SizedBox(
-                                                                  width:
-                                                                      isDesktop
-                                                                          ? 20
-                                                                          : 12),
-                                                              Text(
-                                                                'Age: ${patient['age']}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize:
-                                                                      isDesktop
-                                                                          ? 14
-                                                                          : 12,
-                                                                  color: AppColors
-                                                                      .textSecondary,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          SizedBox(
-                                                              height: isDesktop
-                                                                  ? 8
-                                                                  : 4),
-                                                          Text(
-                                                            'Phone: ${patient['phone']}',
-                                                            style: TextStyle(
-                                                              fontSize:
-                                                                  isDesktop
-                                                                      ? 14
-                                                                      : 12,
-                                                              color: AppColors
-                                                                  .textSecondary,
+                                                              ],
                                                             ),
-                                                          ),
-                                                          if (isDesktop ||
-                                                              isTablet) ...[
-                                                            SizedBox(height: 8),
-                                                            Text(
-                                                              patient['clinic'],
-                                                              style: TextStyle(
-                                                                fontSize:
-                                                                    isDesktop
-                                                                        ? 14
-                                                                        : 12,
-                                                                color: AppColors
-                                                                    .primary,
-                                                                fontStyle:
-                                                                    FontStyle
-                                                                        .italic,
+                                                            if (isDesktop ||
+                                                                isTablet)
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .only(
+                                                                        top:
+                                                                            4.0),
+                                                                child: Text(
+                                                                  patient[
+                                                                      'clinic'],
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        isDesktop
+                                                                            ? 13
+                                                                            : 11,
+                                                                    fontStyle:
+                                                                        FontStyle
+                                                                            .italic,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                  ),
+                                                                ),
                                                               ),
-                                                            ),
                                                           ],
-                                                        ],
+                                                        ),
                                                       ),
-                                                    ),
-                                                    if (isDesktop || isTablet)
-                                                      Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.chevron_right,
-                                                            color: AppColors
-                                                                .textSecondary,
-                                                            size: isDesktop
-                                                                ? 32
-                                                                : 24,
-                                                          ),
-                                                          // GestureDetector(
-                                                          //   onTap: () {},
-                                                          //   child: Icon(
-                                                          //     Icons
-                                                          //         .chevron_right,
-                                                          //     color: AppColors
-                                                          //         .textSecondary,
-                                                          //     size: isDesktop
-                                                          //         ? 32
-                                                          //         : 24,
-                                                          //   ),
-                                                          // ),
-                                                        ],
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 12),
+                                                  Divider(
+                                                      color:
+                                                          Colors.grey.shade300,
+                                                      thickness: 0.8),
+                                                  SizedBox(height: 6),
+
+                                                  // Inline Buttons - Compact
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    children: [
+                                                      TextButton.icon(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            Global.status = '2';
+                                                            Global.patient_id =
+                                                                patient[
+                                                                    'patient_id'];
+                                                            Global.phid =
+                                                                patient['phid'];
+                                                          });
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  PatientFormScreen(
+                                                                firstName: patient[
+                                                                        'name']
+                                                                    .split(
+                                                                        ' ')[0],
+                                                                lastName: patient['name']
+                                                                            .split(
+                                                                                ' ')
+                                                                            .length >
+                                                                        1
+                                                                    ? patient[
+                                                                            'name']
+                                                                        .split(
+                                                                            ' ')[1]
+                                                                    : '',
+                                                                phone: patient[
+                                                                    'phone'],
+                                                                patientExist: 2,
+                                                                phid: patient[
+                                                                    'phid'],
+                                                                patientId: patient[
+                                                                    'patient_id'],
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        icon: Icon(Icons.person,
+                                                            size: 16),
+                                                        label: Text("Details",
+                                                            style: TextStyle(
+                                                                fontSize: 12)),
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              AppColors.primary,
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      12,
+                                                                  vertical: 6),
+                                                          tapTargetSize:
+                                                              MaterialTapTargetSize
+                                                                  .shrinkWrap,
+                                                        ),
                                                       ),
-                                                  ],
-                                                ),
+                                                      SizedBox(width: 8),
+                                                      TextButton.icon(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            Global.status = '2';
+                                                            Global.patient_id =
+                                                                patient[
+                                                                    'patient_id'];
+                                                            Global.phid =
+                                                                patient['phid'];
+                                                          });
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  PostOperationPage(
+                                                                patient_id:
+                                                                    patient[
+                                                                        'id'],
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        icon: Icon(
+                                                            Icons
+                                                                .medical_services,
+                                                            size: 16),
+                                                        label: Text("Post-Op",
+                                                            style: TextStyle(
+                                                                fontSize: 12)),
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              AppColors.primary,
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      12,
+                                                                  vertical: 6),
+                                                          tapTargetSize:
+                                                              MaterialTapTargetSize
+                                                                  .shrinkWrap,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                      );
+                                          ));
                                     },
                                   ),
                                 ),

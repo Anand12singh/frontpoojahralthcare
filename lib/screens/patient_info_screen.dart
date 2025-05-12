@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/constants/base_url.dart';
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_list.dart';
 import '../utils/colors.dart';
@@ -107,12 +108,10 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     try {
       final headers = {
         'Accept': 'application/json',
-        'Cookie':
-            'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
       };
 
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/get_allpatients'),
+        Uri.parse('$localurl/get_allpatients'),
         headers: headers,
       );
 
@@ -155,7 +154,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       };
 
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        Uri.parse('$localurl/checkpatientinfo'),
         headers: headers,
         body: json.encode({
           "first_name": _nameController.text.trim(),
@@ -660,7 +659,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     final isLargeScreen = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.medicalBlue.withOpacity(.2),
       appBar: AppBar(
         title: const Text('Patient Registration'),
         centerTitle: true,

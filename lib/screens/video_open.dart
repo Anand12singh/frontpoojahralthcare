@@ -35,8 +35,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Future<void> _initializeController() async {
     try {
-      // Dispose previous controller if exists
-      if (_controller != null) {
+      // Dispose old controller only if it's already initialized
+      if (_isInitialized) {
         await _controller.dispose();
       }
 
@@ -46,7 +46,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _errorMessage = '';
       });
 
-      // Initialize the correct controller type
       if (widget.isLocalFile) {
         _controller = VideoPlayerController.file(File(widget.videoUrl));
       } else {
@@ -58,10 +57,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             : VideoPlayerController.network(widget.videoUrl);
       }
 
-      // Add error listener
       _controller.addListener(_videoListener);
 
-      // Initialize and update state
       await _controller.initialize();
 
       if (mounted) {

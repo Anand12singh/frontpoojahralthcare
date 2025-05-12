@@ -87,7 +87,7 @@ Widget buildCustomInput({
                     const BorderSide(color: AppColors.error, width: 1.5),
               ),
               filled: true,
-              fillColor: enabled ? Colors.white : AppColors.background,
+              fillColor: enabled ? Colors.white : AppColors.primaryLight,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: maxLines > 1 ? 16 : 14,

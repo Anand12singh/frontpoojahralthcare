@@ -5,11 +5,11 @@ import '../utils/colors.dart';
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
-  final String label;
+  final String? label;
   final String? hintText;
   final String? helperText;
   final String? errorText;
-  final IconData prefixIcon;
+  final IconData? prefixIcon;
   final Widget? prefix;
   final Widget? suffixIcon;
   final bool obscureText;
@@ -80,11 +80,11 @@ class CustomTextField extends StatefulWidget {
   const CustomTextField({
     Key? key,
     this.controller,
-    required this.label,
+    this.label,
     this.hintText,
     this.helperText,
     this.errorText,
-    required this.prefixIcon,
+    this.prefixIcon,
     this.prefix,
     this.suffixIcon,
     this.obscureText = false,
@@ -266,7 +266,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     final effectiveHintStyle = widget.hintStyle ??
         TextStyle(
-          color: AppColors.textSecondary.withOpacity(0.4),
+          color: AppColors.hinttext,
         );
 
     final effectiveStyle = widget.style ??
@@ -320,12 +320,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
         hintStyle: effectiveHintStyle,
         helperStyle: widget.helperStyle,
         errorStyle: widget.errorStyle,
-        prefixIcon: widget.prefix ??
-            Icon(
-              widget.prefixIcon,
-              color: AppColors.primary.withOpacity(0.8),
-              size: 20,
-            ),
+        prefixIcon: widget.prefixIcon != null
+            ? Icon(
+          widget.prefixIcon,
+          color: AppColors.primary.withOpacity(0.8),
+          size: 20,
+        )
+            : null,
+
         prefixIconConstraints: widget.prefixIconConstraints,
         suffixIcon: effectiveSuffixIcon,
         suffixIconConstraints: widget.suffixIconConstraints,

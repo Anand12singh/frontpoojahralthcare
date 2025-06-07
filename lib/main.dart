@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
+import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,6 +20,12 @@ class MyApp extends StatelessWidget {
       title: 'Pooja Healthcare',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        fontFamily: 'Plus Jakarta Sans',
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+        primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
+
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
         useMaterial3: false,
@@ -44,6 +53,8 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/patientInfo': (context) => const PatientInfoScreen(),
+        '/HomeScreen': (context) => const HomeScreen(),
+        '/addPatient': (context) => const PatientRegistrationPage(),
       },
     );
   }

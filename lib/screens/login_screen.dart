@@ -357,11 +357,14 @@ class _LoginScreenState extends State<LoginScreen>
         ),
 
         const SizedBox(height: 14),
-        Animatedbutton(
-          isLoading: _isLoading,
-          onPressed: _login,
-          backgroundColor: AppColors.secondary,
-          shadowColor: AppColors.primary,
+        SizedBox(
+          width: double.infinity,
+          child: Animatedbutton(
+            isLoading: _isLoading,
+            onPressed: _login,
+            backgroundColor: AppColors.secondary,
+            shadowColor: AppColors.primary,
+          ),
         ),
 
 

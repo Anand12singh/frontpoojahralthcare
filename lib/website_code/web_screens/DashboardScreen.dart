@@ -3,6 +3,7 @@ import 'package:poojaheakthcare/utils/colors.dart';
 
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
+import 'PatientDataTabsScreen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -70,8 +71,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               phoneController: phoneController,
               isLoading: _isLoading,
               onPressed: () {
-                // Handle add patient logic here
-                // Then close the modal
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PatientDataTabsScreen()),
+                );
+
                 Navigator.pop(context);
               },
             ),
@@ -437,12 +441,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           _buildField('Phone Number', 'Enter Phone Number', phoneController),
           const SizedBox(height: 24),
-          Animatedbutton(
-            title: 'Add Patient',
-            isLoading: isLoading,
-            onPressed: onPressed,
-            backgroundColor: AppColors.secondary,
-            shadowColor: AppColors.primary,
+          Row(
+            spacing: 10,
+            children: [
+              Expanded(
+
+                child: Animatedbutton(
+
+                  title: 'Discard',
+                  isLoading: isLoading,
+                  onPressed: onPressed,
+                  titlecolor:AppColors.secondary,
+                  backgroundColor: Colors.white,
+                  borderColor: AppColors.secondary,
+
+                  shadowColor: AppColors.primary,
+                ),
+              ),
+
+
+              Expanded(
+
+                child: Animatedbutton(
+
+                  title: 'Add Patient',
+                  isLoading: isLoading,
+                  onPressed: onPressed,
+                  backgroundColor: AppColors.secondary,
+                  shadowColor: AppColors.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),

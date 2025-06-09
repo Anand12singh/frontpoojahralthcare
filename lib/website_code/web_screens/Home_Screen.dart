@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../utils/colors.dart';
 import 'DashboardScreen.dart';
+import 'PatientDataTabsScreen.dart';
 import 'PatientRegistrationPage.dart';
+import 'Patient_Registration.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> pages = [
     const DashboardScreen(),
-    const PatientRegistrationPage(),
+    const PatientDataTabsScreen(),
     // Add more screens here
   ];
 

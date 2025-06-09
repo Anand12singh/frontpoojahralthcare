@@ -27,11 +27,7 @@ class Animatedbutton extends StatelessWidget {
         boxShadow: isLoading
             ? []
             : [
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
+
         ],
       ),
       child: ElevatedButton(
@@ -50,14 +46,13 @@ class Animatedbutton extends StatelessWidget {
           height: 24,
           child: CircularProgressIndicator(
             strokeWidth: 3,
-            color: Colors.white,
           ),
         )
             : Text(
           title,
           style: const TextStyle(
             fontSize: 16,
-            letterSpacing: 1.2,
+          //  letterSpacing: 1.2,
           ),
         ),
       ),

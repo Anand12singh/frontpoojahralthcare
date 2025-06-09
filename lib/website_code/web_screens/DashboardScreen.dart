@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 
-class DashboardScreen extends StatelessWidget {
+import '../../widgets/AnimatedButton.dart';
+import '../../widgets/custom_text_field.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
-  // Sample data for bookmarks using map
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
   final List<Map<String, String>> bookmarksData = const [
     {
       'patientName': 'Gretchen O\'Kon, M/31',
@@ -42,7 +53,33 @@ class DashboardScreen extends StatelessWidget {
       'summary': 'Lorem Ipsum Lorem Ipsum'
     },
   ];
+  bool _isLoading = false;
 
+  void _showAddPatientModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Center(
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            child: _addPatient(
+              firstNameController: firstNameController,
+              lastNameController: lastNameController,
+              phoneController: phoneController,
+              isLoading: _isLoading,
+              onPressed: () {
+                // Handle add patient logic here
+                // Then close the modal
+                Navigator.pop(context);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FC),
@@ -51,34 +88,53 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Welcome Back, Dr. Pooja",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Here's what's happening with your patients today.",
-                  style: TextStyle(fontSize: 16, color: AppColors.greycolor),
-                ),
-                SizedBox(height: 20),
-              ],
-            ),
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome Back, Dr. Pooja",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Here's what's happening with your patients today.",
+                      style: TextStyle(fontSize: 16, color: AppColors.greycolor),
+                    ),
+                    SizedBox(height: 20),
+                  ],
+                 ),
+
+                 Container(
+                   width: 160,
+
+                   child:Animatedbutton(
+                     title: '+ Add Patient',
+                     isLoading: _isLoading,
+                     onPressed: () {
+                       _showAddPatientModal(context);
+                     },
+                     backgroundColor: AppColors.secondary,
+                     shadowColor: AppColors.primary,
+                   ),
+                 ),
+               ],
+             ),
 
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              
+
                   Expanded(
                     flex: 7, //
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Welcome Section
-              
+
                         // Stats Cards - Horizontal Scroll
                         SizedBox(
                           height: 120, // Fixed height for stats cards
@@ -97,10 +153,10 @@ class DashboardScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-              
+
                         const SizedBox(height: 20),
-              
-              
+
+
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
@@ -212,9 +268,9 @@ class DashboardScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-              
+
                         const SizedBox(height: 20),
-              
+
                         // Follow Ups Section
                         SizedBox(
                           height: 200, // Fixed height for follow-ups
@@ -298,7 +354,7 @@ class DashboardScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-              
+
                   // Sidebar Column (20% width)
                   Expanded(
                     flex: 3, // 20% of width
@@ -337,8 +393,86 @@ class DashboardScreen extends StatelessWidget {
 
 
   }
+  Widget _addPatient({
+    required TextEditingController firstNameController,
+    required TextEditingController lastNameController,
+    required TextEditingController phoneController,
+    required bool isLoading,  // Added this parameter
+    required VoidCallback onPressed,  // Added this parameter
+  }) {
+    return Container(
+      width: 400,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Patient Registration',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1C3B70),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Quickly onboard a patient into the system.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.secondary),
+          ),
+          const SizedBox(height: 24),
+          _buildField('First Name', 'Enter first name', firstNameController),
+          const SizedBox(height: 16),
+          _buildField('Last Name', 'Enter last name', lastNameController),
+          const SizedBox(height: 16),
+          _buildField('Phone Number', 'Enter Phone Number', phoneController),
+          const SizedBox(height: 24),
+          Animatedbutton(
+            title: 'Add Patient',
+            isLoading: isLoading,
+            onPressed: onPressed,
+            backgroundColor: AppColors.secondary,
+            shadowColor: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
 
+// Example of the _buildField method (you should have this implemented)
+  Widget _buildField(String label, String hint, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, color: AppColors.primary)),
+        const SizedBox(height: 4),
+        CustomTextField(
+          controller: controller,
+          hintText: hint,
 
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          validator: (value) {
+
+            return null;
+          },
+        ),
+
+      ],
+    );
+  }
 
   Widget _buildFollowUpItem({
     required String name,
@@ -396,6 +530,7 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildStatCard(String title, String count, String assetPath) {
     return Container(
       width: 170,
@@ -476,6 +611,4 @@ class DashboardScreen extends StatelessWidget {
       color: Colors.grey,
     );
   }
-
-
 }

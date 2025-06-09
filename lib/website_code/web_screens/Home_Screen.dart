@@ -107,7 +107,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     index: 5,
                   ),
                   const Spacer(),
+                  _buildSidebarItem(
+                    assetPath: 'assets/settingicon.png',
+                    label: 'Settings',
+                    index: 5,
+                  ),
+                  _buildSidebarItem(
+                    assetPath: 'assets/logouticon.png',
+                    label: 'Logout',
+                    index: 5,
+                  ),
+                  Divider(color: AppColors.secondary,),
+                  Image.asset(
+                    'assets/appstore.png',
+                    //height: 18,
 
+                  ), Image.asset(
+                    'assets/googleplay.png',
+                   // height: 18,
+
+                  ),
                 ],
               ),
             ),

@@ -22,87 +22,89 @@ class _OnboardingFormState extends State<OnboardingForm> {
   String radioValue = 'option1';
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Container(
+    return Container(
 
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+          topRight: Radius.circular(12),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Step Indicator
-            _buildStepNavigation(),
-            const SizedBox(height: 20),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Step Indicator
+          _buildStepNavigation(),
+          const SizedBox(height: 20),
 
-            // Form Content
-            IndexedStack(
-              index: _currentStep,
-              children: [
-                _buildPersonalInfoForm(),
-                _buildMedicalInfoForm(),
-                _buildAdditionalInfoForm(),
-              ],
+          // Form Content
+          IndexedStack(
+            index: _currentStep,
+            children: [
+              _buildPersonalInfoForm(),
+              _buildMedicalInfoForm(),
+              _buildAdditionalInfoForm(),
+            ],
+          ),
+
+
+      /*    const SizedBox(height: 30),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+
             ),
-
-
-            const SizedBox(height: 30),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (_currentStep > 0)
-                    Animatedbutton(
-                      onPressed: () {
-                        setState(() => _currentStep--);
-                        _scrollController.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      shadowColor: Colors.white,
-                      titlecolor: AppColors.primary,
-
-                      backgroundColor: Colors.white,
-                      borderColor: AppColors.secondary,
-                      isLoading: _isLoading,
-                      title:  'BACK',
-                    )
-                  else
-                    const SizedBox(width: 120),
-
-                  SizedBox(width: 10,),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (_currentStep > 0)
                   Animatedbutton(
                     onPressed: () {
-                      if (_currentStep < 2) {
-                        setState(() => _currentStep++);
-                        _scrollController.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      } else {
-                       // _submitForm();
-                      }
+                      setState(() => _currentStep--);
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
                     },
                     shadowColor: Colors.white,
-                    backgroundColor: AppColors.secondary,
+                    titlecolor: AppColors.primary,
+
+                    backgroundColor: Colors.white,
+                    borderColor: AppColors.secondary,
                     isLoading: _isLoading,
-                    title: _currentStep == 2 ? 'SUBMIT' : 'NEXT',
-                  ),
-                ],
-              ),
+                    title:  'BACK',
+                  )
+                else
+                  const SizedBox(width: 120),
+
+                SizedBox(width: 10,),
+                Animatedbutton(
+                  onPressed: () {
+                    if (_currentStep < 2) {
+                      setState(() => _currentStep++);
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                     // _submitForm();
+                    }
+                  },
+                  shadowColor: Colors.white,
+                  backgroundColor: AppColors.secondary,
+                  isLoading: _isLoading,
+                  title: _currentStep == 2 ? 'SUBMIT' : 'NEXT',
+                ),
+              ],
             ),
-          ],
-        ),
+          ),*/
+        ],
       ),
     );
   }
@@ -245,6 +247,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
               ],
             ),
+            const SizedBox(height: 20),
+            _buildFormNavigationButtons(isFirstStep: true),
           ],
         ),
       ),
@@ -326,6 +330,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 ),
 
               ],
+
             ),
           ),
 
@@ -540,7 +545,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                         ],
                       ),
                     ),
-                  
+
                     const SizedBox(
                         width: double.infinity,
                         child: const FormInput(label: 'H/O Present Medication')),
@@ -631,45 +636,403 @@ class _OnboardingFormState extends State<OnboardingForm> {
               ],
             ),
           ),
-
+          const SizedBox(height: 20),
+          _buildFormNavigationButtons(),
         ],
       ),
     );
   }
 
 
+// Add this new helper method
+  Widget _buildFormNavigationButtons({
+    bool isFirstStep = false,
+    bool isLastStep = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (!isFirstStep)
+            Animatedbutton(
+              onPressed: () {
+                setState(() => _currentStep--);
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              shadowColor: Colors.white,
+              titlecolor: AppColors.primary,
+              backgroundColor: Colors.white,
+              borderColor: AppColors.secondary,
+              isLoading: _isLoading,
+              title: 'BACK',
+            )
+          else
+            const SizedBox(width: 120),
+
+          const SizedBox(width: 10),
+          Animatedbutton(
+            onPressed: () {
+              if (!isLastStep) {
+                setState(() => _currentStep++);
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              } else {
+                // _submitForm();
+              }
+            },
+            shadowColor: Colors.white,
+            backgroundColor: AppColors.secondary,
+            isLoading: _isLoading,
+            title: isLastStep ? 'SUBMIT' : 'NEXT',
+          ),
+        ],
+      ),
+    );
+  }
   Widget _buildAdditionalInfoForm() {
     return Form(
       key: _reportsFormKey,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.Offwhitebackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.Containerbackground),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '3. Additional Information',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Column(
+        spacing: 10,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.Offwhitebackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.Containerbackground),
             ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 20,
-              runSpacing: 16,
-              children: const [
-                FormInput(label: 'Referral by'),
-                DropdownInput(label: 'Clinic Location'),
-                FormInput(label: 'Other Location'),
-                FormInput(label: 'Insurance Provider'),
-                FormInput(label: 'Policy Number'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '1. Reports',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 20,),
+                Row(children: [
+                  Text(
+                    'Blood Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 8), // Add some spacing
+                      color: AppColors.backgroundcolor,
+                    ),
+                  ),
+                ],),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 20,
+                  runSpacing: 16,
+                  children: const [
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Laboratory')),
+                    FormInput(label: 'Hemoglobin'),
+                    FormInput(label: 'Total leucocyte count'),
+                    FormInput(label: 'ESR'),
+                    FormInput(label: 'Platelets'),
+                    FormInput(label: 'Urine Routine'),
+                    FormInput(label: 'Urine Culture'),
+                    FormInput(label: 'BUN'),
+                    FormInput(label: 'Serum Creatinine'),
+                    FormInput(label: 'Serum Electrolytes'),
+                    FormInput(label: 'LFT'),
+                    FormInput(label: 'Prothrombin Time / INR'),
+                    FormInput(label: 'Blood Sugar Fasting'),
+                    FormInput(label: 'Blood Sugar Post Prandial'),
+                    FormInput(label: 'HBA1C'),
+                    FormInput(label: 'HBSAG'),
+                    FormInput(label: 'HIV'),
+                    FormInput(label: 'HCV'),
+                    FormInput(label: 'Thyroid Function Test T3 T4 TSH'),
+                    FormInput(label: 'MISC'),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings')),
+
+                  ],
+                ),
+                SizedBox(height: 20,),
+                Row(children: [
+                  Text(
+                    'X-Ray Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 8), // Add some spacing
+                      color: AppColors.backgroundcolor,
+                    ),
+                  ),
+                ],),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(
+
+                  children: [
+                  Text(
+                    'CT Scan Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 8), // Add some spacing
+                      color: AppColors.backgroundcolor,
+                    ),
+                  ),
+                ],),
+                SizedBox(height: 10,),
+                Row(
+                  spacing: 10,
+                  children: [
+                    FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",),
+
+                    Expanded(
+
+                        child: FormInput(label: 'Media History')),
+                  ],
+                ),
+                SizedBox(height: 10,),
+                Row(
+                  spacing: 10,
+                  children: [
+                    FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+
+                    Expanded(
+
+                        child: FormInput(label: 'Findings')),
+                  ],
+                ),     SizedBox(height: 10,),
+
+                Row(children: [
+                  Text(
+                    'MRI Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 8), // Add some spacing
+                      color: AppColors.backgroundcolor,
+                    ),
+                  ),
+                ],),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(children: [
+                  Text(
+                    'PET Scan Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      margin: const EdgeInsets.only(left: 8), // Add some spacing
+                      color: AppColors.backgroundcolor,
+                    ),
+                  ),
+                ],),
+                SizedBox(height: 10,),
+
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(
+
+                  children: [
+                    Text(
+                      'ECG Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
+                      ),
+                    ),
+                  ],),
+                SizedBox(height: 10,),
+
+                Row(
+                  spacing: 10,
+                  children: [
+                    FormInput(label: 'ECG Report',hintlabel: "Upload ECG Reports",),
+
+                    Expanded(
+
+                        child: FormInput(label: 'Media History')),
+                  ],
+                ),
+                SizedBox(height: 10,),
+                SizedBox(
+          width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+
+                Row(
+
+                  children: [
+                    Text(
+                      '2D ECHO Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.hinttext,
+                      ),
+                    ),
+                  ],),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(
+
+                  children: [
+                    Text(
+                      'Echocardiogram Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
+                      ),
+                    ),
+                  ],),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(
+
+                  children: [
+                    Text(
+                      'PFT Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
+                      ),
+                    ),
+                  ],),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+                Row(
+                  spacing: 10,
+                  children: [
+                    FormInput(label: 'MISC',hintlabel: "Upload MISC",),
+
+                    Expanded(
+
+                        child: FormInput(label: 'Media History')),
+                  ],
+                ),
+                SizedBox(height: 10,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Findings')),
+                SizedBox(height: 10,),
+
               ],
             ),
-          ],
-        ),
+          ),
+          Container( width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.Offwhitebackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.Containerbackground),
+            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            const Text(
+              '2. Doctor Notes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 20,),
+            SizedBox(
+                width: double.infinity,
+                child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,)),
+
+              SizedBox(height: 10,),
+              Row(
+                spacing: 10,
+                children: [
+                  FormInput(label: 'Media Upload',hintlabel: "Upload Media",),
+
+
+                  Expanded(
+
+                      child: FormInput(label: 'Media History')),
+                ],
+              ),
+              FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
+          ],),
+          ),
+          Container( width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.Offwhitebackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.Containerbackground),
+            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            const Text(
+              '2. Misc',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 20,),
+            SizedBox(
+                width: double.infinity,
+                child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,)),
+
+
+          ],),
+          ),
+          const SizedBox(height: 20),
+          _buildFormNavigationButtons(isLastStep: true),
+        ],
       ),
     );
   }
@@ -678,9 +1041,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
 class FormInput extends StatelessWidget {
   final String label;
+  final String hintlabel;
   final bool isDate;
   final int maxlength;
-  const FormInput({super.key, required this.label,this.maxlength=1, this.isDate = false});
+  const FormInput({super.key, required this.label,this.maxlength=1, this.isDate = false,this.hintlabel=""});
 
   @override
   Widget build(BuildContext context) {
@@ -697,7 +1061,7 @@ class FormInput extends StatelessWidget {
           CustomTextField(
             maxLines: maxlength,
             controller: TextEditingController(),
-            hintText: label,
+            hintText: hintlabel,
 
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.next,

@@ -1,10 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:tab_container/tab_container.dart';
+import 'package:poojaheakthcare/website_code/web_screens/DischargeTabContent.dart';
 import '../../utils/colors.dart';
+import 'FollowUpsTabContent.dart';
 import 'Patient_Registration.dart';
+import 'SurgeryTabContent.dart';
 
-class PatientDataTabsScreen extends StatelessWidget {
+class PatientDataTabsScreen extends StatefulWidget {
   const PatientDataTabsScreen({super.key});
+
+  @override
+  State<PatientDataTabsScreen> createState() => _PatientDataTabsScreenState();
+}
+
+class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,145 +44,92 @@ class PatientDataTabsScreen extends StatelessWidget {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary,),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  children: [
-                    TabContainer(
-                      tabEdge: TabEdge.top,
-                      tabMaxLength: 120,
-                      tabCurve: Curves.easeInOut,
-                      tabDuration: const Duration(milliseconds: 300),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 600,
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      tabBorderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      selectedTextStyle: const TextStyle(
+                      borderRadius:BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12))
+                    ),
+                    child: TabBar(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 12),  // Space between tabs
+                      controller: _tabController,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.secondary,
+                      labelStyle: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: AppColors.primary
                       ),
-                      unselectedTextStyle: TextStyle(
+                      unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.normal,
                         fontSize: 14,
-                        color: AppColors.secondary,
+                      ),
+                      indicatorSize: null,
+                      indicator: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        color: Colors.transparent,
+                        border: Border(
+                          bottom: BorderSide(
+                            color:  Colors.transparent,
+
+                          ),
+                        ),
                       ),
                       tabs: const [
-                        Text('Onboarding'),
-                        Text('Surgery'),
-                        Text('Discharge Info'),
-                        Text('Follow Ups'),
-                      ],
-        
-                      children: [
-                         Container(child: SingleChildScrollView(child: OnboardingForm())),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const SurgeryTabContent(),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const DischargeTabContent(),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const FollowUpsTabContent(),
-                        ),
+                        Tab(text: 'Onboarding'),
+                        Tab(text: 'Surgery'),
+                        Tab(text: 'Discharge Info'),
+                        Tab(text: 'Follow Ups'),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 1), // Small gap between tab bar and content
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          SingleChildScrollView(child: OnboardingForm()),
+                          const SingleChildScrollView(child: SurgeryTabContent()),
+                          const SingleChildScrollView(child: DischargeTabContent()),
+                          const SingleChildScrollView(child: FollowUpsTabContent()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 20),
-              const Expanded(
-                flex: 1,
-                child: PatientDetailsSidebar(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SurgeryTabContent extends StatelessWidget {
-  const SurgeryTabContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text(
-          'Surgery Details Coming Soon',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class DischargeTabContent extends StatelessWidget {
-  const DischargeTabContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text(
-          'Discharge Info Coming Soon',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class FollowUpsTabContent extends StatelessWidget {
-  const FollowUpsTabContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text(
-          'Follow Ups Coming Soon',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
+            ),
+            const SizedBox(width: 20),
+            const Expanded(
+              flex: 1,
+              child: PatientDetailsSidebar(),
+            ),
+          ],
         ),
       ),
     );

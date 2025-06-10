@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (mounted) {
       Navigator.pushReplacementNamed(
         context,
-        isLoggedIn ? '/patientInfo' : '/login',
+        isLoggedIn ? '/HomeScreen' : '/login',
       );
     }
   }

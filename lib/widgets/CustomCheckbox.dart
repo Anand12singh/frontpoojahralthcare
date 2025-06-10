@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 
 // Custom Checkbox Widget
@@ -102,16 +103,7 @@ class CustomRadioButton<T> extends StatelessWidget {
               ),
             ),
             child: isSelected
-                ? Center(
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.secondary,
-                ),
-              ),
-            )
+                ? Image.asset("assets/checkbox.png")
                 : null,
           ),
           const SizedBox(width: 12),

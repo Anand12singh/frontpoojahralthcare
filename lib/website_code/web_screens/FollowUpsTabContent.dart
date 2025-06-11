@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/AnimatedButton.dart';
+import '../../widgets/DatePickerInput.dart';
 import 'Patient_Registration.dart';
  // Ensure correct import for FormInput widget
 import '../../utils/colors.dart';
@@ -49,8 +50,16 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 12,
 
-                      children: const [
-                        FormInput(label: 'Date', hintlabel: 'dd-mm-yyyy', isDate: true),
+                      children:  [
+
+                        DatePickerInput(
+                          label: 'Date',
+                          hintlabel: 'dd-mm-yyyy',
+                          onDateSelected: (date) {
+                            // Handle selected date
+                            print('Date Date: $date');
+                          },
+                        ),
                         Expanded(child: FormInput(label: 'Notes', hintlabel: 'Text', maxlength: 4)),
                         Expanded(child: FormInput(label: 'Treatment', hintlabel: 'Text', maxlength: 4)),
                       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import '../../utils/colors.dart';
 import '../../widgets/CustomCheckbox.dart';
+import '../../widgets/DatePickerInput.dart';
 import '../../widgets/custom_text_field.dart';
 
 class OnboardingForm extends StatefulWidget {
@@ -225,25 +226,25 @@ class _OnboardingFormState extends State<OnboardingForm> {
               spacing: 20,
               runSpacing: 16,
               children: const [
-                FormInput(label: 'First Name'),
-                FormInput(label: 'Last Name'),
-                FormInput(label: 'Phone Number'),
-                FormInput(label: 'PH ID'),
-                FormInput(label: 'Address'),
-                FormInput(label: 'City'),
-                FormInput(label: 'State'),
-                FormInput(label: 'Pin Code'),
-                FormInput(label: 'Country'),
-                FormInput(label: 'Age'),
-                DropdownInput(label: 'Gender'),
+                FormInput(label: 'First Name',hintlabel: "Enter First Name",),
+                FormInput(label: 'Last Name',hintlabel: "Enter Last Name",),
+                FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number",),
+                FormInput(label: 'PH ID',hintlabel: "Enter PH ID",),
+                FormInput(label: 'Address',hintlabel: "Enter Address",),
+                FormInput(label: 'City',hintlabel: "Enter City",),
+                FormInput(label: 'State',hintlabel: "Enter State",),
+                FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",),
+                FormInput(label: 'Country',hintlabel: "Enter Country",),
+                FormInput(label: 'Age',hintlabel: "Enter Country",),
+                DropdownInput(label: 'Gender',),
                 FormInput(label: 'Consultation Date', isDate: true),
-                FormInput(label: 'Referral by'),
+                FormInput(label: 'Referral by',hintlabel: "Enter Referral by",),
                 DropdownInput(label: 'Clinic Location'),
-                FormInput(label: 'Other  Location'),
+                FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",),
 
-                FormInput(label: 'Height (cms)'),
-                FormInput(label: 'Weight (kg)'),
-                FormInput(label: 'BMI (kg/m²)'),
+                FormInput(label: 'Height (cms)',hintlabel: "Enter Height (cms)",),
+                FormInput(label: 'Weight (kg)',hintlabel: "Enter Weight (kg)",),
+                FormInput(label: 'BMI (kg/m²)',hintlabel: "Enter BMI (kg/m²)",),
 
               ],
             ),
@@ -817,8 +818,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 Row(
                   spacing: 10,
                   children: [
-                    FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
-
+                   // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+                    DatePickerInput(
+                      label: 'Date',
+                      hintlabel: 'dd-mm-yyyy',
+                      onDateSelected: (date) {
+                        // Handle selected date
+                        print('Date Date: $date');
+                      },
+                    ),
                     Expanded(
 
                         child: FormInput(label: 'Findings')),
@@ -1005,7 +1013,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       child: FormInput(label: 'Media History')),
                 ],
               ),
-              FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
+              SizedBox(height: 10,),
+              DatePickerInput(
+                label: 'Follow up date',
+                hintlabel: 'dd-mm-yyyy',
+                onDateSelected: (date) {
+                  // Handle selected date
+                  print('Follow up date: $date');
+                },
+              ),
+            //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
           ],),
           ),
           Container( width: double.infinity,

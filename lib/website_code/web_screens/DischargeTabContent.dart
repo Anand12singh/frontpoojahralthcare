@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/CustomCheckbox.dart';
+import '../../widgets/DatePickerInput.dart';
+import '../../widgets/DocumentUploadWidget.dart';
+import '../../widgets/TimePickerInput.dart';
 import 'Patient_Registration.dart';
 // Ensure path is correct
 import '../../utils/colors.dart';
@@ -40,15 +43,46 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                 Wrap(
                   spacing: 20,
                   runSpacing: 16,
-                  children: const [
-                    FormInput(label: 'Consultant', hintlabel: 'Text'),
-                    FormInput(label: 'Contact', hintlabel: 'Text'),
-                    FormInput(label: 'Qualifications', hintlabel: 'Text'),
-                    FormInput(label: 'Indoor Reg No', hintlabel: 'Text'),
-                    FormInput(label: 'Admission Date', hintlabel: 'dd-mm-yyyy', isDate: true),
-                    FormInput(label: 'Admission Time', hintlabel: '00:12:30'),
-                    FormInput(label: 'Discharge Date', hintlabel: 'dd-mm-yyyy', isDate: true),
-                    FormInput(label: 'Discharge Time', hintlabel: '00:12:30'),
+                  children: [
+                    const FormInput(label: 'Consultant', hintlabel: 'Text'),
+                    const FormInput(label: 'Contact', hintlabel: 'Text'),
+                    const FormInput(label: 'Qualifications', hintlabel: 'Text'),
+                    const FormInput(label: 'Indoor Reg No', hintlabel: 'Text'),
+                    DatePickerInput(
+                      label: 'Admission Date',
+                      hintlabel: 'dd-mm-yyyy',
+                      onDateSelected: (date) {
+                        // Handle selected date
+                        print('Admission Date: $date');
+                      },
+                    ),
+
+                    TimePickerInput(
+                      label: 'Admission Time',
+                      hintlabel: '00:00:00',
+                      onTimeSelected: (date) {
+                        // Handle selected date
+                        print('Admission Time: $date');
+                      },
+                    ),
+                    DatePickerInput(
+                      label: 'Discharge Date',
+                      hintlabel: 'dd-mm-yyyy',
+                      onDateSelected: (date) {
+                        // Handle selected date
+                        print('Discharge Date: $date');
+                      },
+                    ),
+
+                    TimePickerInput(
+                      label: 'Discharge Time',
+                      hintlabel: '00:00:00',
+                      onTimeSelected: (date) {
+                        // Handle selected date
+                        print('Discharge Time: $date');
+                      },
+                    ),
+
 
 
                   ],
@@ -135,17 +169,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('3. Upload Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Row(
-                    spacing: 10,
-                    children: [
-                      Expanded(child: FormInput(label: 'Upload Documents',hintlabel: "Upload Documents",)),
+                  const SizedBox(height: 16),
 
-                      Expanded(
-
-                          child: FormInput(label: 'Media History')),
-                    ],
-                  ),
-
+                  DocumentUploadWidget(label1:"Upload Documents" ,label2:"Media History" ,),
 
                 ],
               )),
@@ -168,10 +194,19 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 12,
 
-                children: const [
-                  FormInput(label: 'Investigations Date', hintlabel: 'dd-mm-yyyy', isDate: true),
+
+                children:  [
+                  DatePickerInput(
+                    label: 'Investigations Date',
+                    hintlabel: 'dd-mm-yyyy',
+                    onDateSelected: (date) {
+                      // Handle selected date
+                      print('Investigations Date: $date');
+                    },
+                  ),
                   Expanded(child: FormInput(label: 'Test', hintlabel: 'Text',maxlength: 4,)),
                   Expanded(child: FormInput(label: 'Positive Findings', hintlabel: 'Text',maxlength: 4,)),
                 ],

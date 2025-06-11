@@ -65,7 +65,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                         width: 60,
                         child:   CustomTextField(
                           controller: TextEditingController(),
-                          label: '00',
+                          hintText: '00',
 
                           keyboardType: TextInputType.number,
                           textInputAction: TextInputAction.done,
@@ -83,7 +83,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                         width: 60,
                         child:   CustomTextField(
                           controller: TextEditingController(),
-                          label: '00',
+                          hintText: '00',
 
                           keyboardType: TextInputType.number,
                           textInputAction: TextInputAction.done,

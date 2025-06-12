@@ -70,13 +70,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               lastNameController: lastNameController,
               phoneController: phoneController,
               isLoading: _isLoading,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PatientDataTabsScreen()),
-                );
 
-                Navigator.pop(context);
+              onPressed: () {
+            /*    Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PatientDataTabsScreen(),
+                  ),
+                );*/
+                Navigator.pop(context); // Close the modal
               },
             ),
           ),
@@ -450,7 +452,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   title: 'Discard',
                   isLoading: isLoading,
-                  onPressed: onPressed,
+                  onPressed: () {
+                    Navigator.pop(context); // Close the modal
+                  },
                   titlecolor:AppColors.secondary,
                   backgroundColor: Colors.white,
                   borderColor: AppColors.secondary,
@@ -466,7 +470,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   title: 'Add Patient',
                   isLoading: isLoading,
-                  onPressed: onPressed,
+                  onPressed: () {
+                        Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PatientDataTabsScreen(),
+                  ),
+                );
+                  },
                   backgroundColor: AppColors.secondary,
                   shadowColor: AppColors.primary,
                 ),

@@ -149,8 +149,6 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     try {
       final headers = {
         'Content-Type': 'application/json',
-        'Cookie':
-            'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
       };
 
       final response = await http.post(
@@ -163,7 +161,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
         }),
       );
 
-      log('API Response: ${response.body}');
+      // log('API Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -188,11 +186,12 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
     String? phid = data['patient_id']?.toString() ?? 'NA';
     String? phid1 = data['phid']?.toString() ?? 'NA';
 
-    Global.status = patientExist.toString();
-    Global.patient_id = phid;
-    Global.phid = phid;
-    Global.phid1 = phid1;
-
+    setState(() {
+      Global.status = patientExist.toString();
+      Global.patient_id = phid;
+      Global.phid = phid;
+      Global.phid1 = phid1;
+    });
     log('Patient Exist: $patientExist, PHID: $phid');
 
     Navigator.push(

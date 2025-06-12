@@ -510,7 +510,8 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                                                                 patient[
                                                                     'patient_id'];
                                                             Global.phid =
-                                                                patient['phid'];
+                                                                patient['id']
+                                                                    .toString();
                                                           });
                                                           Navigator.push(
                                                             context,

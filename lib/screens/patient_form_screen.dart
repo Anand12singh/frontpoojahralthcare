@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -129,6 +130,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
   final TextEditingController _planController = TextEditingController();
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
+  final TextEditingController _occupationController = TextEditingController();
 
   //add new filds
 
@@ -273,6 +275,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     _lastNameController.dispose();
     _phoneController.dispose();
     _phIdController.dispose();
+
     _addressController.dispose();
     _ageController.dispose();
     _referralController.dispose();
@@ -373,6 +376,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
       _altPhoneController.text =
           _patientData?['alternative_no']?.toString() ?? '';
+      _occupationController.text =
+          _patientData?['occupation']?.toString() ?? '';
       _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
       _addressController.text = _patientData?['address']?.toString() ?? '';
       _descriptionController.text =
@@ -383,10 +388,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           _patientData?['date']?.toString() ?? DateTime.now().toString());
 
       _referralController.text = _patientData?['referral_by']?.toString() ?? '';
-      _otherLocationController.text =
-          _patientData?['other_location']?.toString() ?? '';
-
-      _selectedLocationId = _patientData?['location']?.toString() ?? '';
+      _selectedLocationId = _patientData?['location']?.toString() ?? '2';
       log('_selectedLocationId $_selectedLocationId');
       final location = _locations.firstWhere(
         (loc) => loc['id'].toString() == _selectedLocationId,
@@ -394,6 +396,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       );
 
       log('locationlocation: $location');
+      _otherLocationController.text =
+          _patientData?['other_location']?.toString() ?? '';
 
       // Visit Info
       _tempController.text = _visitData?['temp']?.toString() ?? '';
@@ -635,6 +639,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         );
       }
     } catch (e) {
+      log('error $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
@@ -669,6 +674,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       return;
     }
 
+    log('Global.status ${Global.status}');
+    log('Global.phid ${Global.phid}');
+
     try {
       showDialog(
         context: context,
@@ -694,14 +702,15 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
-      log('_doctorNotesController.text ${_doctorNotesController.text}');
-      log('_selectedLocationId $_selectedLocationId');
+
+      log('_occupationController ${_occupationController.text}');
 
       // ✅ Add Form Fields
       Map<String, String> fields = {
         'first_name': _ensureString(_firstNameController.text),
         'last_name': _ensureString(_lastNameController.text),
         'gender': _ensureGender(_gender),
+        'occupation': _ensureString(_occupationController.text),
         'mobile_no': _ensureString(_phoneController.text),
         'alternative_no': _ensureString(_altPhoneController.text),
         'address': _ensureString(_addressController.text),
@@ -1285,6 +1294,8 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     String? errorText,
     double borderRadius = 12.0,
     bool enableNewLines = false,
+    bool digitsOnly = false,
+    bool allowDecimal = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -1326,6 +1337,12 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             child: TextFormField(
               controller: controller,
               obscureText: obscureText,
+              inputFormatters: allowDecimal
+                  ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]
+                  : digitsOnly
+                      ? [FilteringTextInputFormatter.digitsOnly]
+                      : null,
+
               decoration: InputDecoration(
                 hintText: hintText,
                 prefixIcon: prefixIcon,
@@ -2227,12 +2244,27 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
             ),
           ],
         ),
-        _buildCustomInput(
-          controller: _phoneController,
-          label: 'Phone Number',
-          isRequired: true,
-          keyboardType: TextInputType.phone,
-          validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+        Row(
+          children: [
+            Expanded(
+              child: _buildCustomInput(
+                controller: _phoneController,
+                label: 'Phone Number',
+                isRequired: true,
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildCustomInput(
+                controller: _occupationController,
+                label: 'Occupation',
+                keyboardType: TextInputType.text,
+              ),
+            ),
+          ],
         ),
         _buildCustomInput(
           controller: _phIdController,
@@ -2253,6 +2285,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 controller: _ageController,
                 label: 'Age',
                 keyboardType: TextInputType.number,
+                allowDecimal: true,
               ),
             ),
             const SizedBox(width: 16),
@@ -2337,6 +2370,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
           controller: _rbsController,
           label: 'RBS (mg/dL)',
           keyboardType: TextInputType.number,
+          allowDecimal: true,
         ),
 
         // Chief Complaints
@@ -2444,32 +2478,34 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         ),
         if (_isFebrile)
           _buildCustomInput(
-            controller: _tempController,
-            label: 'Temperature',
-            keyboardType: TextInputType.number,
-            // p
-          ),
+              controller: _tempController,
+              label: 'Temperature',
+              keyboardType: TextInputType.number,
+              allowDecimal: true
+
+              // p
+              ),
         _buildCustomInput(
-          controller: _pulseController,
-          label: 'Pulse (bpm)',
-          keyboardType: TextInputType.number,
-        ),
+            controller: _pulseController,
+            label: 'Pulse (bpm)',
+            keyboardType: TextInputType.number,
+            allowDecimal: true),
         Row(
           children: [
             Expanded(
               child: _buildCustomInput(
-                controller: _bpSystolicController,
-                label: 'BP Systolic',
-                keyboardType: TextInputType.number,
-              ),
+                  controller: _bpSystolicController,
+                  label: 'BP Systolic',
+                  keyboardType: TextInputType.number,
+                  allowDecimal: true),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildCustomInput(
-                controller: _bpDiastolicController,
-                label: 'BP Diastolic',
-                keyboardType: TextInputType.number,
-              ),
+                  controller: _bpDiastolicController,
+                  label: 'BP Diastolic',
+                  keyboardType: TextInputType.number,
+                  allowDecimal: true),
             ),
           ],
         ),

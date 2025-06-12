@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Animatedbutton extends StatelessWidget {
   final bool isLoading;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String title;
   final Color backgroundColor;
   final Color titlecolor;

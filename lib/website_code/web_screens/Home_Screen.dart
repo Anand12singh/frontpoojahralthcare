@@ -3,14 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../screens/patient_list.dart';
 import '../../utils/colors.dart';
+import '../../widgets/KeepAlivePage.dart';
 import 'DashboardScreen.dart';
 import 'PatientDataTabsScreen.dart';
 import 'PatientRegistrationPage.dart';
 import 'Patient_Registration.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialPage; // Add this line
+
+  const HomeScreen({super.key, this.initialPage = 0}); // Modify this line
+
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isSidebarCollapsed = false;
   late Timer _timer;
   late String _currentTime;
+  late PageController _pageController; // Change this line
 
   @override
   void initState() {
@@ -31,7 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentTime = _formatDateTime(DateTime.now());
       });
     });
+    _pageController = PageController(initialPage: widget.initialPage); // Modify this line
+    selectedPageIndex = widget.initialPage; // Add this line
   }
+
 
   String _formatDateTime(DateTime dt) {
     final time = DateFormat('HH:mm:ss').format(dt);
@@ -46,11 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final List<Widget> pages = [
-    const DashboardScreen(),
-    const PatientDataTabsScreen(),
-    // Add more screens here
+    KeepAlivePage(child: DashboardScreen()),
+    KeepAlivePage(child: RecentPatientsListScreen()),
+    KeepAlivePage(child: PatientDataTabsScreen()),
+    // Add other pages similarly
   ];
-
   void _toggleSidebar() {
     setState(() {
       isSidebarCollapsed = !isSidebarCollapsed;
@@ -198,8 +207,12 @@ SizedBox(width: 8,),
                   ),
                 ),
                 Expanded(
-                  child: pages[selectedPageIndex],
-                ),
+                  child: PageView(
+                    controller: _pageController,
+
+                    children: pages,
+                  ),
+                )
               ],
             ),
           ),
@@ -223,7 +236,10 @@ SizedBox(width: 8,),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: InkWell(
-          onTap: () => setState(() => selectedPageIndex = index),
+          onTap: () {
+            setState(() => selectedPageIndex = index);
+            _pageController.jumpToPage(index);
+          },
           child: Row(
             children: [
               Image.asset(

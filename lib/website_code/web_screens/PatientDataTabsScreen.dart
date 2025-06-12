@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DischargeTabContent.dart';
 import '../../utils/colors.dart';
+import '../../widgets/KeepAlivePage.dart';
 import 'FollowUpsTabContent.dart';
 import 'Patient_Registration.dart';
 import 'SurgeryTabContent.dart';
 
 class PatientDataTabsScreen extends StatefulWidget {
+
   const PatientDataTabsScreen({super.key});
 
   @override
@@ -13,9 +15,9 @@ class PatientDataTabsScreen extends StatefulWidget {
 }
 
 class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-
+  bool get wantKeepAlive => true;
   @override
   void initState() {
     super.initState();
@@ -113,12 +115,12 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                       child: TabBarView(
                         controller: _tabController,
                         children: [
-                          SingleChildScrollView(child: OnboardingForm()),
-                          const SingleChildScrollView(child: SurgeryTabContent()),
-                          const SingleChildScrollView(child: DischargeTabContent()),
-                          const SingleChildScrollView(child: FollowUpsTabContent()),
+                          KeepAlivePage(child: SingleChildScrollView(child: OnboardingForm())),
+                          KeepAlivePage(child: SurgeryTabContent()),
+                          KeepAlivePage(child: DischargeTabContent()),
+                          KeepAlivePage(child: FollowUpsTabContent()),
                         ],
-                      ),
+                      )
                     ),
                   ),
                 ],

@@ -1,8 +1,14 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
-
+import 'package:http/http.dart' as http;
+import '../../constants/global_variable.dart';
+import '../../screens/olddpatientfom.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
+import 'Home_Screen.dart';
 import 'PatientDataTabsScreen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,9 +20,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
 
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _lastnameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final List<Map<String, String>> bookmarksData = const [
     {
       'patientName': 'Gretchen O\'Kon, M/31',
@@ -55,7 +61,103 @@ class _DashboardScreenState extends State<DashboardScreen> {
     },
   ];
   bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
 
+
+ void _AddPatientsubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+      _isSubmitting = true;
+    });
+    FocusScope.of(context).unfocus();
+
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        'Cookie':
+        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+      };
+
+      final response = await http.post(
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        headers: headers,
+        body: json.encode({
+          "first_name": _nameController.text.trim(),
+          "last_name": _lastnameController.text.trim(),
+          "mobile_no": _phoneController.text.trim(),
+        }),
+      );
+
+      log('API Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          _isLoading = false;
+          _handleSuccessResponse(responseData);
+        } else {
+          _isLoading = false;
+          _showErrorSnackbar(responseData['message'] ?? 'Submission failed');
+        }
+      } else {
+        _isLoading = false;
+        _showErrorSnackbar('API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isSubmitting = false;
+      });
+      _showErrorSnackbar('Error: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+
+  void _handleSuccessResponse(Map<String, dynamic> responseData) {
+    final data = responseData['data'][0];
+    int patientExist = data['patientExist'] ?? 0;
+    String? phid = data['patient_id']?.toString() ?? 'NA';
+    String? phid1 = data['phid']?.toString() ?? 'NA';
+
+    Global.status = patientExist.toString();
+    Global.patient_id = phid;
+    Global.phid = phid;
+    Global.phid1 = phid1;
+    GlobalPatientData.firstName =_nameController.text.trim();
+    GlobalPatientData.lastName =_lastnameController.text.trim();
+    GlobalPatientData.phone =_phoneController.text.trim();
+    GlobalPatientData.patientExist =patientExist;
+    GlobalPatientData.phid =phid1;
+    GlobalPatientData.patientId =phid ;
+
+    log('Patient Exist: $patientExist, PHID: $phid');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+        initialPage: 2,
+        ),
+      ),
+    );
+  }
   void _showAddPatientModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -66,9 +168,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             margin: const EdgeInsets.all(20),
             child: _addPatient(
-              firstNameController: firstNameController,
-              lastNameController: lastNameController,
-              phoneController: phoneController,
+              firstNameController: _nameController,
+              lastNameController: _lastnameController,
+              phoneController: _phoneController,
               isLoading: _isLoading,
 
               onPressed: () {
@@ -419,100 +521,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Patient Registration',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1C3B70),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Patient Registration',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1C3B70),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Quickly onboard a patient into the system.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.secondary),
-          ),
-          const SizedBox(height: 24),
-          _buildField('First Name', 'Enter first name', firstNameController),
-          const SizedBox(height: 16),
-          _buildField('Last Name', 'Enter last name', lastNameController),
-          const SizedBox(height: 16),
-          _buildField('Phone Number', 'Enter Phone Number', phoneController),
-          const SizedBox(height: 24),
-          Row(
-            spacing: 10,
-            children: [
-              Expanded(
+            const SizedBox(height: 8),
+            const Text(
+              'Quickly onboard a patient into the system.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.secondary),
+            ),
+            const SizedBox(height: 24),
+            _buildField('First Name', 'Enter first name', firstNameController,    validator: (value) => value?.isEmpty ?? true
+                ? 'Please enter patient name'
+                : null,),
+            const SizedBox(height: 16),
+            _buildField('Last Name', 'Enter last name', lastNameController,validator: (value) => value?.isEmpty ?? true
+                ? 'Please enter patient name'
+                : null,),
+            const SizedBox(height: 16),
+            _buildField('Phone Number', 'Enter Phone Number', phoneController,    validator: (value) {
+              if (value?.isEmpty ?? true)
+                return 'Please enter phone number';
+              if (!RegExp(r'^[0-9]{10}$').hasMatch(value!))
+                return 'Enter a valid 10-digit number';
+              return null;
+            },),
+            const SizedBox(height: 24),
+            Row(
+              spacing: 10,
+              children: [
+                Expanded(
 
-                child: Animatedbutton(
+                  child: Animatedbutton(
 
-                  title: 'Discard',
-                  isLoading: isLoading,
-                  onPressed: () {
-                    Navigator.pop(context); // Close the modal
-                  },
-                  titlecolor:AppColors.secondary,
-                  backgroundColor: Colors.white,
-                  borderColor: AppColors.secondary,
+                    title: 'Discard',
+                    isLoading: isLoading,
+                    onPressed: () {
+                      _nameController.clear();
+                      _lastnameController.clear();
+                      _phoneController.clear();
+                      Navigator.pop(context);
+                    },
+                    titlecolor:AppColors.secondary,
+                    backgroundColor: Colors.white,
+                    borderColor: AppColors.secondary,
 
-                  shadowColor: AppColors.primary,
-                ),
-              ),
-
-
-              Expanded(
-
-                child: Animatedbutton(
-
-                  title: 'Add Patient',
-                  isLoading: isLoading,
-                  onPressed: () {
-                        Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PatientDataTabsScreen(),
+                    shadowColor: AppColors.primary,
                   ),
-                );
-                  },
-                  backgroundColor: AppColors.secondary,
-                  shadowColor: AppColors.primary,
                 ),
-              ),
-            ],
-          ),
-        ],
+
+
+                Expanded(
+                  child: Animatedbutton(
+                    title: 'Add Patient',
+                    isLoading: isLoading,
+                    onPressed: _isSubmitting ? null : () => _AddPatientsubmit(),
+
+
+
+                    backgroundColor: AppColors.secondary,
+                    shadowColor: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
 // Example of the _buildField method (you should have this implemented)
-  Widget _buildField(String label, String hint, TextEditingController controller) {
+  Widget _buildField(
+      String label,
+      String hint,
+      TextEditingController controller, {
+        String? Function(String?)? validator,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, color: AppColors.primary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+          ),
+        ),
         const SizedBox(height: 4),
         CustomTextField(
           controller: controller,
           hintText: hint,
-
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
-          validator: (value) {
-
-            return null;
-          },
+          validator: validator,
         ),
-
       ],
     );
   }
+
 
   Widget _buildFollowUpItem({
     required String name,

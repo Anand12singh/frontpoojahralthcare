@@ -4,6 +4,7 @@ import 'package:poojaheakthcare/constants/global_variable.dart';
 import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
+import '../widgets/AnimatedButton.dart';
 import '../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -105,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen>
             if (token != null) {
               await AuthService.saveToken(token);
             }
-            Navigator.pushReplacementNamed(context, '/patientInfo');
+            Navigator.pushReplacementNamed(context, '/HomeScreen');
           } else {
             log('${responseData['message']}');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -164,11 +165,8 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          FadeTransition(
-                            opacity: _fadeInAnimation,
-                            child: _buildLogo(),
-                          ),
-                          const SizedBox(height: 40),
+
+
                           ScaleTransition(
                             scale: _scaleAnimation,
                             child: SlideTransition(
@@ -192,42 +190,13 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLogo() {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.primary.withOpacity(0.1),
-                AppColors.primary.withOpacity(0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [
-                AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
-              ],
-            ).createShader(bounds),
-            child: Image.asset(
-              'assets/app_icon.png',
-              height: 70,
-            ),
-          ),
+        Image.asset(
+          'assets/logo.png',
+          height: 70,
         ),
         const SizedBox(height: 24),
         Text(
-          'Pooja Healthcare',
+          'Login',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -236,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
         Text(
-          'Clinic Records System',
+          'Enter your credentials to continue',
           style: TextStyle(
             fontSize: 16,
             color: AppColors.textSecondary,
@@ -252,72 +221,77 @@ class _LoginScreenState extends State<LoginScreen>
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
           width: 1,
         ),
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Login',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+      child: Column(
+        children: [
+          FadeTransition(
+            opacity: _fadeInAnimation,
+            child: _buildLogo(),
+          ),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                const SizedBox(height: 24),
+                _buildLoginForm(),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Enter your credentials to continue',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildLoginForm(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLoginForm() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Username',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
         CustomTextField(
           controller: _nameController,
-          label: 'User Name',
-          prefixIcon: Icons.person,
+          hintText: 'Enter username',
+
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter your user name';
             }
-            // if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-            //   return 'Enter a valid email';
-            // }
             return null;
           },
         ),
         const SizedBox(height: 16),
+        Text(
+          'Password',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
         CustomTextField(
           controller: _passwordController,
-          label: 'Password',
-          prefixIcon: Icons.lock_outlined,
+          hintText: 'Enter password',
+
           obscureText: _obscurePassword,
           textInputAction: TextInputAction.done,
           suffixIcon: IconButton(
@@ -341,53 +315,64 @@ class _LoginScreenState extends State<LoginScreen>
           },
           onFieldSubmitted: (_) => _login(),
         ),
-        const SizedBox(height: 24),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          width: double.infinity,
-          height: 50,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: _isLoading
-                ? []
-                : [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-          ),
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _login,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'LOGIN',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
+
+        const SizedBox(height: 12),
+
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Checkbox(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                side: BorderSide(style: BorderStyle.solid),
+                  value: false, // You can bind this to a state variable
+                  onChanged: (value) {
+                    // setState(() => _keepMeLoggedIn = value ?? false);
+                  },
+                ),
+                Text(
+                  'Keep me logged in',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
+              ],
+            ),
+            GestureDetector(
+
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/addPatient');
+              },
+              child: Text(
+                'Forget password?',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.bluePrimary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: Animatedbutton(
+            isLoading: _isLoading,
+            onPressed: _login,
+            backgroundColor: AppColors.secondary,
+            shadowColor: AppColors.primary,
           ),
         ),
+
+
       ],
     );
   }
+
 }

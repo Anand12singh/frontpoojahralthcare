@@ -5,13 +5,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
-import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'constants/global_variable.dart';
 import 'firebase_options.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
 
 /// Background notification handler (Mobile Only)
 @pragma('vm:entry-point')
@@ -44,6 +46,7 @@ Future<void> main() async {
   // Initialize notification service
   await NotificationService.initialize();
 
+
   runApp(const MyApp());
 }
 
@@ -56,6 +59,12 @@ class MyApp extends StatelessWidget {
       title: 'Pooja Healthcare',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        fontFamily: 'Plus Jakarta Sans',
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+        primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
+
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
         useMaterial3: false,
@@ -82,7 +91,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/patientInfo': (context) => const PatientInfoScreen(),
+       // '/patientInfo': (context) => const PatientInfoScreen(),
+        '/HomeScreen': (context) => const HomeScreen(),
+        '/addPatient': (context) => const PatientRegistrationPage(),
       },
       navigatorKey: NotificationService.navigatorKey,
     );

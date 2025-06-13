@@ -117,7 +117,6 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               onPressed: () {
                 Navigator.of(context).pop();
-                // TODO: Add logic to open app store/play store
               },
             ),
           ],
@@ -133,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (mounted) {
       Navigator.pushReplacementNamed(
         context,
-        isLoggedIn ? '/patientInfo' : '/login',
+        isLoggedIn ? '/HomeScreen' : '/login',
       );
     }
   }

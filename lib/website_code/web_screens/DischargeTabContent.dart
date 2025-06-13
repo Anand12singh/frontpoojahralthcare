@@ -171,7 +171,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                   const Text('3. Upload Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
 
-                  DocumentUploadWidget(label1:"Upload Documents" ,label2:"Media History" ,),
+                  DocumentUploadWidget(label:"Upload Documents" ,docType:"Media History" ,onFilesSelected: (p0) {
+
+                  },),
 
                 ],
               )),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
@@ -11,12 +12,14 @@ import '../../screens/patient_info_screen.dart';
 import '../../utils/colors.dart';
 import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DatePickerInput.dart';
+import '../../widgets/DocumentUploadWidget.dart';
 import '../../widgets/DropdownInput.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
+import 'Home_Screen.dart';
 class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
@@ -97,10 +100,106 @@ class _OnboardingFormState extends State<OnboardingForm> {
   final TextEditingController _planController = TextEditingController();
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
-  Map<String, dynamic>? _patientData;
-  Map<String, dynamic>? _visitData;
-  String _gender = 'Male';
-  DateTime _selectedDate = DateTime.now();
+
+
+  //Doc &report controllers
+  // Add these to your existing controllers list
+  final TextEditingController _laboratoryController = TextEditingController();
+  final TextEditingController _hemoglobinController = TextEditingController();
+  final TextEditingController _totalLeucocyteCountController = TextEditingController();
+  final TextEditingController _esrController = TextEditingController();
+  final TextEditingController _plateletsController = TextEditingController();
+  final TextEditingController _urineRoutineController = TextEditingController();
+  final TextEditingController _urineCultureController = TextEditingController();
+  final TextEditingController _bunController = TextEditingController();
+  final TextEditingController _serumCreatinineController = TextEditingController();
+  final TextEditingController _serumElectrolytesController = TextEditingController();
+  final TextEditingController _lftController = TextEditingController();
+  final TextEditingController _prothrombinTimeController = TextEditingController();
+  final TextEditingController _bloodSugarFastingController = TextEditingController();
+  final TextEditingController _bloodSugarPostPrandialController = TextEditingController();
+  final TextEditingController _hba1cController = TextEditingController();
+  final TextEditingController _hbsagController = TextEditingController();
+  final TextEditingController _hivController = TextEditingController();
+  final TextEditingController _hcvController = TextEditingController();
+  final TextEditingController _thyroidFunctionTestController = TextEditingController();
+  final TextEditingController _miscReportController = TextEditingController();
+  final TextEditingController _bloodReportFindingsController = TextEditingController();
+  final TextEditingController _xrayFindingsController = TextEditingController();
+  final TextEditingController _ctScanFindingsController = TextEditingController();
+  final TextEditingController _mriFindingsController = TextEditingController();
+  final TextEditingController _petScanFindingsController = TextEditingController();
+  final TextEditingController _ecgFindingsController = TextEditingController();
+  final TextEditingController _echoFindingsController = TextEditingController();
+  final TextEditingController _pftFindingsController = TextEditingController();
+  final TextEditingController _miscFindingsController = TextEditingController();
+  final TextEditingController _doctorDiagnosisController = TextEditingController();
+  final TextEditingController _miscTextController = TextEditingController();
+
+
+  final TextEditingController _otherLocationController =
+  TextEditingController();
+
+
+  final TextEditingController _prothrombinTimController =
+  TextEditingController();
+
+  final TextEditingController _hBA1CController = TextEditingController();
+  final TextEditingController _hBSAGController = TextEditingController();
+
+//Thyroid Function tes
+  final TextEditingController _t3Controller = TextEditingController();
+  final TextEditingController _t4Controller = TextEditingController();
+  final TextEditingController _tshController = TextEditingController();
+  final TextEditingController _miscController = TextEditingController();
+  final TextEditingController _xRayLaboratoryController =
+  TextEditingController();
+  DateTime _dateofXRayController = DateTime.now();
+  final TextEditingController _xRayFindingController = TextEditingController();
+//ctscan
+  final TextEditingController _ctscanLaboratoryController =
+  TextEditingController();
+  DateTime _dateofctscanController = DateTime.now();
+  final TextEditingController _ctscanFindingController =
+  TextEditingController();
+//mri
+  final TextEditingController _mriLaboratoryController =
+  TextEditingController();
+  DateTime _dateofmriController = DateTime.now();
+  final TextEditingController _mriFindingController = TextEditingController();
+  final TextEditingController _occupationController = TextEditingController();
+//petscan
+  final TextEditingController _petscanLaboratoryController =
+  TextEditingController();
+  DateTime _dateofpetscanController = DateTime.now();
+  final TextEditingController _petscanFindingController =
+  TextEditingController();
+
+//ecg
+  final TextEditingController _ecgLaboratoryController =
+  TextEditingController();
+  DateTime _dateofecgController = DateTime.now();
+  final TextEditingController _ecgFindingController = TextEditingController();
+
+//2d
+  final TextEditingController _a2dLaboratoryController =
+  TextEditingController();
+  DateTime _dateofe2dController = DateTime.now();
+  final TextEditingController _a2dFindingController = TextEditingController();
+//pet
+  final TextEditingController _pftLaboratoryController =
+  TextEditingController();
+  DateTime _dateofpftController = DateTime.now();
+  final TextEditingController _pftFindingController = TextEditingController();
+//folow
+  DateTime _followupdateFindingController = DateTime.now();
+  //misc
+  final TextEditingController _miscLaboratoryController =
+  TextEditingController();
+  DateTime _dateofmiscController = DateTime.now();
+  final TextEditingController _miscFindingController = TextEditingController();
+
+  // Medical Conditions
   bool _hasDM = false;
   bool _hasHypertension = false;
   bool _hasIHD = false;
@@ -110,11 +209,23 @@ class _OnboardingFormState extends State<OnboardingForm> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
+
+  // Other state variables
+  bool _isLoadingLocations = false;
+
+  List<Map<String, dynamic>> _locations = [];
+  String? locationId = '2';
+  Map<String, dynamic>? _patientData;
+  Map<String, dynamic>? _visitData;
+  var _documentData;
+
+
+  String _gender = 'Male';
+  DateTime _selectedDate = DateTime.now();
+
   String? _selectedLocationId = '2';
   String _selectedLocationName = '';
-  List<Map<String, dynamic>> _locations = [];
-  var _documentData;
-  String? locationId = '2';
+
 
   String _ensureString(String? value) => value?.trim() ?? '';
   String _ensureNumber(String? value) => value?.trim().isEmpty ?? true ? '0' : value!.trim();
@@ -122,6 +233,19 @@ class _OnboardingFormState extends State<OnboardingForm> {
   String _ensureGender(String gender) {
     return gender == 'Male' ? '1' : gender == 'Female' ? '2' : '3';
   }
+
+  late Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
+    'blood_reports': [],
+    'xray_report': [],
+    'ecg_report': [],
+    'ct_scan_report': [],
+    'echocardiagram_report': [],
+    'misc_report': [],
+    'pr_image': [],
+    'pa_abdomen_image': [],
+    'pr_rectum_image': [],
+    'doctor_note_image': [],
+  };
   @override
 
   void initState() {
@@ -130,13 +254,72 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
     _phoneController.text = GlobalPatientData.phone ?? '';
-print("Global.phid");
-print(GlobalPatientData.phid);
-    if (GlobalPatientData.patientExist == 2) {
-      _fetchPatientData();
-    }
+    _uploadedFiles = {
+      'blood_reports': [],
+      'xray_report': [],
+      'ecg_report': [],
+      'ct_scan_report': [],
+      'echocardiagram_report': [],
+      'misc_report': [],
+      'pr_image': [],
+      'pa_abdomen_image': [],
+      'pr_rectum_image': [],
+      'doctor_note_image': [],
+    };
+    _submit();
+
 
     _fetchLocations();
+  }
+  Future<void> _submit() async {
+
+
+
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        'Cookie':
+        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+      };
+
+      final response = await http.post(
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        headers: headers,
+        body: json.encode({
+          "first_name": _firstNameController.text.trim(),
+          "last_name": _lastNameController.text.trim(),
+          "mobile_no": _phoneController.text.trim(),
+        }),
+      );
+
+      log('API Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          final data = responseData['data'][0];
+          int patientExist = data['patientExist'] ?? 0;
+          print("patientExist");
+          print(patientExist);
+
+
+
+          GlobalPatientData.patientExist= patientExist;
+
+          if (GlobalPatientData.patientExist == 2) {
+            _fetchPatientData();
+          }
+        } else {
+          showTopRightToast(context,responseData['message'] ?? 'Submission failed',backgroundColor: Colors.red);
+        }
+      } else {
+        showTopRightToast(context,'API Error: ${response.statusCode}',backgroundColor: Colors.red);
+      }
+    } catch (e) {
+      showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+    } finally {
+
+    }
   }
   void _calculateBMI() {
     if (_heightController.text.isNotEmpty && _weightController.text.isNotEmpty) {
@@ -235,6 +418,7 @@ print(GlobalPatientData.phid);
             _documentData = responseData['PatientDocumentInfo'] ?? {};
 
             log('_documentData $_documentData');
+            log('_patientData $_patientData');
 
             _populateFormFields();
           });
@@ -269,29 +453,35 @@ print(GlobalPatientData.phid);
     });
   }
   void _populateFormFields() {
-    try {
+    try {  _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
+    _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
+    _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
+    _altPhoneController.text =
+        _patientData?['alternative_no']?.toString() ?? '';
+    _occupationController.text =
+        _patientData?['occupation']?.toString() ?? '';
+    _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
+    _addressController.text = _patientData?['address']?.toString() ?? '';
+    _descriptionController.text =
+        _patientData?['description']?.toString() ?? '';
+    _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
+
+    _selectedDate = DateTime.parse(
+        _patientData?['date']?.toString() ?? DateTime.now().toString());
+
+    _referralController.text = _patientData?['referral_by']?.toString() ?? '';
+    _selectedLocationId = _patientData?['location']?.toString() ?? '2';
+    log('_selectedLocationId $_selectedLocationId');
+    final location = _locations.firstWhere(
+          (loc) => loc['id'].toString() == _selectedLocationId,
+      orElse: () => {}, // return empty map if not found
+    );
+
+    log('locationlocation: $location');
+    _otherLocationController.text =
+        _patientData?['other_location']?.toString() ?? '';
       // Personal Info
-      _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
-      _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
-      _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
-      _altPhoneController.text =
-          _patientData?['alternative_no']?.toString() ?? '';
-      _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
-      _addressController.text = _patientData?['address']?.toString() ?? '';
-      _descriptionController.text =
-          _patientData?['description']?.toString() ?? '';
-      _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
-
-      try {
-        _selectedDate = DateTime.parse(
-            _patientData?['date']?.toString() ?? DateTime.now().toString());
-      } catch (e) {
-        _selectedDate = DateTime.now();
-      }
-
-      _referralController.text = _patientData?['referral_by']?.toString() ?? '';
-
-      // Visit Info
+      _tempController.text = _visitData?['temp']?.toString() ?? '';
       _ageController.text = _visitData?['age']?.toString() ?? '';
       _heightController.text = _visitData?['height']?.toString() ?? '';
       _weightController.text = _visitData?['weight']?.toString() ?? '';
@@ -317,7 +507,7 @@ print(GlobalPatientData.phid);
           _visitData?['past_surgical_history']?.toString() ?? '';
       _drugAllergyController.text =
           _visitData?['drug_allergy']?.toString() ?? '';
-      _tempController.text = _visitData?['temp']?.toString() ?? '';
+      _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
       _pulseController.text = _visitData?['pulse']?.toString() ?? '';
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
@@ -351,19 +541,108 @@ print(GlobalPatientData.phid);
       _doctorNotesController.text =
           _patientData?['doctor_note']?.toString() ?? '';
 
-      locationId = _patientData?['location']?.toString() ?? '2';
+      _hemoglobinController.text = _visitData?['heamoglobin']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _esrController.text = _visitData?['esr']?.toString() ?? '';
+      _plateletsController.text = _visitData?['platelets']?.toString() ?? '';
+      _urineRoutineController.text =
+          _visitData?['urine_routine']?.toString() ?? '';
+      _urineCultureController.text =
+          _visitData?['urine_culture']?.toString() ?? '';
+      _bunController.text = _visitData?['bun']?.toString() ?? '';
+      _serumCreatinineController.text =
+          _visitData?['serum_creatinine']?.toString() ?? '';
+      _serumElectrolytesController.text =
+          _visitData?['serum_electrolytes']?.toString() ?? '';
+      _lftController.text = _visitData?['lft']?.toString() ?? '';
+      _prothrombinTimController.text =
+          _visitData?['prothrombin_time_inr']?.toString() ?? '';
+      _bloodSugarFastingController.text =
+          _visitData?['blood_sugar_fasting']?.toString() ?? '';
+      _bloodSugarPostPrandialController.text =
+          _visitData?['blood_sugar_post_prandial']?.toString() ?? '';
+      _hBA1CController.text = _visitData?['hba1c']?.toString() ?? '';
+      _hBSAGController.text = _visitData?['hbsag']?.toString() ?? '';
+      _hivController.text = _visitData?['hiv']?.toString() ?? '';
+      _hcvController.text = _visitData?['hcv']?.toString() ?? '';
+      _t3Controller.text = _visitData?['t3']?.toString() ?? '';
+      _t4Controller.text = _visitData?['t4']?.toString() ?? '';
+      _tshController.text = _visitData?['tsh']?.toString() ?? '';
+      _miscController.text = _visitData?['misc']?.toString() ?? '';
+      _xRayLaboratoryController.text =
+          _visitData?['x_ray_laboratory']?.toString() ?? '';
+      if (location.isNotEmpty) {
+        _selectedLocationName = location['location'] ?? '';
+        log('_selectedLocationName $_selectedLocationName');
+      } else {
+        _selectedLocationName = '';
+        log('Location not found for ID $_selectedLocationId');
+      }
+
+      _dateofXRayController = DateTime.parse(
+          _visitData?['date_of_x_ray']?.toString() ??
+              DateTime.now().toString());
+
+      _xRayFindingController.text =
+          _visitData?['x_ray_finding']?.toString() ?? '';
+      _ctscanLaboratoryController.text =
+          _visitData?['ct_scan_laboratory']?.toString() ?? '';
+
+      _dateofctscanController = DateTime.parse(
+          _visitData?['date_of_ct_scan']?.toString() ??
+              DateTime.now().toString());
+
+      _ctscanFindingController.text =
+          _visitData?['ct_scan_finding']?.toString() ?? '';
+
+      _mriLaboratoryController.text =
+          _visitData?['mri_laboratory']?.toString() ?? '';
+
+      _dateofmriController = DateTime.parse(
+          _visitData?['date_of_mri']?.toString() ?? DateTime.now().toString());
+
+      _mriFindingController.text = _visitData?['mri_finding']?.toString() ?? '';
+      _petscanLaboratoryController.text =
+          _visitData?['pet_scan_laboratory']?.toString() ?? '';
+      _dateofpetscanController = DateTime.parse(
+          _visitData?['date_of_pet_scan']?.toString() ??
+              DateTime.now().toString());
+      _petscanFindingController.text =
+          _visitData?['pet_scan_finding']?.toString() ?? '';
+      _ecgLaboratoryController.text =
+          _visitData?['ecg_laboratory']?.toString() ?? '';
+      _dateofecgController = DateTime.parse(
+          _visitData?['date_of_ecg']?.toString() ?? DateTime.now().toString());
+      _ecgFindingController.text = _visitData?['ecg_finding']?.toString() ?? '';
+      _a2dLaboratoryController.text =
+          _visitData?['a2d_echo_laboratory']?.toString() ?? '';
+      _a2dFindingController.text =
+          _visitData?['a2d_echo_finding']?.toString() ?? '';
+      _dateofe2dController = DateTime.parse(
+          _visitData?['date_of_a2d_echo']?.toString() ??
+              DateTime.now().toString());
+
+      _pftLaboratoryController.text =
+          _visitData?['pft_laboratory']?.toString() ?? '';
+      _pftFindingController.text = _visitData?['pft_finding']?.toString() ?? '';
+      _dateofpftController = DateTime.parse(
+          _visitData?['date_of_pft']?.toString() ?? DateTime.now().toString());
+      _miscLaboratoryController.text =
+          _visitData?['msic_laboratory']?.toString() ?? '';
+      _miscFindingController.text =
+          _visitData?['msic_finding']?.toString() ?? '';
+      _dateofmiscController = DateTime.parse(
+          _visitData?['date_of_msic']?.toString() ?? DateTime.now().toString());
+      _followupdateFindingController = DateTime.parse(
+          _visitData?['follow_up_date']?.toString() ??
+              DateTime.now().toString());
 
 
-      _selectedLocationId = _patientData?['location']?.toString() ?? '2';
-
-      final location = _locations.firstWhere(
-            (loc) => loc['id'].toString() == _selectedLocationId,
-        orElse: () => {'id': '2', 'location': 'Unknown'},
-      );
-      _selectedLocationName = location['location'] ?? 'Unknown';
-
-
-      _uploadedFiles.clear();
+      print("Before populating _uploadedFiles:");
+      print(_uploadedFiles);
 
       if (_documentData != null && _documentData is Map) {
         _documentData.forEach((docTypeId, files) {
@@ -377,16 +656,15 @@ print(GlobalPatientData.phid);
               return {
                 'id': file['id'],
                 'path': file['media_url'],
-                'name':
-                path.basename(file['media_url']?.toString() ?? 'unknown'),
-                'type': path
-                    .extension(file['media_url']?.toString() ?? '')
-                    .replaceAll('.', '')
-                    .toUpperCase(),
+                'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
+                'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
                 'size': 'N/A',
                 'isExisting': true,
               };
             }).toList();
+
+            print("After populating ${docType}:");
+            print(_uploadedFiles[docType]);
           } catch (e) {
             log('error $e');
           }
@@ -397,18 +675,7 @@ print(GlobalPatientData.phid);
     }
   }
 
-  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    'blood_reports': [],
-    'xray_report': [],
-    'ecg_report': [],
-    'ct_scan_report': [],
-    'echocardiagram_report': [],
-    'misc_report': [],
-    'pr_image': [],
-    'pa_abdomen_image': [],
-    'pr_rectum_image': [],
-    'doctor_note_image': [],
-  };
+
   @override
   void dispose() {
     // Dispose all controllers
@@ -460,6 +727,39 @@ print(GlobalPatientData.phid);
     _descriptionController.dispose();
     _copdDescriptionController.dispose();
     _ihdDescriptionController.dispose();
+
+    _laboratoryController.dispose();
+    _hemoglobinController.dispose();
+    _totalLeucocyteCountController.dispose();
+    _esrController.dispose();
+    _plateletsController.dispose();
+    _urineRoutineController.dispose();
+    _urineCultureController.dispose();
+    _bunController.dispose();
+    _serumCreatinineController.dispose();
+    _serumElectrolytesController.dispose();
+    _lftController.dispose();
+    _prothrombinTimeController.dispose();
+    _bloodSugarFastingController.dispose();
+    _bloodSugarPostPrandialController.dispose();
+    _hba1cController.dispose();
+    _hbsagController.dispose();
+    _hivController.dispose();
+    _hcvController.dispose();
+    _thyroidFunctionTestController.dispose();
+    _miscReportController.dispose();
+    _bloodReportFindingsController.dispose();
+    _xrayFindingsController.dispose();
+    _ctScanFindingsController.dispose();
+    _mriFindingsController.dispose();
+    _petScanFindingsController.dispose();
+    _ecgFindingsController.dispose();
+    _echoFindingsController.dispose();
+    _pftFindingsController.dispose();
+    _miscFindingsController.dispose();
+    _doctorDiagnosisController.dispose();
+    _miscTextController.dispose();
+
     super.dispose();
   }
   Future<void> _submitForm() async {
@@ -558,6 +858,65 @@ print(GlobalPatientData.phid);
         'status': Global.status ?? GlobalPatientData.patientId.toString(),
         'doctor_note': _ensureString(_doctorNotesController.text),
         'description': _ensureString(_descriptionController.text),
+        'other_location': _ensureString(_otherLocationController.text),
+        //add
+        'follow_up_date':
+        _followupdateFindingController.toIso8601String().split('T')[0],
+        'heamoglobin': _ensureString(_hemoglobinController.text),
+        'total_leucocyte_count':
+        _ensureString(_totalLeucocyteCountController.text),
+        'esr': _ensureString(_esrController.text),
+        'platelets': _ensureString(_plateletsController.text),
+        'urine_routine': _ensureString(_urineRoutineController.text),
+        'urine_culture': _ensureString(_urineCultureController.text),
+        'bun': _ensureString(_bunController.text),
+        'serum_creatinine': _ensureString(_serumCreatinineController.text),
+        'serum_electrolytes': _ensureString(_serumElectrolytesController.text),
+        'lft': _ensureString(_lftController.text),
+        'prothrombin_time_inr': _ensureString(_prothrombinTimController.text),
+        'blood_sugar_fasting': _ensureString(_bloodSugarFastingController.text),
+        'blood_sugar_post_prandial':
+        _ensureString(_bloodSugarPostPrandialController.text),
+        'hba1c': _ensureString(_hBA1CController.text),
+        'hbsag': _ensureString(_hBSAGController.text),
+        'hiv': _ensureString(_hivController.text),
+        'hcv': _ensureString(_hcvController.text),
+        't3': _ensureString(_t3Controller.text),
+        't4': _ensureString(_t4Controller.text),
+        'tsh': _ensureString(_tshController.text),
+        'misc': _ensureString(_miscController.text),
+        'x_ray_laboratory': _ensureString(_xRayLaboratoryController.text),
+        'date_of_x_ray': _dateofXRayController.toIso8601String().split('T')[0],
+        'x_ray_finding': _ensureString(_xRayFindingController.text),
+        'ct_scan_laboratory': _ensureString(_ctscanLaboratoryController.text),
+        'date_of_ct_scan':
+        _dateofctscanController.toIso8601String().split('T')[0],
+
+        'ct_scan_finding': _ensureString(_ctscanFindingController.text),
+
+        'mri_laboratory': _ensureString(_mriLaboratoryController.text),
+        'date_of_mri': _dateofmriController.toIso8601String().split('T')[0],
+        'mri_finding': _ensureString(_mriFindingController.text),
+        'pet_scan_laboratory': _ensureString(_petscanLaboratoryController.text),
+        'date_of_pet_scan':
+        _dateofpetscanController.toIso8601String().split('T')[0],
+        'pet_scan_finding': _ensureString(_petscanFindingController.text),
+
+        'ecg_laboratory': _ensureString(_ecgLaboratoryController.text),
+        'date_of_ecg': _dateofecgController.toIso8601String().split('T')[0],
+
+        'ecg_finding': _ensureString(_ecgFindingController.text),
+        'a2d_echo_laboratory': _ensureString(_a2dLaboratoryController.text),
+        'date_of_a2d_echo':
+        _dateofe2dController.toIso8601String().split('T')[0],
+
+        'a2d_echo_finding': _ensureString(_a2dFindingController.text),
+        'pft_laboratory': _ensureString(_pftLaboratoryController.text),
+        'date_of_pft': _dateofpftController.toIso8601String().split('T')[0],
+        'pft_finding': _ensureString(_pftFindingController.text),
+        'msic_laboratory': _ensureString(_miscLaboratoryController.text),
+        'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
+        'msic_finding': _ensureString(_miscFindingController.text),
       };
 
       if (Global.status == '2') {
@@ -567,58 +926,32 @@ print(GlobalPatientData.phid);
       request.fields.addAll(fields);
       log('Form Fields: ${jsonEncode(fields)}');
       List<String> existingFileIds = [];
-      // ✅ Handle File Uploads (New + Existing)
-      // ✅ Handle File Uploads (New + Existing)
-      for (var entry in _uploadedFiles.entries) {
-        final docType = entry.key;
-        final files = entry.value;
-
-        String? fieldName = _mapDocTypeToField(docType);
+// Inside your _submitForm function
+      for (var docType in _uploadedFiles.keys) {
+        final fieldName = _mapDocTypeToField(docType);
         if (fieldName == null) continue;
 
-        for (var file in files) {
-          if (file['isExisting'] == true) {
-            existingFileIds.add(file['id'].toString());
-          } else {
-            if (kIsWeb) {
-              Uint8List? fileBytes = file['bytes'];
-              String? fileName = file['name'] ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (fileBytes != null && fileName != null) {
-                request.files.add(http.MultipartFile.fromBytes(
-                  fieldName,
-                  fileBytes,
-                  filename: fileName,
-                ));
-              } else {
-                log('❌ Web file data incomplete: bytes=${fileBytes != null}, name=${fileName != null}');
-                continue;
-              }
-            } else {
-              // Mobile handling
-              String? filePath = file['path'];
-              String? fileName = file['name'] ??
-                  path.basename(filePath ?? '') ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (filePath != null) {
-                final fileToUpload = File(filePath);
-                if (await fileToUpload.exists()) {
-                  request.files.add(await http.MultipartFile.fromPath(
-                    fieldName,
-                    filePath,
-                    filename: fileName,
-                  ));
-                } else {
-                  log('❌ File not found: $filePath');
-                }
-              }
+        for (var file in _uploadedFiles[docType]!) {
+          if (!file['isExisting']) { // Only upload new files
+            if (kIsWeb && file['bytes'] != null) {
+              request.files.add(http.MultipartFile.fromBytes(
+                fieldName,
+                file['bytes']!,
+                filename: file['name'],
+              ));
+            } else if (!kIsWeb && file['path'] != null) {
+              request.files.add(await http.MultipartFile.fromPath(
+                fieldName,
+                file['path']!,
+                filename: file['name'],
+              ));
             }
+          } else {
+            // For existing files, you might want to send their IDs
+            existingFileIds.add(file['id'].toString());
           }
         }
       }
-
       if (existingFileIds.isNotEmpty) {
         request.fields['existing_file'] = existingFileIds.join(',');
       }
@@ -652,7 +985,7 @@ print(GlobalPatientData.phid);
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => PatientInfoScreen()),
+                            builder: (context) => HomeScreen(initialPage: 1,)),
                       );
                     },
                     child: const Text('view'),
@@ -662,15 +995,16 @@ print(GlobalPatientData.phid);
             });
         // Navigator.of(context).pop();
       } else {
-        ShowDialogs.showSnackBar(context,
-            '❌ Failed to save patient record. Status code: ${response.statusCode}');
+        showTopRightToast(context, '❌ Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.green);
+
       }
     } catch (e, stackTrace) {
       // Navigator.of(context).pop();s
       log('🚨 Submission Error: $e');
       log('Stack Trace: $stackTrace');
+      showTopRightToast(context, 'Error occurred: ${e.toString()}', backgroundColor: Colors.green);
 
-      ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
+
     }
   }
 
@@ -796,7 +1130,9 @@ print(GlobalPatientData.phid);
         showTopRightToast(context, responseData['message'], backgroundColor: Colors.green);
 
         // Navigate to success screen or patient info screen
-        *//*Navigator.pushReplacement(
+        */
+
+  /*Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => PatientInfoScreen()),
         );*//*
@@ -1183,7 +1519,7 @@ print(GlobalPatientData.phid);
                     ),
 
 
-                     FormInput(label: 'Pulse (BPM)'),
+                     FormInput(label: 'Pulse (BPM)',controller: _pulseController,),
                      Container(
                        width: 308,
                        child: Row(
@@ -1542,32 +1878,32 @@ print(GlobalPatientData.phid);
                 Wrap(
                   spacing: 20,
                   runSpacing: 16,
-                  children: const [
+                  children:  [
                     SizedBox(
                         width: double.infinity,
-                        child: FormInput(label: 'Laboratory')),
-                    FormInput(label: 'Hemoglobin'),
-                    FormInput(label: 'Total leucocyte count'),
-                    FormInput(label: 'ESR'),
-                    FormInput(label: 'Platelets'),
-                    FormInput(label: 'Urine Routine'),
-                    FormInput(label: 'Urine Culture'),
-                    FormInput(label: 'BUN'),
-                    FormInput(label: 'Serum Creatinine'),
-                    FormInput(label: 'Serum Electrolytes'),
-                    FormInput(label: 'LFT'),
-                    FormInput(label: 'Prothrombin Time / INR'),
-                    FormInput(label: 'Blood Sugar Fasting'),
-                    FormInput(label: 'Blood Sugar Post Prandial'),
-                    FormInput(label: 'HBA1C'),
-                    FormInput(label: 'HBSAG'),
-                    FormInput(label: 'HIV'),
-                    FormInput(label: 'HCV'),
-                    FormInput(label: 'Thyroid Function Test T3 T4 TSH'),
-                    FormInput(label: 'MISC'),
+                        child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
+                    FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
+                    FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
+                    FormInput(label: 'ESR',controller: _esrController,),
+                    FormInput(label: 'Platelets',controller: _plateletsController,),
+                    FormInput(label: 'Urine Routine',controller:_urineRoutineController),
+                    FormInput(label: 'Urine Culture',controller:_urineCultureController),
+                    FormInput(label: 'BUN',controller:_bunController),
+                    FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
+                    FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
+                    FormInput(label: 'LFT',controller:_lftController),
+                    FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController),
+                    FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
+                    FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
+                    FormInput(label: 'HBA1C',controller:_hBA1CController),
+                    FormInput(label: 'HBSAG',controller:_hBSAGController),
+                    FormInput(label: 'HIV',controller:_hivController),
+                    FormInput(label: 'HCV',controller:_hcvController),
+                    FormInput(label: 'Thyroid Function Test T3 T4 TSH',controller:_thyroidFunctionTestController),
+                    FormInput(label: 'MISC',controller:_miscController),
                     SizedBox(
                         width: double.infinity,
-                        child: FormInput(label: 'Findings')),
+                        child: FormInput(label: 'Findings',controller: _miscFindingsController,)),
 
                   ],
                 ),
@@ -1588,7 +1924,7 @@ print(GlobalPatientData.phid);
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller:_xRayFindingController)),
                 SizedBox(height: 10,),
                 Row(
 
@@ -1606,16 +1942,28 @@ print(GlobalPatientData.phid);
                   ),
                 ],),
                 SizedBox(height: 10,),
-                Row(
+
+                DocumentUploadWidget(
+                  docType: 'ct_scan_report', // This should match one of your map keys
+                  label: "CT Scan Report",
+                  onFilesSelected: (files) {
+                    setState(() {
+                      _uploadedFiles['ct_scan_report'] = files;
+                    });
+                  },
+                  initialFiles: _uploadedFiles['ct_scan_report'],
+                ),
+             /*   Row(
                   spacing: 10,
                   children: [
-                    FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",),
+
+                    FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
 
                     Expanded(
 
-                        child: FormInput(label: 'Media History')),
+                        child: FormInput(label: 'Media History',)),
                   ],
-                ),
+                ),*/
                 SizedBox(height: 10,),
                 Row(
                   spacing: 10,
@@ -1631,7 +1979,7 @@ print(GlobalPatientData.phid);
                     ),
                     Expanded(
 
-                        child: FormInput(label: 'Findings')),
+                        child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
                   ],
                 ),     SizedBox(height: 10,),
 
@@ -1651,7 +1999,7 @@ print(GlobalPatientData.phid);
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller: _mriFindingController,)),
                 SizedBox(height: 10,),
                 Row(children: [
                   Text(
@@ -1670,7 +2018,7 @@ print(GlobalPatientData.phid);
 
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
                 SizedBox(height: 10,),
                 Row(
 
@@ -1688,21 +2036,21 @@ print(GlobalPatientData.phid);
                     ),
                   ],),
                 SizedBox(height: 10,),
-
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(label: 'ECG Report',hintlabel: "Upload ECG Reports",),
-
-                    Expanded(
-
-                        child: FormInput(label: 'Media History')),
-                  ],
+                DocumentUploadWidget(
+                  docType: 'ecg_report', // This should match one of your map keys
+                  label: "Upload ECG Reports",
+                  onFilesSelected: (files) {
+                    setState(() {
+                      _uploadedFiles['ecg_report'] = files;
+                    });
+                  },
+                  initialFiles: _uploadedFiles['ecg_report'],
                 ),
+
                 SizedBox(height: 10,),
                 SizedBox(
           width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
                 SizedBox(height: 10,),
 
                 Row(
@@ -1722,7 +2070,7 @@ print(GlobalPatientData.phid);
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller:_echoFindingsController)),
                 SizedBox(height: 10,),
                 Row(
 
@@ -1742,7 +2090,7 @@ print(GlobalPatientData.phid);
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller: _echoFindingsController,)),
                 SizedBox(height: 10,),
                 Row(
 
@@ -1762,22 +2110,24 @@ print(GlobalPatientData.phid);
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(height: 10,),
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(label: 'MISC',hintlabel: "Upload MISC",),
+                    child: FormInput(label: 'Findings',controller: _pftFindingController,)),
+                SizedBox(height: 10),
 
-                    Expanded(
-
-                        child: FormInput(label: 'Media History')),
-                  ],
+                DocumentUploadWidget(
+                  docType: 'misc_report', // This should match one of your map keys
+                  label: "Upload MISC",
+                  onFilesSelected: (files) {
+                    setState(() {
+                      _uploadedFiles['misc_report'] = files;
+                    });
+                  },
+                  initialFiles: _uploadedFiles['misc_report'],
                 ),
+
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings')),
+                    child: FormInput(label: 'Findings',controller: _miscFindingController,)),
                 SizedBox(height: 10,),
 
               ],
@@ -1811,7 +2161,7 @@ print(GlobalPatientData.phid);
 
                   Expanded(
 
-                      child: FormInput(label: 'Media History')),
+                      child: FormInput(label: 'Media History',)),
                 ],
               ),
               SizedBox(height: 10,),
@@ -1843,7 +2193,7 @@ print(GlobalPatientData.phid);
             SizedBox(height: 20,),
             SizedBox(
                 width: double.infinity,
-                child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,)),
+                child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscTextController,)),
 
 
           ],),

@@ -1,16 +1,21 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../utils/colors.dart';
 
 class DocumentUploadWidget extends StatefulWidget {
-  final String label1;
-  final String label2;
+  final String docType;
+  final String label;
+  final Function(List<Map<String, dynamic>>) onFilesSelected;
+  final List<Map<String, dynamic>>? initialFiles;
 
   const DocumentUploadWidget({
     super.key,
-    required this.label1,
-    required this.label2,
+    required this.docType,
+    required this.label,
+    required this.onFilesSelected,
+    this.initialFiles,
   });
 
   @override
@@ -18,16 +23,57 @@ class DocumentUploadWidget extends StatefulWidget {
 }
 
 class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
-  List<PlatformFile> _selectedFiles = [];
+  List<Map<String, dynamic>> _selectedFiles = [];
 
-  void _pickFiles() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-    );
-    if (result != null) {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with existing files if any
+    _selectedFiles = widget.initialFiles?.where((file) => file['isExisting'] ?? false).toList() ?? [];
+  }
+
+  @override
+  void didUpdateWidget(DocumentUploadWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update when parent provides new initialFiles
+    if (widget.initialFiles != oldWidget.initialFiles) {
       setState(() {
-        _selectedFiles.addAll(result.files);
+        // Keep newly uploaded files and merge with updated existing files
+        final newFiles = _selectedFiles.where((f) => !(f['isExisting'] ?? true)).toList();
+        final existingFiles = widget.initialFiles?.where((f) => f['isExisting'] ?? false).toList() ?? [];
+        _selectedFiles = [...newFiles, ...existingFiles];
       });
+    }
+  }
+
+  Future<void> _pickFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      );
+
+      if (result != null) {
+        List<Map<String, dynamic>> newFiles = result.files.map((file) {
+          return {
+            'path': kIsWeb ? file.name : file.path!,
+            'name': file.name,
+            'bytes': file.bytes,
+            'size': file.size,
+            'type': file.extension?.toUpperCase() ?? 'FILE',
+            'isExisting': false,
+          };
+        }).toList();
+
+        setState(() {
+          _selectedFiles.addAll(newFiles);
+        });
+
+        widget.onFilesSelected(_selectedFiles);
+      }
+    } catch (e) {
+      debugPrint('File picking error: $e');
     }
   }
 
@@ -35,10 +81,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     setState(() {
       _selectedFiles.removeAt(index);
     });
+    widget.onFilesSelected(_selectedFiles);
   }
 
-  String _formatSize(int bytes) {
-    return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  String _formatSize(dynamic size) {
+    if (size is int) {
+      if (size <= 0) return '0 KB';
+      return '${(size / 1024).toStringAsFixed(0)} KB';
+    }
+    return size?.toString() ?? '';
   }
 
   @override
@@ -54,26 +105,36 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.label1,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, color: AppColors.primary)),
-                  const SizedBox(height: 4),
+                  Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   GestureDetector(
                     onTap: _pickFiles,
                     child: Container(
                       height: 50,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      alignment: Alignment.centerLeft,
                       decoration: BoxDecoration(
-                        color: Colors.white,
                         border: Border.all(
-                            color: AppColors.textSecondary.withOpacity(0.3),
-                            width: 1.5),
+                          color: AppColors.textSecondary.withOpacity(0.3),
+                          width: 1.5,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        "Tap to upload documents",
-                        style: TextStyle(color: Colors.grey[700]),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.attach_file, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Tap to upload documents",
+                            style: TextStyle(color: Colors.grey[700]),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -83,38 +144,52 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
             const SizedBox(width: 12),
 
-            // Media History Display
+            // Uploaded Files Display
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.label2,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, color: AppColors.primary)),
-                  const SizedBox(height: 4),
+                  const Text(
+                    'Uploaded Files',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       border: Border.all(
-                          color: AppColors.textSecondary.withOpacity(0.3),
-                          width: 1.5),
+                        color: AppColors.textSecondary.withOpacity(0.3),
+                        width: 1.5,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: _selectedFiles.isEmpty
-                        ? Text("No media selected",
-                        style: TextStyle(color: Colors.grey[700]))
+                        ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        "No files selected",
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                    )
                         : Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: List.generate(_selectedFiles.length, (index) {
                         final file = _selectedFiles[index];
                         return Container(
-
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.grey[100],
                             borderRadius: BorderRadius.circular(8),
@@ -124,15 +199,20 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Media ${index + 1} (${_formatSize(file.size)})',
+                                '${file['name']} (${_formatSize(file['size'])})',
                                 style: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.w500),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               GestureDetector(
                                 onTap: () => _removeFile(index),
-                                child: const Icon(Icons.close,
-                                    color: Colors.red, size: 18),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                  size: 18,
+                                ),
                               ),
                             ],
                           ),

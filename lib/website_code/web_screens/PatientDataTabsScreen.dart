@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DischargeTabContent.dart';
 import '../../utils/colors.dart';
+import '../../widgets/KeepAlivePage.dart';
 import 'FollowUpsTabContent.dart';
 import 'Patient_Registration.dart';
 import 'SurgeryTabContent.dart';
@@ -13,9 +14,9 @@ class PatientDataTabsScreen extends StatefulWidget {
 }
 
 class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-
+  bool get wantKeepAlive => true;
   @override
   void initState() {
     super.initState();
@@ -44,7 +45,8 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppColors.primary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -62,12 +64,16 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                     width: 600,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius:BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12))
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
                     ),
                     child: TabBar(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 12),  // Space between tabs
                       controller: _tabController,
+                      isScrollable: false, // use true if tab texts are long
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 12),
                       labelColor: AppColors.primary,
                       unselectedLabelColor: AppColors.secondary,
                       labelStyle: const TextStyle(
@@ -78,18 +84,12 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                         fontWeight: FontWeight.normal,
                         fontSize: 14,
                       ),
-                      indicatorSize: null,
+                      indicatorSize: TabBarIndicatorSize.label,
                       indicator: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
                         color: Colors.transparent,
-                        border: Border(
-                          bottom: BorderSide(
-                            color:  Colors.transparent,
-
-                          ),
-                        ),
                       ),
                       tabs: const [
                         Tab(text: 'Onboarding'),
@@ -99,27 +99,30 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 1), // Small gap between tab bar and content
-                  Expanded(
+
+                  // const SizedBox(
+                  //     height: 1), // Small gap between tab bar and content
+                  Flexible(
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(12),
-                          bottomRight: Radius.circular(12),
-                          topRight: Radius.circular(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
                         ),
-                      ),
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          SingleChildScrollView(child: OnboardingForm()),
-                          const SingleChildScrollView(child: SurgeryTabContent()),
-                          const SingleChildScrollView(child: DischargeTabContent()),
-                          const SingleChildScrollView(child: FollowUpsTabContent()),
-                        ],
-                      ),
-                    ),
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            KeepAlivePage(
+                                child: SingleChildScrollView(
+                                    child: OnboardingForm())),
+                            KeepAlivePage(child: SurgeryTabContent()),
+                            KeepAlivePage(child: DischargeTabContent()),
+                            KeepAlivePage(child: FollowUpsTabContent()),
+                          ],
+                        )),
                   ),
                 ],
               ),

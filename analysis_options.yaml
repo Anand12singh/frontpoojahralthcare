@@ -9,6 +9,7 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
+    annotate_overrides: ignore
     must_be_immutable: ignore
     prefer_typing_uninitialized_variables: ignore
     unnecessary_string_interpolations: ignore

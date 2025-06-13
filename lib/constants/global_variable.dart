@@ -7,3 +7,22 @@ class Global {
   static String? device_info;
 
 }
+
+
+class GlobalPatientData {
+  static String? firstName;
+  static String? lastName;
+  static String? phone;
+  static int? patientExist;
+  static String? patientId;
+  static String? phid;
+
+  static void clear() {
+    firstName = null;
+    lastName = null;
+    phone = null;
+    patientExist = null;
+    patientId = null;
+    phid = null;
+  }
+}

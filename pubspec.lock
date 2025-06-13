@@ -640,6 +640,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   nm:
     dependency: transitive
     description:
@@ -872,6 +880,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.1"
+  provider:
+    dependency: "direct main"
+    description:
+      name: provider
+      sha256: "4abbd070a04e9ddc287673bf5a030c7ca8b685ff70218720abab8b092f53dd84"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.5"
   rxdart:
     dependency: transitive
     description:
@@ -1057,10 +1073,18 @@ packages:
     dependency: transitive
     description:
       name: timezone
-      sha256: ffc9d5f4d1193534ef051f9254063fa53d588609418c84299956c3db9383587d
+      sha256: dd14a3b83cfd7cb19e7888f1cbc20f258b8d71b54c06f79ac585f14093a287d1
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.10.1"
+  toast:
+    dependency: "direct main"
+    description:
+      name: toast
+      sha256: "12433091e3e5a25b3a25f670126e42547c9ade135de30ad9ace45d1ddccd57c9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   typed_data:
     dependency: transitive
     description:

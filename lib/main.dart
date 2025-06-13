@@ -46,7 +46,6 @@ Future<void> main() async {
   // Initialize notification service
   await NotificationService.initialize();
 
-
   runApp(const MyApp());
 }
 
@@ -64,7 +63,6 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
         primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
-
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
         useMaterial3: false,
@@ -91,7 +89,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-       // '/patientInfo': (context) => const PatientInfoScreen(),
+        // '/patientInfo': (context) => const PatientInfoScreen(),
         '/HomeScreen': (context) => const HomeScreen(),
         '/addPatient': (context) => const PatientRegistrationPage(),
       },

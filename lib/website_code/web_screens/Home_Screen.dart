@@ -3,14 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../screens/patient_list.dart';
 import '../../utils/colors.dart';
+import '../../widgets/KeepAlivePage.dart';
 import 'DashboardScreen.dart';
 import 'PatientDataTabsScreen.dart';
 import 'PatientRegistrationPage.dart';
 import 'Patient_Registration.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialPage; // Add this line
+
+  const HomeScreen({super.key, this.initialPage = 0}); // Modify this line
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isSidebarCollapsed = false;
   late Timer _timer;
   late String _currentTime;
+  late PageController _pageController; // Change this line
 
   @override
   void initState() {
@@ -31,6 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentTime = _formatDateTime(DateTime.now());
       });
     });
+    _pageController =
+        PageController(initialPage: widget.initialPage); // Modify this line
+    selectedPageIndex = widget.initialPage; // Add this line
   }
 
   String _formatDateTime(DateTime dt) {
@@ -46,11 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final List<Widget> pages = [
-    const DashboardScreen(),
-    const PatientDataTabsScreen(),
-    // Add more screens here
+    KeepAlivePage(child: DashboardScreen()),
+    KeepAlivePage(child: RecentPatientsListScreen()),
+    KeepAlivePage(child: PatientDataTabsScreen()),
+    
+    // Add other pages similarly
   ];
-
   void _toggleSidebar() {
     setState(() {
       isSidebarCollapsed = !isSidebarCollapsed;
@@ -66,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: isSidebarCollapsed ? 80 : 220,
-            color:Colors.white,
+            color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -119,15 +128,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Logout',
                     index: 5,
                   ),
-                  Divider(color: AppColors.secondary,),
+                  Divider(
+                    color: AppColors.secondary,
+                  ),
                   Image.asset(
                     'assets/appstore.png',
                     //height: 18,
-
-                  ), Image.asset(
+                  ),
+                  Image.asset(
                     'assets/googleplay.png',
-                   // height: 18,
-
+                    // height: 18,
                   ),
                 ],
               ),
@@ -155,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Container(
-
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8F9FB),
@@ -165,9 +174,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,
-                            children:  [
+                            children: [
                               Icon(Icons.search, size: 16, color: Colors.grey),
-SizedBox(width: 8,),
+                              SizedBox(
+                                width: 8,
+                              ),
                               Expanded(
                                 child: TextField(
                                   textAlign: TextAlign.start,
@@ -179,8 +190,8 @@ SizedBox(width: 8,),
                                   ),
                                 ),
                               ),
-
-                              const Icon(Icons.close, size: 18, color: Colors.grey),
+                              const Icon(Icons.close,
+                                  size: 18, color: Colors.grey),
                             ],
                           ),
                         ),
@@ -198,8 +209,11 @@ SizedBox(width: 8,),
                   ),
                 ),
                 Expanded(
-                  child: pages[selectedPageIndex],
-                ),
+                  child: PageView(
+                    controller: _pageController,
+                    children: pages,
+                  ),
+                )
               ],
             ),
           ),
@@ -217,19 +231,24 @@ SizedBox(width: 8,),
 
     return Container(
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFEDF1F6) : Colors.transparent,
+        color: isSelected
+            ? AppColors.primary.withOpacity(0.6)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: InkWell(
-          onTap: () => setState(() => selectedPageIndex = index),
+          onTap: () {
+            setState(() => selectedPageIndex = index);
+            _pageController.jumpToPage(index);
+          },
           child: Row(
             children: [
               Image.asset(
                 assetPath,
                 height: 18,
-                color: isSelected ? AppColors.primary : AppColors.secondary,
+                color: isSelected ? AppColors.surface : AppColors.secondary,
               ),
               if (!isSidebarCollapsed) ...[
                 const SizedBox(width: 12),
@@ -237,7 +256,7 @@ SizedBox(width: 8,),
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isSelected ? AppColors.primary : AppColors.secondary,
+                    color: isSelected ? AppColors.surface : AppColors.secondary,
                   ),
                 ),
               ],

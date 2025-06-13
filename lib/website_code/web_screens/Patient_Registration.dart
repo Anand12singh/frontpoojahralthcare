@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/services/auth_service.dart';
@@ -14,6 +16,7 @@ import '../../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 
 import '../../widgets/showTopSnackBar.dart';
+import '../../widgets/show_dialog.dart';
 class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
@@ -123,11 +126,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
   void initState() {
     super.initState();
-    _phIdController.text = 'PH-${Global.phid1 ?? ''}';
+    _phIdController.text = 'PH-${GlobalPatientData.patientId ?? ''}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
     _phoneController.text = GlobalPatientData.phone ?? '';
-
+print("Global.phid");
+print(GlobalPatientData.phid);
     if (GlobalPatientData.patientExist == 2) {
       _fetchPatientData();
     }
@@ -458,8 +462,243 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _ihdDescriptionController.dispose();
     super.dispose();
   }
-
   Future<void> _submitForm() async {
+    bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
+    bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+    bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
+    // if (!_validateFiles()) {
+    //   ShowDialogs.showSnackBar(
+    //       context, 'Some files are invalid. Please check your uploads.');
+    //   return;
+    // }
+
+    if (!personalValid || !medicalValid || !reportsValid) {
+      ShowDialogs.showSnackBar(context, 'Please fill all required fields');
+      return;
+    }
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) =>
+        const Center(child: CircularProgressIndicator()),
+      );
+
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        ShowDialogs.showSnackBar(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+      );
+
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+      log('_doctorNotesController.text ${_doctorNotesController.text}');
+
+      // ✅ Add Form Fields
+      Map<String, String> fields = {
+        'first_name': _ensureString(_firstNameController.text),
+        'last_name': _ensureString(_lastNameController.text),
+        'gender': _ensureGender(_gender),
+        'mobile_no': _ensureString(_phoneController.text),
+        'alternative_no': _ensureString(_altPhoneController.text),
+        'address': _ensureString(_addressController.text),
+        'date': _selectedDate.toIso8601String().split('T')[0],
+        'referral_by': _ensureString(_referralController.text),
+        'location': _selectedLocationId ?? '1',
+        'age': _ensureNumber(_ageController.text),
+        'height': _ensureNumber(_heightController.text),
+        'weight': _ensureNumber(_weightController.text),
+        'bmi': _ensureNumber(_bmiController.text),
+        'rbs': _ensureNumber(_rbsController.text),
+        'chief_complaints': _ensureString(_complaintsController.text),
+        'history_of_dm_status': _ensureStatus(_hasDM),
+        'history_of_dm_description': _ensureString(_dmSinceController.text),
+        'hypertension_status': _ensureStatus(_hasHypertension),
+        'hypertension_description':
+        _ensureString(_hypertensionSinceController.text),
+        'IHD_status': _ensureStatus(_hasIHD),
+        'IHD_description': _ensureString(_ihdDescriptionController.text),
+        'COPD_status': _ensureStatus(_hasCOPD),
+        'COPD_description': _ensureString(_copdDescriptionController.text),
+        'any_other_illness': _ensureString(_otherIllnessController.text),
+        'past_surgical_history': _ensureString(_surgicalHistoryController.text),
+        'drug_allergy': _ensureString(_drugAllergyController.text),
+        'temp': _ensureString(_tempController.text),
+        'pulse': _ensureNumber(_pulseController.text),
+        'bp_systolic': _ensureNumber(_bpSystolicController.text),
+        'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
+        'pallor': _ensureStatus(_hasPallor),
+        'icterus': _ensureStatus(_hasIcterus),
+        'oedema_status': _ensureStatus(_hasOedema),
+        'oedema_description': _ensureString(_oedemaDetailsController.text),
+        'lymphadenopathy':
+        _ensureString(_lymphadenopathyDetailsController.text),
+        'HO_present_medication':
+        _ensureString(_currentMedicationController.text),
+        'respiratory_system': _ensureString(_rsController.text),
+        'cardio_vascular_system': _ensureString(_cvsController.text),
+        'central_nervous_system': _ensureString(_cnsController.text),
+        'pa_abdomen': _ensureString(_paAbdomenController.text),
+        'pr_rectum': _ensureString(_prRectumController.text),
+        'local_examination': _ensureString(_localExamController.text),
+        'clinical_diagnosis': _ensureString(_diagnosisController.text),
+        'comorbidities': _ensureString(_comorbiditiesController.text),
+        'plan': _ensureString(_planController.text),
+        'advise': _ensureString(_adviseController.text),
+        'status': Global.status ?? GlobalPatientData.patientId.toString(),
+        'doctor_note': _ensureString(_doctorNotesController.text),
+        'description': _ensureString(_descriptionController.text),
+      };
+
+      if (Global.status == '2') {
+        fields['patientId'] = Global.phid.toString();
+      }
+
+      request.fields.addAll(fields);
+      log('Form Fields: ${jsonEncode(fields)}');
+      List<String> existingFileIds = [];
+      // ✅ Handle File Uploads (New + Existing)
+      // ✅ Handle File Uploads (New + Existing)
+      for (var entry in _uploadedFiles.entries) {
+        final docType = entry.key;
+        final files = entry.value;
+
+        String? fieldName = _mapDocTypeToField(docType);
+        if (fieldName == null) continue;
+
+        for (var file in files) {
+          if (file['isExisting'] == true) {
+            existingFileIds.add(file['id'].toString());
+          } else {
+            if (kIsWeb) {
+              Uint8List? fileBytes = file['bytes'];
+              String? fileName = file['name'] ??
+                  'file_${DateTime.now().millisecondsSinceEpoch}';
+
+              if (fileBytes != null && fileName != null) {
+                request.files.add(http.MultipartFile.fromBytes(
+                  fieldName,
+                  fileBytes,
+                  filename: fileName,
+                ));
+              } else {
+                log('❌ Web file data incomplete: bytes=${fileBytes != null}, name=${fileName != null}');
+                continue;
+              }
+            } else {
+              // Mobile handling
+              String? filePath = file['path'];
+              String? fileName = file['name'] ??
+                  path.basename(filePath ?? '') ??
+                  'file_${DateTime.now().millisecondsSinceEpoch}';
+
+              if (filePath != null) {
+                final fileToUpload = File(filePath);
+                if (await fileToUpload.exists()) {
+                  request.files.add(await http.MultipartFile.fromPath(
+                    fieldName,
+                    filePath,
+                    filename: fileName,
+                  ));
+                } else {
+                  log('❌ File not found: $filePath');
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (existingFileIds.isNotEmpty) {
+        request.fields['existing_file'] = existingFileIds.join(',');
+      }
+      log("existingFileIds $existingFileIds");
+
+      log('📤 Request Fields: ${jsonEncode(request.fields)}');
+      log('📂 Total Files to Upload: ${request.files.length}');
+
+      // ✅ Send Request
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      Navigator.of(context).pop();
+      log('✅ Response Status: ${response.statusCode}');
+      log('📜 Response Body: $responseBody');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(responseBody);
+        showDialog(
+            context: context,
+            barrierDismissible: false, // Prevents closing without interaction
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Success'),
+                content: Text(responseData['message'] ??
+                    'Patient record saved successfully'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PatientInfoScreen()),
+                      );
+                    },
+                    child: const Text('view'),
+                  ),
+                ],
+              );
+            });
+        // Navigator.of(context).pop();
+      } else {
+        ShowDialogs.showSnackBar(context,
+            '❌ Failed to save patient record. Status code: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      // Navigator.of(context).pop();s
+      log('🚨 Submission Error: $e');
+      log('Stack Trace: $stackTrace');
+
+      ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
+    }
+  }
+
+  String? _mapDocTypeToField(String docType) {
+    switch (docType) {
+      case 'blood_reports':
+        return 'blood_report';
+      case 'xray_report':
+        return 'xray_report';
+      case 'ecg_report':
+        return 'ecg_report';
+      case 'ct_scan_report':
+        return 'ct_scan_report';
+      case 'echocardiagram_report':
+        return 'echocardiagram_report';
+      case 'misc_report':
+        return 'misc_report';
+      case 'doctor_note_image':
+        return 'doctor_note_image';
+      case 'pr_rectum_image':
+        return 'pr_rectum_image';
+      case 'pa_abdomen_image':
+        return 'pa_abdomen_image';
+      default:
+        return null;
+    }
+  }
+/*  Future<void> _submitForm() async {
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
     bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
@@ -551,15 +790,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
       final responseBody = await response.stream.bytesToString();
       print("responseBody");
       print(responseBody);
+      print(request.fields);
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
         showTopRightToast(context, responseData['message'], backgroundColor: Colors.green);
 
         // Navigate to success screen or patient info screen
-        /*Navigator.pushReplacement(
+        *//*Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => PatientInfoScreen()),
-        );*/
+        );*//*
       } else {
         showTopRightToast(context, 'Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.red);
 
@@ -571,7 +811,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     } finally {
       setState(() => _isLoading = false);
     }
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {

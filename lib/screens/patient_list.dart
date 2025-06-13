@@ -46,6 +46,8 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
         final responseData = json.decode(response.body);
         setState(() {
           patients = _transformApiData(responseData['data'] ?? []);
+          print("patients");
+          print(patients);
           filteredPatients = List.from(patients);
           isLoading = false;
         });
@@ -66,6 +68,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   List<Map<String, dynamic>> _transformApiData(List<dynamic> apiData) {
     return apiData.map((patient) {
       return {
+        'id': patient['id'] ?? 'N/A',
         'phid': patient['phid'] ?? 'N/A',
         'name': '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}',
         'age': patient['age']?.toString() ?? 'N/A',
@@ -206,10 +209,15 @@ prefixIcon: Icons.search_rounded,
                                             : '';
                                         GlobalPatientData.phone = patient['phone'];
                                         GlobalPatientData.patientExist =patient['patientExist'];
-                                        GlobalPatientData.phid =patient['phid'];
-                                        GlobalPatientData.patientId =patient['patient_id'] ;
 
 
+                                        Global.status ="2";
+                                        Global.phid =patient['id'].toString();
+                                        GlobalPatientData.patientId =patient['phid'] ;
+
+                                        print("patient['patient_id']");
+                                        print(GlobalPatientData.patientId);
+                                        print( Global.phid);
 
                                         Navigator.push(
                                           context,

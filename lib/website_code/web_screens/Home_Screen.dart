@@ -54,6 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  final List<int> nonHighlightablePageIndices = [
+    2,
+  ];
+
   final List<Widget> pages = [
     KeepAlivePage(child: DashboardScreen()),
     KeepAlivePage(child: RecentPatientsListScreen()),
@@ -226,7 +230,9 @@ SizedBox(width: 8,),
     required String label,
     required int index,
   }) {
-    final bool isSelected = selectedPageIndex == index;
+    // Check if the item is supposed to be highlighted
+    final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
+    final bool isSelected = selectedPageIndex == index && isHighlightable;
 
     return Container(
       decoration: BoxDecoration(
@@ -237,8 +243,11 @@ SizedBox(width: 8,),
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: InkWell(
           onTap: () {
-            setState(() => selectedPageIndex = index);
-            _pageController.jumpToPage(index);
+            if(isHighlightable)
+            {
+              setState(() => selectedPageIndex = index);
+              _pageController.jumpToPage(index);
+            }
           },
           child: Row(
             children: [
@@ -263,4 +272,5 @@ SizedBox(width: 8,),
       ),
     );
   }
+
 }

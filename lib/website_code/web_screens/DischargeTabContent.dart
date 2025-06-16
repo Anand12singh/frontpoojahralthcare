@@ -129,10 +129,10 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: const [
-                      CustomCheckbox(label: 'H/O DM'),
-                    CustomCheckbox(label: 'Hypertension'),
-                    CustomCheckbox(label: 'IHD'),
-                    CustomCheckbox(label: 'COPD'),
+                      CustomCheckbox(label: 'H/O DM',initialValue: false,),
+                    CustomCheckbox(label: 'Hypertension',initialValue: false,),
+                    CustomCheckbox(label: 'IHD',initialValue: false,),
+                    CustomCheckbox(label: 'COPD',initialValue: false,),
                   ],
                 ),
                 const SizedBox(height: 16),

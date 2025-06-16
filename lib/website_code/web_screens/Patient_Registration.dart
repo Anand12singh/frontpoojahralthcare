@@ -209,6 +209,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
+  DateTime _followUpDate = DateTime.now(); // Initialize with default value
+  DateTime _ConsulationDate = DateTime.now(); // Initialize with default value
+  DateTime _CTScanDate = DateTime.now(); // Initialize with default value
+
 
   // Other state variables
   bool _isLoadingLocations = false;
@@ -219,14 +223,21 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Map<String, dynamic>? _visitData;
   var _documentData;
 
-
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
   String _gender = 'Male';
   DateTime _selectedDate = DateTime.now();
 
   String? _selectedLocationId = '2';
   String _selectedLocationName = '';
 
-
+// Add these to your existing state variables
+  String _tempStatus = 'Afebrile'; // 'Febrile' or 'Afebrile'
+  String _pallorStatus = 'Nil';    // '+' or 'Nil'
+  String _icterusStatus = 'Nil';   // '+' or 'Nil'
+  String _lymphadenopathyStatus = 'Nil'; // '+' or 'Nil'
+  String _oedemaStatus = 'Nil';    // '+' or 'Nil'
   String _ensureString(String? value) => value?.trim() ?? '';
   String _ensureNumber(String? value) => value?.trim().isEmpty ?? true ? '0' : value!.trim();
   String _ensureStatus(bool value) => value ? '1' : '0';
@@ -469,6 +480,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _selectedDate = DateTime.parse(
         _patientData?['date']?.toString() ?? DateTime.now().toString());
 
+    _ConsulationDate = DateTime.parse(
+        _patientData?['date']?.toString() ?? DateTime.now().toString());
+
+
+
     _referralController.text = _patientData?['referral_by']?.toString() ?? '';
     _selectedLocationId = _patientData?['location']?.toString() ?? '2';
     log('_selectedLocationId $_selectedLocationId');
@@ -489,16 +505,57 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _rbsController.text = _visitData?['rbs']?.toString() ?? '';
       _complaintsController.text =
           _visitData?['chief_complaints']?.toString() ?? '';
-      _hasDM = _visitData?['history_of_dm_status'] == 1;
+    // Replace all direct boolean assignments with proper conversions
+    _hasDM = (_visitData?['history_of_dm_status']?.toString() ?? "0") == "1";
+    print('_hasDM: $_hasDM (raw value: ${_visitData?['history_of_dm_status']})');
+
+    _hasHypertension = (_visitData?['hypertension_status']?.toString() ?? "0") == "1";
+    print('_hasHypertension: $_hasHypertension (raw value: ${_visitData?['hypertension_status']})');
+
+    _hasIHD = (_visitData?['IHD_status']?.toString() ?? "0") == "1";
+    print('_hasIHD: $_hasIHD (raw value: ${_visitData?['IHD_status']})');
+
+    _hasCOPD = (_visitData?['COPD_status']?.toString() ?? "0") == "1";
+    print('_hasCOPD: $_hasCOPD (raw value: ${_visitData?['COPD_status']})');
+
+    _hasPallor = (_visitData?['pallor']?.toString() ?? "0") == "1";
+    print('_hasPallor: $_hasPallor (raw value: ${_visitData?['pallor']})');
+
+    _hasIcterus = (_visitData?['icterus']?.toString() ?? "0") == "1";
+    print('_hasIcterus: $_hasIcterus (raw value: ${_visitData?['icterus']})');
+
+    _hasOedema = (_visitData?['oedema_status']?.toString() ?? "0") == "1";
+    print('_hasOedema: $_hasOedema (raw value: ${_visitData?['oedema_status']})');
+
+    _hasLymphadenopathy = (_visitData?['lymphadenopathy']?.toString() ?? "0") == "1";
+    print('_hasLymphadenopathy: $_hasLymphadenopathy (raw value: ${_visitData?['lymphadenopathy']})');
       _dmSinceController.text =
           _visitData?['history_of_dm_description']?.toString() ?? '';
-      _hasHypertension = _visitData?['hypertension_status'] == 1;
-      _hypertensionSinceController.text =
+
+
+
+    _tempStatus = _visitData?['temp'] == '0' ? 'Afebrile' : 'Febrile';
+
+    // Pallor
+    _pallorStatus = (_visitData?['pallor']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Icterus
+    _icterusStatus = (_visitData?['icterus']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Lymphadenopathy
+    _lymphadenopathyStatus = (_visitData?['lymphadenopathy']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Oedema
+    _oedemaStatus = (_visitData?['oedema_status']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    _hypertensionSinceController.text =
           _visitData?['hypertension_description']?.toString() ?? '';
-      _hasIHD = _visitData?['IHD_status'] == 1;
+
+
       _ihdDescriptionController.text =
           _visitData?['IHD_description']?.toString() ?? '';
-      _hasCOPD = _visitData?['COPD_status'] == 1;
+
+
       _copdDescriptionController.text =
           _visitData?['COPD_description']?.toString() ?? '';
       _otherIllnessController.text =
@@ -512,13 +569,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
           _visitData?['bp_diastolic']?.toString() ?? '';
-      _hasPallor = _visitData?['pallor'] == 1;
-      _hasIcterus = _visitData?['icterus'] == 1;
-      _hasOedema = _visitData?['oedema_status'] == 1;
+
       _oedemaDetailsController.text =
           _visitData?['oedema_description']?.toString() ?? '';
-      _hasLymphadenopathy =
-          (_visitData?['lymphadenopathy']?.toString() ?? '') != '';
+
       _lymphadenopathyDetailsController.text =
           _visitData?['lymphadenopathy']?.toString() ?? '';
       _currentMedicationController.text =
@@ -566,6 +620,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
           _visitData?['blood_sugar_post_prandial']?.toString() ?? '';
       _hBA1CController.text = _visitData?['hba1c']?.toString() ?? '';
       _hBSAGController.text = _visitData?['hbsag']?.toString() ?? '';
+    _followUpDate = DateTime.parse(_visitData?['follow_up_date']?.toString() ?? DateTime.now().toString());
+    _CTScanDate = DateTime.parse(_visitData?['date_of_ct_scan']?.toString() ?? DateTime.now().toString());
       _hivController.text = _visitData?['hiv']?.toString() ?? '';
       _hcvController.text = _visitData?['hcv']?.toString() ?? '';
       _t3Controller.text = _visitData?['t3']?.toString() ?? '';
@@ -591,9 +647,6 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _ctscanLaboratoryController.text =
           _visitData?['ct_scan_laboratory']?.toString() ?? '';
 
-      _dateofctscanController = DateTime.parse(
-          _visitData?['date_of_ct_scan']?.toString() ??
-              DateTime.now().toString());
 
       _ctscanFindingController.text =
           _visitData?['ct_scan_finding']?.toString() ?? '';
@@ -812,7 +865,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'mobile_no': _ensureString(_phoneController.text),
         'alternative_no': _ensureString(_altPhoneController.text),
         'address': _ensureString(_addressController.text),
-        'date': _selectedDate.toIso8601String().split('T')[0],
+        'date': _formatDate(_ConsulationDate),
         'referral_by': _ensureString(_referralController.text),
         'location': _selectedLocationId ?? '1',
         'age': _ensureNumber(_ageController.text),
@@ -833,16 +886,18 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'any_other_illness': _ensureString(_otherIllnessController.text),
         'past_surgical_history': _ensureString(_surgicalHistoryController.text),
         'drug_allergy': _ensureString(_drugAllergyController.text),
-        'temp': _ensureString(_tempController.text),
+        'temp': _tempStatus == 'Febrile' ? '1' : '0',
+        'pallor': _pallorStatus == '+' ? '1' : '0',
+        'icterus': _icterusStatus == '+' ? '1' : '0',
+        'lymphadenopathy': _lymphadenopathyStatus == '+' ? '1' : '0',
+        'oedema_status': _oedemaStatus == '+' ? '1' : '0',
         'pulse': _ensureNumber(_pulseController.text),
         'bp_systolic': _ensureNumber(_bpSystolicController.text),
         'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
-        'pallor': _ensureStatus(_hasPallor),
-        'icterus': _ensureStatus(_hasIcterus),
-        'oedema_status': _ensureStatus(_hasOedema),
+
+
         'oedema_description': _ensureString(_oedemaDetailsController.text),
-        'lymphadenopathy':
-        _ensureString(_lymphadenopathyDetailsController.text),
+
         'HO_present_medication':
         _ensureString(_currentMedicationController.text),
         'respiratory_system': _ensureString(_rsController.text),
@@ -860,8 +915,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'description': _ensureString(_descriptionController.text),
         'other_location': _ensureString(_otherLocationController.text),
         //add
-        'follow_up_date':
-        _followupdateFindingController.toIso8601String().split('T')[0],
+        'follow_up_date': _formatDate(_followUpDate),
+        'date_of_ct_scan': _formatDate(_CTScanDate),
+
         'heamoglobin': _ensureString(_hemoglobinController.text),
         'total_leucocyte_count':
         _ensureString(_totalLeucocyteCountController.text),
@@ -1332,9 +1388,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   label: 'Consultation Date',
                   hintlabel: 'dd-mm-yyyy',
                   onDateSelected: (date) {
-                    // Handle selected date
-                    print('Consultation Date: $date');
+                    setState(() {
+                      _ConsulationDate = date; // Update the selected date
+                    });
                   },
+                  initialDate: _ConsulationDate, // Pass the initial date if needed
                 ),
 
                 FormInput(label: 'Referral by',hintlabel: "Enter Referral by",controller: _referralController,),
@@ -1432,12 +1490,30 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
                     CustomCheckbox(
                     label: 'H/O DM',
-
+                    initialValue: _hasDM,
                     onChanged: (value) => setState(() => _hasDM = value),
                   ),
-                      CustomCheckbox(label: 'Hypertension'),
-                      CustomCheckbox(label: 'IHD'),
-                     CustomCheckbox(label: 'COPD'),
+                      CustomCheckbox(label: 'Hypertension'
+                        ,initialValue: _hasHypertension
+                      ,onChanged: (value) {
+                        setState(() {
+                          _hasHypertension=value;
+                        });
+                      },
+                      ),
+                      CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                        setState(() {
+                          _hasIHD=value;
+                        });
+                      },),
+                     CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                       setState(() {
+                         print("_hasCOPD");
+                         print(_hasCOPD);
+                         _hasCOPD=value;
+                       });
+                     },),
+
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1490,25 +1566,23 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           Text("Temp",
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, color: AppColors.primary)),
-
-                          SizedBox(height: 8,),
-
+                          SizedBox(height: 8),
                           Row(
                             children: [
                               CustomRadioButton<String>(
                                 value: 'Febrile',
-                                groupValue: radioValue,
+                                groupValue: _tempStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _tempStatus = value!);
                                 },
                                 label: 'Febrile',
                               ),
-                              SizedBox(width: 8,),
+                              SizedBox(width: 8),
                               CustomRadioButton<String>(
                                 value: 'Afebrile',
-                                groupValue: radioValue,
+                                groupValue: _tempStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _tempStatus = value!);
                                 },
                                 label: 'Afebrile',
                               ),
@@ -1536,6 +1610,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                        ),
                      ),
                    // const DropdownInput(label: 'Pallor'),
+                    // Pallor
                     Container(
                       width: 275,
                       child: Column(
@@ -1544,27 +1619,24 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           Text("Pallor",
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, color: AppColors.primary)),
-
-                          SizedBox(height: 8,),
-
+                          SizedBox(height: 8),
                           Row(
                             children: [
                               CustomRadioButton<String>(
-                                value: '',
-                                groupValue: radioValue,
+                                value: '+',
+                                groupValue: _pallorStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _pallorStatus = value!);
                                 },
-                                label: '',
+                                label: '+',
                               ),
-                              SizedBox(width: 4,),
-                              Text("+"),
-                              SizedBox(width: 4,),
+                              SizedBox(width: 4),
+                              SizedBox(width: 4),
                               CustomRadioButton<String>(
                                 value: 'Nil',
-                                groupValue: radioValue,
+                                groupValue: _pallorStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _pallorStatus = value!);
                                 },
                                 label: 'Nil',
                               ),
@@ -1573,6 +1645,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                         ],
                       ),
                     ),
+
+// Icterus
                     Container(
                       width: 275,
                       child: Column(
@@ -1581,27 +1655,24 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           Text("Icterus",
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, color: AppColors.primary)),
-
-                          SizedBox(height: 8,),
-
+                          SizedBox(height: 8),
                           Row(
                             children: [
                               CustomRadioButton<String>(
-                                value: ' ',
-                                groupValue: radioValue,
+                                value: '+',
+                                groupValue: _icterusStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _icterusStatus = value!);
                                 },
-                                label: ' ',
+                                label: '+',
                               ),
-                              SizedBox(width: 4,),
-                              Text("+"),
-                              SizedBox(width: 4,),
+                              SizedBox(width: 4),
+                              SizedBox(width: 4),
                               CustomRadioButton<String>(
                                 value: 'Nil',
-                                groupValue: radioValue,
+                                groupValue: _icterusStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _icterusStatus = value!);
                                 },
                                 label: 'Nil',
                               ),
@@ -1610,6 +1681,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                         ],
                       ),
                     ),
+
+
                     Container(
                       width: 275,
                       child: Column(
@@ -1624,21 +1697,21 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           Row(
                             children: [
                               CustomRadioButton<String>(
-                                value: '',
-                                groupValue: radioValue,
+                                value: '+',
+                                groupValue: _lymphadenopathyStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _lymphadenopathyStatus = value!);
                                 },
-                                label: '',
+                                label: '+',
                               ),
                               SizedBox(width: 4,),
-                              Text("+"),
+
                               SizedBox(width: 4,),
                               CustomRadioButton<String>(
                                 value: 'Nil',
-                                groupValue: radioValue,
+                                groupValue: _lymphadenopathyStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _lymphadenopathyStatus = value!);
                                 },
                                 label: 'Nil',
                               ),
@@ -1661,21 +1734,21 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           Row(
                             children: [
                               CustomRadioButton<String>(
-                                value: ' ',
-                                groupValue: radioValue,
+                                value: '+',
+                                groupValue: _oedemaStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _oedemaStatus = value!);
                                 },
-                                label: ' ',
+                                label: '+',
                               ),
                               SizedBox(width: 4,),
-                              Text("+"),
+
                               SizedBox(width: 4,),
                               CustomRadioButton<String>(
                                 value: 'Nil',
-                                groupValue: radioValue,
+                                groupValue: _oedemaStatus,
                                 onChanged: (value) {
-                                  setState(() => radioValue = value!);
+                                  setState(() => _oedemaStatus = value!);
                                 },
                                 label: 'Nil',
                               ),
@@ -1973,9 +2046,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       label: 'Date',
                       hintlabel: 'dd-mm-yyyy',
                       onDateSelected: (date) {
-                        // Handle selected date
-                        print('Date Date: $date');
+                        setState(() {
+                          _CTScanDate = date; // Update the selected date
+                        });
                       },
+                      initialDate: _CTScanDate, // Pass the initial date if needed
                     ),
                     Expanded(
 
@@ -2166,12 +2241,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
               ),
               SizedBox(height: 10,),
               DatePickerInput(
-                label: 'Follow up date',
+                label: 'Flollow up date',
                 hintlabel: 'dd-mm-yyyy',
                 onDateSelected: (date) {
-                  // Handle selected date
-                  print('Follow up date: $date');
+                  setState(() {
+                    _followUpDate = date; // Update the selected date
+                  });
                 },
+                initialDate: _followUpDate, // Pass the initial date if needed
               ),
             //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
           ],),

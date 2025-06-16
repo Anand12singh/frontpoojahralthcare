@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DischargeTabContent.dart';
+import '../../constants/global_variable.dart';
 import '../../utils/colors.dart';
 import '../../widgets/KeepAlivePage.dart';
 import 'FollowUpsTabContent.dart';
@@ -116,9 +117,9 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                         controller: _tabController,
                         children: [
                           KeepAlivePage(child: SingleChildScrollView(child: OnboardingForm())),
-                          KeepAlivePage(child: SurgeryTabContent()),
-                          KeepAlivePage(child: DischargeTabContent()),
-                          KeepAlivePage(child: FollowUpsTabContent()),
+                          KeepAlivePage(child: SurgeryTabContent(patientId: GlobalPatientData.patientId.toString(),)),
+                          KeepAlivePage(child: DischargeTabContent(patientId:GlobalPatientData.patientId.toString(),)),
+                          KeepAlivePage(child: FollowUpsTabContent(patientId:GlobalPatientData.patientId.toString(),)),
                         ],
                       )
                     ),

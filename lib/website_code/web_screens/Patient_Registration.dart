@@ -441,9 +441,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
       }
     } catch (e) {
       debugPrint('Error fetching patient data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading patient data: ${e.toString()}')),
-      );
+
+      showTopRightToast(context,'Error loading patient data: ${e.toString()}',backgroundColor: Colors.red);
+
       _initializeWithEmptyData();
     } finally {
       setState(() => _isLoading = false);

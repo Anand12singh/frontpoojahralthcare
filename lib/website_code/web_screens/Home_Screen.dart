@@ -230,7 +230,7 @@ SizedBox(width: 8,),
     required String label,
     required int index,
   }) {
-    // Check if the item is supposed to be highlighted
+
     final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
     final bool isSelected = selectedPageIndex == index && isHighlightable;
 

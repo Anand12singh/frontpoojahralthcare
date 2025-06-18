@@ -5,12 +5,14 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import '../../utils/colors.dart';
+import '../../widgets/DatePickerInput.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
@@ -126,7 +128,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
-                const Icon(Icons.calendar_today, size: 20),
+                const Icon(Icons.calendar_month_rounded, size: 20),
               ],
             ),
           ),
@@ -142,39 +144,93 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Upload Implants', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
-        const SizedBox(height: 8),
+        const Text('Implants', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+        const SizedBox(height: 4),
         InkWell(
           onTap: _pickImage,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            width: 300,
+            height: 48,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.textSecondary.withOpacity(0.3),
+                width: 1.5,
+              )
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.cloud_upload, size: 40, color: AppColors.primary),
-                const SizedBox(height: 8),
-                const Text('Click to upload images'),
-                const SizedBox(height: 4),
-                const Text('Supports JPG, PNG, PDF', style: TextStyle(fontSize: 12)),
+                 Text('Upload Implants' ,style: TextStyle(
+    fontWeight: FontWeight.w600,
+    color: AppColors.primary,
+    fontSize: 14,
+    ),),
+      Text('Upload' ,style: TextStyle(
+
+    color: AppColors.secondary,
+    fontSize: 14,
+    ),),
+
+              //  Icon(Icons.cloud_upload, size: 40, color: AppColors.primary),
+
+
+              /*  const SizedBox(height: 4),
+                const Text('Supports JPG, PNG, PDF', style: TextStyle(fontSize: 12)),*/
               ],
             ),
           ),
         ),
         if (hasImages) ...[
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _uploadedFiles['implants_image']!.map((file) {
-              return Chip(
-                label: Text(file['name']),
-                deleteIcon: const Icon(Icons.close, size: 16),
-                onDeleted: () => _removeFile('implants_image', file),
-              );
-            }).toList(),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border.all(
+                color: AppColors.textSecondary.withOpacity(0.3),
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _uploadedFiles['implants_image']!.map((file) {
+                return Chip(
+
+                backgroundColor: AppColors.surface,
+
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(color:AppColors.textSecondary.withOpacity(0.3),width: 1.5 ),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(file['name'],  style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),),
+
+
+                    ],
+                  ),
+                  deleteIcon: const Icon(Icons.close, size: 16,color: Colors.red,),
+                  onDeleted: () => _removeFile('implants_image', file),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ],
@@ -380,7 +436,17 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
               children: [
                 Expanded(child: _buildFormInput('Surgery', _surgeryController)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildDatePickerField()),
+                Expanded(
+                  child: DatePickerInput(
+                    label: 'Date',
+                    initialDate: _selectedDate,
+                    onDateSelected: (date) {
+                      setState(() => _selectedDate = date);
+                    }, hintlabel: '',
+                  ),
+                ),
+           /*     const SizedBox(width: 12),
+                Expanded(child: _buildDatePickerField()),*/
                 const SizedBox(width: 12),
                 Expanded(child: _buildFormInput('Surgeon', _surgeonController)),
               ],
@@ -405,6 +471,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                         SizedBox(
                           width: 60,
                           child: CustomTextField(
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                            ],
                             controller: _timetakenHrController,
                             hintText: '00',
                             keyboardType: TextInputType.number,
@@ -416,6 +485,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                         SizedBox(
                           width: 60,
                           child: CustomTextField(
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                            ],
                             controller: _timetakenMinController,
                             hintText: '00',
                             keyboardType: TextInputType.number,
@@ -436,9 +508,12 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Expanded(child: _buildFormInput('Location', _findingsController, maxLines: 1)),
+                const SizedBox(width: 12),
                 Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
                 const SizedBox(width: 12),
                 Expanded(child: _buildFormInput('Implants used, if any', _implantsController, maxLines: 3)),
+
               ],
             ),
             const SizedBox(height: 12),

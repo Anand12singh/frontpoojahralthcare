@@ -4,6 +4,7 @@ import '../../constants/global_variable.dart';
 import '../../utils/colors.dart';
 import '../../widgets/KeepAlivePage.dart';
 import 'FollowUpsTabContent.dart';
+import 'PatientDetailsSidebar.dart';
 import 'Patient_Registration.dart';
 import 'SurgeryTabContent.dart';
 
@@ -68,7 +69,8 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                       borderRadius:BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12))
                     ),
                     child: TabBar(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
+
+                     // padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
                       labelPadding: const EdgeInsets.symmetric(horizontal: 12),  // Space between tabs
                       controller: _tabController,
                       labelColor: AppColors.primary,
@@ -77,12 +79,17 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
+
+
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.normal,
                         fontSize: 14,
                       ),
+
                       indicatorSize: null,
+
                       indicator: BoxDecoration(
+
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
@@ -96,13 +103,16 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                       ),
                       tabs: const [
                         Tab(text: 'Onboarding'),
-                        Tab(text: 'Surgery'),
+
+                        Tab(text: 'Operation Notes'),
+
                         Tab(text: 'Discharge Info'),
+
                         Tab(text: 'Follow Ups'),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 1), // Small gap between tab bar and content
+
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
@@ -128,9 +138,9 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
               ),
             ),
             const SizedBox(width: 20),
-            const Expanded(
+            Expanded(
               flex: 1,
-              child: PatientDetailsSidebar(),
+              child: PatientDetailsSidebar(patientId: GlobalPatientData.patientId!,),
             ),
           ],
         ),

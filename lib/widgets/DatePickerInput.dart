@@ -103,13 +103,26 @@ class _DatePickerInputState extends State<DatePickerInput> {
               style: const TextStyle(
                   fontWeight: FontWeight.w600, color: AppColors.primary)),
           const SizedBox(height: 4),
-          CustomTextField(
-            hintText: widget.hintlabel,
-              controller: _controller,
-              readOnly: true,
-              enabled: widget.enabled,
-
-          onTap: () => _selectDate(context),
+          Stack(
+            children: [
+              CustomTextField(
+                hintText: widget.hintlabel,
+                  controller: _controller,
+                  readOnly: true,
+                  enabled: widget.enabled,
+              
+              onTap: () => _selectDate(context),
+              ),
+              
+              Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Icon(Icons.calendar_month_outlined,color: AppColors.primary,size: 20,),
+                  ))
+            ],
           ),
         ],
       ),

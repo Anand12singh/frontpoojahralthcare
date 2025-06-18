@@ -91,7 +91,7 @@ class _DropdownInputState<T> extends State<DropdownInput<T>> {
                 : null,
             decoration: InputDecoration(
               contentPadding: widget.contentPadding ??
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 12),
               border: widget.border ??
                   OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

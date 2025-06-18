@@ -272,7 +272,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             controller: entry.value.notesController,
                             label: 'Notes',
                             hintlabel: 'Enter notes',
-
+                            maxlength: 4,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -281,7 +281,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             controller: entry.value.treatmentController,
                             label: 'Treatment',
                             hintlabel: 'Enter treatment',
-
+                            maxlength: 4,
                           ),
                         ),
                       ],
@@ -314,8 +314,9 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
+                style: ButtonStyle(shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))))),
                 icon: const Icon(
-                  Icons.add_box,
+                  Icons.add_box_rounded,
                   color: AppColors.secondary,
                   size: 40,
                 ),

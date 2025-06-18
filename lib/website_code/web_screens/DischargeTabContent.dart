@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +17,7 @@ import '../../widgets/DocumentUploadWidget.dart';
 import '../../widgets/TimePickerInput.dart';
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
-
+import 'package:path/path.dart' as path;
 import 'Patient_Registration.dart';
 
 class DischargeTabContent extends StatefulWidget {
@@ -38,7 +39,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   bool _isLoading = false;
   bool _isEditing = false;
   int? _existingDischargeId;
-
+  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
+    "discharge_images": []
+  };
   // Information Controllers
   final TextEditingController _consultantController = TextEditingController();
   final TextEditingController _contactController = TextEditingController();
@@ -70,10 +73,11 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   final TextEditingController _treatmentGivenController = TextEditingController();
   final TextEditingController _hospitalizationCourseController = TextEditingController();
 
+  List<Investigation> _investigations = [Investigation()];
   // Investigations Controllers
   final TextEditingController _testController = TextEditingController();
   final TextEditingController _positiveFindingsController = TextEditingController();
-
+  String _ensureStatus(bool value) => value ? '1' : '0';
   @override
   void initState() {
     super.initState();
@@ -102,7 +106,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       final jsonResponse = json.decode(responseData);
 
       if (response.statusCode == 200 && jsonResponse['status'] == true && jsonResponse['data'].isNotEmpty) {
-        final dischargeData = jsonResponse['data'][0];
+        final dischargeData = jsonResponse['data'];
+        print("dischargeData");
+        print(dischargeData);
         _populateFormFields(dischargeData);
         _existingDischargeId = dischargeData['id'];
         _isEditing = true;
@@ -144,6 +150,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       _hasIHD = data['IHD_status'] == 1;
       _hasTB = data['tb'] == 1;
       _surgicalHistoryController.text = data['surgical_history']?.toString() ?? '';
+      _operationTypeController.text = data['operation_type']?.toString() ?? '';
       _personalHistoryController.text = data['personal_history']?.toString() ?? '';
       _otherIllnessController.text = data['other_illness']?.toString() ?? '';
       _presentMedicationController.text = data['history_of_present_medication']?.toString() ?? '';
@@ -151,10 +158,45 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       _onExaminationController.text = data['on_examination']?.toString() ?? '';
       _treatmentGivenController.text = data['treatment_given']?.toString() ?? '';
       _hospitalizationCourseController.text = data['course_during_hospitalization']?.toString() ?? '';
+      if (data['investigations'] != null && data['investigations'] is List) {
+        _investigations = (data['investigations'] as List).map((item) => Investigation(
+          date: item['investigation_date'] != null
+              ? DateTime.parse(item['investigation_date'])
+              : DateTime.now(),
+          test: item['test'] ?? '',
+          positiveFinding: item['positive_finding'] ?? '',
+        )).toList();
+      }
+
+      if (data['discharge_images'] != null && data['discharge_images'] is List) {
+        _uploadedFiles['discharge_images'] = (data['discharge_images'] as List).map((file) {
+          return {
+            'id': file['id'],
+            'path': file['media_url'],
+            'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
+            'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
+            'size': 'N/A',
+            'isExisting': true,
+          };
+        }).toList();
+      }
     } catch (e) {
       log('Error populating form fields: $e');
     }
   }
+
+  void _addInvestigation() {
+    setState(() {
+      _investigations.add(Investigation());
+    });
+  }
+
+  void _removeInvestigation(int index) {
+    setState(() {
+      _investigations.removeAt(index);
+    });
+  }
+
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
@@ -167,24 +209,31 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
         Navigator.of(context).pop();
-         showTopRightToast(
-          context,
-          'Authentication token not found. Please login again.',
-           backgroundColor: Colors.red
+        showTopRightToast(
+            context,
+            'Authentication token not found. Please login again.',
+            backgroundColor: Colors.red
         );
         return;
       }
 
-      final headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$localurl/post_discharge'),
+      );
 
-      final body = json.encode({
-        "id": _existingDischargeId,
-        "patient_id": widget.patientId,
-        "post_operation_id": widget.postOperationId,
+      // Add headers
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+
+      // Add form fields
+      request.fields.addAll({
+        "id": _existingDischargeId?.toString() ?? '',
+        "patient_id": widget.patientId.toString(),
+        "post_operation_id": widget.postOperationId?.toString() ?? "0",
         "consultant": _consultantController.text,
         "contact": _contactController.text,
         "qualifications": _qualificationsController.text,
@@ -195,7 +244,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "drug_allergy": _drugAllergyController.text,
         "diagnosis": _diagnosisController.text,
         "chief_complaints": _chiefComplaintsController.text,
-        "tb": _hasTB ? 1 : 0,
+        "tb": _hasTB ? '1' : '0',
         "surgical_history": _surgicalHistoryController.text,
         "personal_history": _personalHistoryController.text,
         "other_illness": _otherIllnessController.text,
@@ -204,33 +253,70 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "on_examination": _onExaminationController.text,
         "treatment_given": _treatmentGivenController.text,
         "course_during_hospitalization": _hospitalizationCourseController.text,
-        "history_of_dm_status": _hasDM ? 1 : 0,
-        "hypertension_status": _hasHypertension ? 1 : 0,
-        "IHD_status": _hasIHD ? 1 : 0,
-        "COPD_status": _hasCOPD ? 1 : 0,
+        "history_of_dm_status": _hasDM ? '1' : '0',
+        "hypertension_status": _ensureStatus(_hasHypertension),
+        "IHD_status": _ensureStatus(_hasIHD),
+        "COPD_status": _hasCOPD ? '1' : '0',
         "follow_up": DateFormat('yyyy-MM-dd').format(_followUpDate),
+        "investigations": json.encode(_investigations.map((inv) => {
+          "investigation_date": inv.date.toIso8601String(),
+          "test": inv.testController.text,
+          "positive_finding": inv.positiveFindingController.text,
+        }).toList()),
       });
 
-      final response = await http.post(
-        Uri.parse('$localurl/post_discharge'),
-        headers: headers,
-        body: body,
-      );
+      // Add file uploads
+      List<String> existingFileIds = [];
+      for (var file in _uploadedFiles['discharge_images'] ?? []) {
+        if (!file['isExisting']) {
+          if (kIsWeb && file['bytes'] != null) {
+            request.files.add(http.MultipartFile.fromBytes(
+              'discharge_images',
+              file['bytes']!,
+              filename: file['name'],
+            ));
+          } else if (!kIsWeb && file['path'] != null) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'discharge_images',
+              file['path']!,
+              filename: file['name'],
+            ));
+          }
+        } else {
+          existingFileIds.add(file['id'].toString());
+        }
+      }
+      if (existingFileIds.isNotEmpty) {
+        request.fields['existing_file'] = existingFileIds.join(',');
+      }
+      log("existingFileIds $existingFileIds");
 
-      final responseData = json.decode(response.body);
+      log('Sending discharge data: ${request.fields}');
+      // Send request
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final responseData = json.decode(responseBody);
 
       if (response.statusCode == 200) {
-        showTopRightToast(context,responseData['message'] ?? 'Discharge record saved successfully',backgroundColor: Colors.green);
-
+        showTopRightToast(
+            context,
+            responseData['message'] ?? 'Discharge record saved successfully',
+            backgroundColor: Colors.green
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${responseData['message']}')),
+        print('Error: ${responseData['message']}');
+        showTopRightToast(
+            context,
+            'Error: ${responseData['message']}',
+            backgroundColor: Colors.red
         );
       }
     } catch (e) {
-      showTopRightToast(context,'Error: $e',backgroundColor: Colors.red);
-
-
+      showTopRightToast(
+          context,
+          'Error: $e',
+          backgroundColor: Colors.red
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -270,13 +356,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                           label: 'Consultant',
                           hintlabel: 'Enter consultant name'
                       ),
-                      FormInput(
-                          controller: _contactController,
-                          label: 'Contact',
-                          hintlabel: 'Enter contact number',
 
-
-                      ),
                       FormInput(
                           controller: _qualificationsController,
                           label: 'Qualifications',
@@ -365,7 +445,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                             controller: _diagnosisController,
                             label: 'Diagnosis',
                             hintlabel: 'Enter diagnosis details',
-
+maxlength: 4,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -374,7 +454,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                             controller: _chiefComplaintsController,
                             label: 'Chief complaints',
                             hintlabel: 'Enter chief complaints',
-
+maxlength: 4,
                         ),
                       ),
                     ],
@@ -410,7 +490,11 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                       CustomCheckbox(
                         label: 'Hypertension',
                         initialValue: _hasHypertension,
-                        onChanged: (value) => setState(() => _hasHypertension = value),
+                        onChanged:(value) {
+                          print("_hasHypertension");
+                          print(_hasHypertension);
+                          setState(() => _hasHypertension = value);
+                        }
                       ),
                       CustomCheckbox(
                         label: 'IHD',
@@ -433,50 +517,50 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                           controller: _surgicalHistoryController,
                           label: 'Surgical History',
                           hintlabel: 'Enter surgical history',
-
+maxlength: 4,
                       ),
                       FormInput(
                           controller: _personalHistoryController,
                           label: 'Personal History',
                           hintlabel: 'Enter personal history',
-
+                        maxlength: 4,
                       ),
                       FormInput(
                           controller: _otherIllnessController,
                           label: 'Other Illness',
                           hintlabel: 'Enter other illness details',
-
+                        maxlength: 4,
                       ),
                       FormInput(
                           controller: _presentMedicationController,
                           label: 'History of Present Medication',
                           hintlabel: 'Enter current medication details',
-
+                        maxlength: 4,
                       ),
                       FormInput(
                           controller: _familyHistoryController,
                           label: 'Family History',
                           hintlabel: 'Enter family history',
-
+                        maxlength: 4,
                       ),
                       FormInput(
                           controller: _onExaminationController,
                           label: 'On Examination',
                           hintlabel: 'Enter examination findings',
-
+                        maxlength: 4,
                       ),
                       FormInput(
                           controller: _treatmentGivenController,
                           label: 'Treatment given',
                           hintlabel: 'Enter treatment details',
-
+                        maxlength: 4,
 
                       ),
                       FormInput(
                           controller: _hospitalizationCourseController,
                           label: 'Course during hospitalization',
                           hintlabel: 'Enter course details',
-
+                        maxlength: 4,
                       ),
                     ],
                   ),
@@ -502,10 +586,13 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                   const SizedBox(height: 16),
                   DocumentUploadWidget(
                     label: "Upload Documents",
-                    docType: "Media History",
+                    docType: "discharge_images",
                     onFilesSelected: (files) {
-                      // Handle file uploads
+                      setState(() {
+                        _uploadedFiles['discharge_images'] = files;
+                      });
                     },
+                    initialFiles: _uploadedFiles['discharge_images'],
                   ),
                 ],
               ),
@@ -527,55 +614,70 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                 children: [
                   const Text('4. Investigations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DatePickerInput(
-                        label: 'Investigations Date',
-                        initialDate: _investigationsDate,
-                        onDateSelected: (date) {
-                          setState(() => _investigationsDate = date);
-                        }, hintlabel: '',
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FormInput(
-                            controller: _testController,
-                            label: 'Test',
-                            hintlabel: 'Enter test details',
+                  ..._investigations.asMap().entries.map((entry) {
+                    final index = entry.key +1;
+                    final investigation = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              DatePickerInput(
+                                label: 'Investigations Date',
+                                hintlabel: 'Investigations Date',
+                                initialDate: investigation.date,
+                                onDateSelected: (date) {
+                                  setState(() {
+                                    investigation.date = date;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FormInput(
+                                  controller: investigation.testController,
+                                  label: 'Test',
+                                  hintlabel: 'Enter test name',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FormInput(
+                                  controller: investigation.positiveFindingController,
+                                  label: 'Positive Findings',
+                                  hintlabel: 'Enter findings',
+                                ),
+                              ),
+                              if (_investigations.length > 1)
+                                IconButton(
+                                  padding: EdgeInsets.all(8),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeInvestigation(index),
+                                ),
+                            ],
+                          ),
 
-
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FormInput(
-                            controller: _positiveFindingsController,
-                            label: 'Positive Findings',
-                            hintlabel: 'Enter findings',
-
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                    );
+                  }).toList(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
+                        style: ButtonStyle(shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))))),
+
                         icon: const Icon(Icons.add_box, color: AppColors.secondary, size: 40),
-                        onPressed: () {
-                          // Add more investigation fields
-                        },
+                        onPressed: _addInvestigation,
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 32),
-
             // Follow Up Date
            /* DatePickerInput(
               label: 'Follow Up Date',
@@ -586,7 +688,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
             ),
 
             const SizedBox(height: 32),*/
-
+            const SizedBox(height: 32),
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -638,6 +740,30 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
     _hospitalizationCourseController.dispose();
     _testController.dispose();
     _positiveFindingsController.dispose();
+    for (var inv in _investigations) {
+      inv.dispose();
+    }
+
     super.dispose();
+  }
+}
+
+class Investigation {
+  DateTime date;
+  final TextEditingController testController;
+  final TextEditingController positiveFindingController;
+
+  Investigation({
+    DateTime? date,
+    String test = '',
+    String positiveFinding = '',
+  }) :
+        date = date ?? DateTime.now(),
+        testController = TextEditingController(text: test),
+        positiveFindingController = TextEditingController(text: positiveFinding);
+
+  void dispose() {
+    testController.dispose();
+    positiveFindingController.dispose();
   }
 }

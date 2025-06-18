@@ -110,7 +110,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
-                      fontSize: 16,
+
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -154,7 +154,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
-                      fontSize: 16,
+
                     ),
                   ),
                   const SizedBox(height: 8),

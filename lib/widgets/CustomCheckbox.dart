@@ -70,6 +70,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
             widget.label,
             style: TextStyle(
               color: isChecked ? AppColors.primary : Colors.grey[700],
+              fontWeight: FontWeight.w600
             ),
           ),
         ],

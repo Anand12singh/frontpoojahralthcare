@@ -3,10 +3,12 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/patient_info_screen.dart';
 import '../../utils/colors.dart';
@@ -122,7 +124,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
   final TextEditingController _hbsagController = TextEditingController();
   final TextEditingController _hivController = TextEditingController();
   final TextEditingController _hcvController = TextEditingController();
-  final TextEditingController _thyroidFunctionTestController = TextEditingController();
+  final TextEditingController _thyroidFunctionT3TestController = TextEditingController();
+  final TextEditingController _thyroidFunctionT4TestController = TextEditingController();
+  final TextEditingController _thyroidFunctionTSHTestController = TextEditingController();
   final TextEditingController _miscReportController = TextEditingController();
   final TextEditingController _bloodReportFindingsController = TextEditingController();
   final TextEditingController _xrayFindingsController = TextEditingController();
@@ -294,7 +298,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
       };
 
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        Uri.parse('$localurl/checkpatientinfo'),
         headers: headers,
         body: json.encode({
           "first_name": _firstNameController.text.trim(),
@@ -365,7 +369,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getlocation'),
+        Uri.parse('$localurl/getlocation'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -397,7 +401,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     try {
       final requestBody = {'id': Global.phid};
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        Uri.parse('$localurl/getpatientbyid'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -473,6 +477,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
         _patientData?['occupation']?.toString() ?? '';
     _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
     _addressController.text = _patientData?['address']?.toString() ?? '';
+    _cityController.text = _patientData?['city']?.toString() ?? '';
+    _stateController.text = _patientData?['state']?.toString() ?? '';
+    _pincodeController.text = _patientData?['pincode']?.toString() ?? '';
+    _countryController.text = _patientData?['country']?.toString() ?? '';
+
+
+
     _descriptionController.text =
         _patientData?['description']?.toString() ?? '';
     _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
@@ -502,6 +513,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _heightController.text = _visitData?['height']?.toString() ?? '';
       _weightController.text = _visitData?['weight']?.toString() ?? '';
       _bmiController.text = _visitData?['bmi']?.toString() ?? '';
+      _laboratoryController.text = _visitData?['blood_laboratory']?.toString() ?? '';
+      _bloodReportFindingsController.text = _visitData?['blood_finding']?.toString() ?? '';
       _rbsController.text = _visitData?['rbs']?.toString() ?? '';
       _complaintsController.text =
           _visitData?['chief_complaints']?.toString() ?? '';
@@ -529,7 +542,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
     _hasLymphadenopathy = (_visitData?['lymphadenopathy']?.toString() ?? "0") == "1";
     print('_hasLymphadenopathy: $_hasLymphadenopathy (raw value: ${_visitData?['lymphadenopathy']})');
-      _dmSinceController.text =
+    _SincewhenController.text =
           _visitData?['history_of_dm_description']?.toString() ?? '';
 
 
@@ -624,9 +637,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _CTScanDate = DateTime.parse(_visitData?['date_of_ct_scan']?.toString() ?? DateTime.now().toString());
       _hivController.text = _visitData?['hiv']?.toString() ?? '';
       _hcvController.text = _visitData?['hcv']?.toString() ?? '';
-      _t3Controller.text = _visitData?['t3']?.toString() ?? '';
-      _t4Controller.text = _visitData?['t4']?.toString() ?? '';
-      _tshController.text = _visitData?['tsh']?.toString() ?? '';
+    _thyroidFunctionT3TestController.text = _visitData?['t3']?.toString() ?? '';
+    _thyroidFunctionT4TestController.text = _visitData?['t4']?.toString() ?? '';
+    _thyroidFunctionTSHTestController.text = _visitData?['tsh']?.toString() ?? '';
       _miscController.text = _visitData?['misc']?.toString() ?? '';
       _xRayLaboratoryController.text =
           _visitData?['x_ray_laboratory']?.toString() ?? '';
@@ -799,7 +812,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _hbsagController.dispose();
     _hivController.dispose();
     _hcvController.dispose();
-    _thyroidFunctionTestController.dispose();
+    _thyroidFunctionT3TestController.dispose();
+    _thyroidFunctionT4TestController.dispose();
+    _thyroidFunctionTSHTestController.dispose();
     _miscReportController.dispose();
     _bloodReportFindingsController.dispose();
     _xrayFindingsController.dispose();
@@ -848,7 +863,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+        Uri.parse('$localurl/storepatient'),
       );
 
       request.headers.addAll({
@@ -865,6 +880,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'mobile_no': _ensureString(_phoneController.text),
         'alternative_no': _ensureString(_altPhoneController.text),
         'address': _ensureString(_addressController.text),
+        'city': _ensureString(_cityController.text),
+        'state': _ensureString(_stateController.text),
+        'pincode': _ensureNumber(_pincodeController.text),
+        'country': _ensureString(_countryController.text),
         'date': _formatDate(_ConsulationDate),
         'referral_by': _ensureString(_referralController.text),
         'location': _selectedLocationId ?? '1',
@@ -875,7 +894,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'rbs': _ensureNumber(_rbsController.text),
         'chief_complaints': _ensureString(_complaintsController.text),
         'history_of_dm_status': _ensureStatus(_hasDM),
-        'history_of_dm_description': _ensureString(_dmSinceController.text),
+        'history_of_dm_description': _ensureString(_SincewhenController.text),
         'hypertension_status': _ensureStatus(_hasHypertension),
         'hypertension_description':
         _ensureString(_hypertensionSinceController.text),
@@ -900,6 +919,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
         'HO_present_medication':
         _ensureString(_currentMedicationController.text),
+
+        'blood_laboratory': _ensureString(_laboratoryController.text),
         'respiratory_system': _ensureString(_rsController.text),
         'cardio_vascular_system': _ensureString(_cvsController.text),
         'central_nervous_system': _ensureString(_cnsController.text),
@@ -930,6 +951,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'serum_electrolytes': _ensureString(_serumElectrolytesController.text),
         'lft': _ensureString(_lftController.text),
         'prothrombin_time_inr': _ensureString(_prothrombinTimController.text),
+        'blood_finding': _ensureString(_bloodReportFindingsController.text),
         'blood_sugar_fasting': _ensureString(_bloodSugarFastingController.text),
         'blood_sugar_post_prandial':
         _ensureString(_bloodSugarPostPrandialController.text),
@@ -937,16 +959,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'hbsag': _ensureString(_hBSAGController.text),
         'hiv': _ensureString(_hivController.text),
         'hcv': _ensureString(_hcvController.text),
-        't3': _ensureString(_t3Controller.text),
-        't4': _ensureString(_t4Controller.text),
-        'tsh': _ensureString(_tshController.text),
+        't3': _ensureString(_thyroidFunctionT3TestController.text),
+        't4': _ensureString(_thyroidFunctionT4TestController.text),
+        'tsh': _ensureString(_thyroidFunctionTSHTestController.text),
         'misc': _ensureString(_miscController.text),
         'x_ray_laboratory': _ensureString(_xRayLaboratoryController.text),
         'date_of_x_ray': _dateofXRayController.toIso8601String().split('T')[0],
         'x_ray_finding': _ensureString(_xRayFindingController.text),
         'ct_scan_laboratory': _ensureString(_ctscanLaboratoryController.text),
-        'date_of_ct_scan':
-        _dateofctscanController.toIso8601String().split('T')[0],
+
 
         'ct_scan_finding': _ensureString(_ctscanFindingController.text),
 
@@ -963,8 +984,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
         'ecg_finding': _ensureString(_ecgFindingController.text),
         'a2d_echo_laboratory': _ensureString(_a2dLaboratoryController.text),
-        'date_of_a2d_echo':
-        _dateofe2dController.toIso8601String().split('T')[0],
+        'date_of_a2d_echo': _dateofe2dController.toIso8601String().split('T')[0],
 
         'a2d_echo_finding': _ensureString(_a2dFindingController.text),
         'pft_laboratory': _ensureString(_pftLaboratoryController.text),
@@ -1350,7 +1370,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '1. Personal Information',
+              '1. Basic Details',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -1360,14 +1380,24 @@ class _OnboardingFormState extends State<OnboardingForm> {
               children:  [
                 FormInput(label: 'First Name',hintlabel: "Enter First Name",  controller: _firstNameController,),
                 FormInput(label: 'Last Name',hintlabel: "Enter Last Name",  controller: _lastNameController,),
-                FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number", controller: _phoneController,),
+                FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number", controller: _phoneController,
+
+                  inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
                 FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,),
                 FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
                 FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
                 FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),
-                FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,),
+                FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
+
+                    inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+      ],),
                 FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController,),
-                FormInput(label: 'Age',hintlabel: "Enter Country",controller: _ageController,),
+                FormInput(label: 'Age',hintlabel: "Enter Country",controller: _ageController, inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
                 DropdownInput<String>(
                   label: 'Gender',
                   items: const [
@@ -1417,11 +1447,17 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   },
                   value: _selectedLocationId,
                 ),
-                FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",),
+                FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
 
-                FormInput(label: 'Height (cms)',hintlabel: "Enter Height (cms)",controller: _heightController,),
-                FormInput(label: 'Weight (kg)',hintlabel: "Enter Weight",controller: _weightController,),
-                FormInput(label: 'BMI (kg/m²)',hintlabel: "Enter BMI",controller: _bmiController,),
+                FormInput(label: 'Height (cms)',hintlabel: "Enter Height (cms)",controller: _heightController, inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
+                FormInput(label: 'Weight (kg)',hintlabel: "Enter Weight",controller: _weightController, inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
+                FormInput(label: 'BMI (kg/m²)',hintlabel: "Enter BMI",controller: _bmiController, inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
 
               ],
             ),
@@ -1795,12 +1831,36 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,),
                     FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,),
 
-                    FormInput(label: 'Upload Attachments'),
+                    SizedBox(
+                      width: double.infinity,
+                      child:    DocumentUploadWidget(
+                        docType: 'pa_abdomen_image', // This should match one of your map keys
+                        label: "P/A Per Abdomen",
+                        onFilesSelected: (files) {
+                          setState(() {
+                            _uploadedFiles['pa_abdomen_image'] = files;
+                          });
+                        },
+                        initialFiles: _uploadedFiles['pa_abdomen_image'],
+                      ),),
                     FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
                     FormInput(label: 'P/R Rectum Notes',controller: _prRectumController,),
                     SizedBox(
                         width: double.infinity,
                         child:  FormInput(label: 'Local Examination',maxlength: 2,controller: _localExamController,)),
+
+                    SizedBox(
+                        width: double.infinity,
+                        child:    DocumentUploadWidget(
+                          docType: 'ct_scan_report', // This should match one of your map keys
+                          label: "Media History",
+                          onFilesSelected: (files) {
+                            setState(() {
+                              _uploadedFiles['ct_scan_report'] = files;
+                            });
+                          },
+                          initialFiles: _uploadedFiles['ct_scan_report'],
+                        ),),
                   ],
                 ),
 
@@ -1912,6 +1972,31 @@ class _OnboardingFormState extends State<OnboardingForm> {
       ),
     );
   }
+
+
+
+  Future<void> _pickImage() async {
+    final pickedFiles = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
+      withData: true,
+    );
+
+    if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
+      setState(() {
+        _uploadedFiles['implants_image'] ??= [];
+        _uploadedFiles['implants_image']!.addAll(pickedFiles.files.map((file) {
+          return {
+            'bytes': file.bytes!,
+            'name': file.name,
+            'type': path.extension(file.name).replaceAll('.', '').toLowerCase(),
+            'isExisting': false,
+          };
+        }).toList());
+      });
+    }
+  }
   Widget _buildAdditionalInfoForm() {
     return Form(
       key: _reportsFormKey,
@@ -1972,11 +2057,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     FormInput(label: 'HBSAG',controller:_hBSAGController),
                     FormInput(label: 'HIV',controller:_hivController),
                     FormInput(label: 'HCV',controller:_hcvController),
-                    FormInput(label: 'Thyroid Function Test T3 T4 TSH',controller:_thyroidFunctionTestController),
+                    FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
+                    FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
+                    FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController),
                     FormInput(label: 'MISC',controller:_miscController),
                     SizedBox(
                         width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _miscFindingsController,)),
+                        child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
 
                   ],
                 ),
@@ -2145,8 +2232,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings',controller:_echoFindingsController)),
-                SizedBox(height: 10,),
+                    child: FormInput(label: 'Findings',controller:_a2dFindingController)),
+             /*   SizedBox(height: 10,),
                 Row(
 
                   children: [
@@ -2165,7 +2252,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 SizedBox(height: 10,),
                 SizedBox(
                     width: double.infinity,
-                    child: FormInput(label: 'Findings',controller: _echoFindingsController,)),
+                    child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
                 SizedBox(height: 10,),
                 Row(
 
@@ -2225,20 +2312,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
             SizedBox(height: 20,),
             SizedBox(
                 width: double.infinity,
-                child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,)),
-
-              SizedBox(height: 10,),
-              Row(
-                spacing: 10,
-                children: [
-                  FormInput(label: 'Media Upload',hintlabel: "Upload Media",),
+                child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
 
 
-                  Expanded(
-
-                      child: FormInput(label: 'Media History',)),
-                ],
-              ),
               SizedBox(height: 10,),
               DatePickerInput(
                 label: 'Flollow up date',
@@ -2264,14 +2340,25 @@ class _OnboardingFormState extends State<OnboardingForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
             const Text(
-              '2. Misc',
+              '3. Misc',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             SizedBox(height: 20,),
             SizedBox(
                 width: double.infinity,
-                child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscTextController,)),
+                child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
 
+              SizedBox(height: 10,),
+              DocumentUploadWidget(
+                docType: 'misc_report', // This should match one of your map keys
+                label: "MISC Upload",
+                onFilesSelected: (files) {
+                  setState(() {
+                    _uploadedFiles['misc_report'] = files;
+                  });
+                },
+                initialFiles: _uploadedFiles['misc_report'],
+              ),
 
           ],),
           ),
@@ -2283,13 +2370,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
   }
 }
 
+
+
 class FormInput extends StatelessWidget {
   final String label;
   final String hintlabel;
   final bool isDate;
   final int maxlength;
   final TextEditingController? controller;
-
+  final List<TextInputFormatter>? inputFormatters;
   const FormInput({
     super.key,
     required this.label,
@@ -2297,6 +2386,7 @@ class FormInput extends StatelessWidget {
     this.isDate = false,
     this.hintlabel="",
     this.controller,
+    this.inputFormatters,
   });
 
   @override
@@ -2315,6 +2405,7 @@ class FormInput extends StatelessWidget {
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,
             keyboardType: TextInputType.text,
+            inputFormatters:inputFormatters,
             textInputAction: TextInputAction.next,
             validator: (value) {
               return null;
@@ -2338,7 +2429,7 @@ class PatientDetailsSidebar extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children:  [
-              Text('PH ID– 75842152', style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
+              Text("PH ID-0012312", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
               SizedBox(height: 8),
               buildInfoBlock("Patient's Name", "Balasubramaniam Tiwari - 42/M"),
               buildInfoBlock("History", "H/O DM  |  IHD  |  COPD"),

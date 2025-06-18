@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../utils/colors.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -76,7 +77,7 @@ class CustomTextField extends StatefulWidget {
   final StrutStyle? strutStyle;
   final bool obscureTextAutoToggle;
   final Duration? obscureTextToggleDelay;
-
+  final List<TextInputFormatter>? inputFormatters;
   const CustomTextField({
     Key? key,
     this.controller,
@@ -95,6 +96,7 @@ class CustomTextField extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.validator,
     this.onChanged,
+    this.inputFormatters,
     this.onTap,
     this.onFieldSubmitted,
     this.onEditingComplete,
@@ -298,6 +300,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       readOnly: widget.readOnly,
       enabled: widget.enabled,
       keyboardType: widget.keyboardType,
+      inputFormatters: widget.inputFormatters,
       textInputAction: widget.textInputAction,
       textCapitalization: widget.textCapitalization,
       style: effectiveStyle,

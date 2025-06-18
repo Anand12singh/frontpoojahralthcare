@@ -104,13 +104,25 @@ class _TimePickerInputState extends State<TimePickerInput> {
               style: const TextStyle(
                   fontWeight: FontWeight.w600, color: AppColors.primary)),
           const SizedBox(height: 4),
-          CustomTextField(
-            hintText: widget.hintlabel,
-            controller: _controller,
-            readOnly: true,
-            enabled: widget.enabled,
+          Stack(
+            children: [
+              CustomTextField(
+                hintText: widget.hintlabel,
+                controller: _controller,
+                readOnly: true,
+                enabled: widget.enabled,
 
-            onTap: () => _selectTime(context),
+                onTap: () => _selectTime(context),
+              ),
+              Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Icon(Icons.access_time_rounded,color: AppColors.primary,size: 20,),
+                  ))
+            ],
           ),
         ],
       ),

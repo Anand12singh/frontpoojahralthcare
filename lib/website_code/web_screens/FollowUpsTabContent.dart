@@ -213,7 +213,10 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(
+
+        color: AppColors.primary,
+      ));
     }
 
     return SingleChildScrollView(

@@ -1050,7 +1050,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
         showDialog(
-          
+
             context: context,
             barrierDismissible: false, // Prevents closing without interaction
             builder: (BuildContext context) {
@@ -2422,3 +2422,5 @@ class FormInput extends StatelessWidget {
     );
   }
 }
+
+

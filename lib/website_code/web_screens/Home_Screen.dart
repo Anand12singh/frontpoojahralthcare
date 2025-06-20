@@ -101,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Patient list',
                     index: 1,
                   ),
-                  _buildSidebarItem(
+                 /* _buildSidebarItem(
                     assetPath: 'assets/DrSchedule.png',
                     label: 'Dr. Schedule',
                     index: 2,
@@ -115,12 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     assetPath: 'assets/UserManagement.png',
                     label: 'User Management',
                     index: 4,
-                  ),
+                  )
                   _buildSidebarItem(
                     assetPath: 'assets/Master.png',
                     label: 'Masters',
                     index: 5,
-                  ),
+                  ),*/
                   const Spacer(),
                   _buildSidebarItem(
                     assetPath: 'assets/settingicon.png',

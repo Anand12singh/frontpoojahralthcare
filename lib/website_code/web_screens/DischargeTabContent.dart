@@ -425,8 +425,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                       Expanded(
                         child: FormInput(
                             controller: _operationTypeController,
-                            label: 'Operation Type',
-                            hintlabel: 'Enter operation type'
+                            label: 'Surgery Type',
+                            hintlabel: 'Enter surgery type'
                         ),
                       ),
                       const SizedBox(width: 10),

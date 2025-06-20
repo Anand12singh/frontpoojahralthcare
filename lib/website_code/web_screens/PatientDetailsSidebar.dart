@@ -56,7 +56,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to load patient data';
+          errorMessage = 'Patient data not found.';
         });
       }
     } catch (e) {

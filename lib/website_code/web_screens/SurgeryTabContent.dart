@@ -434,8 +434,10 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             // Row 1
             Row(
               children: [
-                Expanded(child: _buildFormInput('Surgery', _surgeryController)),
-                const SizedBox(width: 12),
+                Container(
+                    width: 620,
+                    child: _buildFormInput('Surgery', _surgeryController)),
+                const SizedBox(width: 16),
                 Expanded(
                   child: DatePickerInput(
                     label: 'Date',
@@ -447,7 +449,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                 ),
            /*     const SizedBox(width: 12),
                 Expanded(child: _buildDatePickerField()),*/
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: _buildFormInput('Surgeon', _surgeonController)),
               ],
             ),
@@ -457,47 +459,50 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             Row(
               children: [
                 Expanded(child: _buildFormInput('Assistant', _assistantController)),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: _buildFormInput('Anaesthetist/s', _anaesthetistController)),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: _buildFormInput('Anaesthesia', _anaesthesiaController)),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 60,
-                          child: CustomTextField(
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-                            ],
-                            controller: _timetakenHrController,
-                            hintText: '00',
-                            keyboardType: TextInputType.number,
+                const SizedBox(width: 16),
+                Container(
+                  width: 275,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 60,
+                            child: CustomTextField(
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                              ],
+                              controller: _timetakenHrController,
+                              hintText: '00',
+                              keyboardType: TextInputType.number,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('Hr', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 60,
-                          child: CustomTextField(
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-                            ],
-                            controller: _timetakenMinController,
-                            hintText: '00',
-                            keyboardType: TextInputType.number,
+                          const SizedBox(width: 8),
+                          const Text('Hr', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 60,
+                            child: CustomTextField(
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                              ],
+                              controller: _timetakenMinController,
+                              hintText: '00',
+                              keyboardType: TextInputType.number,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('Min', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 8),
+                          const Text('Min', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

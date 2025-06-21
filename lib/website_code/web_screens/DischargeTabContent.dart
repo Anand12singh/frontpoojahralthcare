@@ -51,7 +51,11 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   final TextEditingController _drugAllergyController = TextEditingController();
   final TextEditingController _diagnosisController = TextEditingController();
   final TextEditingController _chiefComplaintsController = TextEditingController();
+  final TextEditingController _SincewhenController = TextEditingController();
+  final TextEditingController _hypertensionSinceController = TextEditingController();
 
+  final TextEditingController _copdDescriptionController = TextEditingController();
+  final TextEditingController _ihdDescriptionController = TextEditingController();
   // Date/Time fields
   DateTime _admissionDate = DateTime.now();
   DateTime _dischargeDate = DateTime.now();
@@ -121,9 +125,11 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       });
     }
   }
-
+  String _ensureString(String? value) => value?.trim() ?? '';
   void _populateFormFields(Map<String, dynamic> data) {
     try {
+      print("data");
+      print(data);
       // Basic Info
       _consultantController.text = data['consultant']?.toString() ?? '';
       _contactController.text = data['contact']?.toString() ?? '';
@@ -132,7 +138,19 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       _drugAllergyController.text = data['drug_allergy']?.toString() ?? '';
       _diagnosisController.text = data['diagnosis']?.toString() ?? '';
       _chiefComplaintsController.text = data['chief_complaints']?.toString() ?? '';
+      _SincewhenController.text =
+          data['history_of_dm_description']?.toString() ?? '';
 
+      _hypertensionSinceController.text =
+          data['hypertension_description']?.toString() ?? '';
+
+
+      _ihdDescriptionController.text =
+          data['IHD_description']?.toString() ?? '';
+
+
+      _copdDescriptionController.text =
+          data['COPD_description']?.toString() ?? '';
       // Dates
       if (data['admission_date'] != null) {
         _admissionDate = DateTime.parse(data['admission_date'].toString());
@@ -148,6 +166,11 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       _hasDM = data['history_of_dm_status'] == 1;
       _hasHypertension = data['hypertension_status'] == 1;
       _hasIHD = data['IHD_status'] == 1;
+      _hasCOPD = data['COPD_status'] == 1;
+      print("_hasCOPD");
+      print(data['COPD_status']);
+      print(_hasCOPD);
+      print(_hasIHD);
       _hasTB = data['tb'] == 1;
       _surgicalHistoryController.text = data['surgical_history']?.toString() ?? '';
       _operationTypeController.text = data['operation_type']?.toString() ?? '';
@@ -174,9 +197,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         _uploadedFiles['discharge_images'] = (data['discharge_images'] as List).map((file) {
           return {
             'id': file['id'],
-            'path': file['media_url'],
-            'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
-            'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
+            'path': file['image_path'],
+            'name': path.basename(file['image_path']?.toString() ?? 'unknown'),
+            'type': path.extension(file['image_path']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
             'size': '',
             'isExisting': true,
           };
@@ -258,7 +281,12 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "history_of_dm_status": _hasDM ? '1' : '0',
         "hypertension_status": _ensureStatus(_hasHypertension),
         "IHD_status": _ensureStatus(_hasIHD),
-        "COPD_status": _hasCOPD ? '1' : '0',
+        "COPD_status":_ensureStatus(_hasCOPD) ,
+        'history_of_dm_description': _ensureString(_SincewhenController.text),
+        'hypertension_description':
+        _ensureString(_hypertensionSinceController.text),
+        'IHD_description': _ensureString(_ihdDescriptionController.text),
+        'COPD_description': _ensureString(_copdDescriptionController.text),
         "follow_up": DateFormat('yyyy-MM-dd').format(_followUpDate),
         "investigations": json.encode(_investigations.map((inv) => {
           "investigation_date": inv.date.toIso8601String(),
@@ -483,31 +511,67 @@ maxlength: 4,
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CustomCheckbox(
-                        label: 'H/O DM',
-                        initialValue: _hasDM,
-                        onChanged: (value) => setState(() => _hasDM = value),
+
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(
+                            label: 'H/O DM',
+                            initialValue: _hasDM,
+                            onChanged: (value) => setState(() => _hasDM = value),
+                          ),
+                          const SizedBox(height: 8),
+                          if(_hasDM)
+                            FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
+                        ],
                       ),
-                      CustomCheckbox(
-                        label: 'Hypertension',
-                        initialValue: _hasHypertension,
-                        onChanged:(value) {
-                          print("_hasHypertension");
-                          print(_hasHypertension);
-                          setState(() => _hasHypertension = value);
-                        }
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(label: 'Hypertension'
+                            ,initialValue: _hasHypertension
+                            ,onChanged: (value) {
+                              setState(() {
+                                _hasHypertension=value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          if(_hasHypertension)
+                            FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
+                        ],
                       ),
-                      CustomCheckbox(
-                        label: 'IHD',
-                        initialValue: _hasIHD,
-                        onChanged: (value) => setState(() => _hasIHD = value),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                            setState(() {
+                              _hasIHD=value;
+                            });
+                          },),
+                          const SizedBox(height: 8),
+                          if(_hasIHD)
+                            FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
+                        ],
                       ),
-                      CustomCheckbox(
-                        label: 'COPD',
-                        initialValue: _hasCOPD,
-                        onChanged: (value) => setState(() => _hasCOPD = value),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                            setState(() {
+                              print("_hasCOPD");
+                              print(_hasCOPD);
+                              _hasCOPD=value;
+                            });
+                          },),
+                          const SizedBox(height: 8),
+                          if(_hasCOPD)
+                            FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
+                        ],
                       ),
+
                     ],
                   ),
                   const SizedBox(height: 16),

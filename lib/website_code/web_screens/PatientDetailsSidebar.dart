@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import 'package:poojaheakthcare/widgets/custom_text_field.dart';
 import 'dart:convert';
 
 import '../../constants/base_url.dart';
+import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
+import '../../widgets/showTopSnackBar.dart';
 import 'Patient_Registration.dart';
 
 class PatientDetailsSidebar extends StatefulWidget {
@@ -16,9 +20,13 @@ class PatientDetailsSidebar extends StatefulWidget {
 
 class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
   Map<String, dynamic>? patientData;
-  bool isLoading = true;
-  String errorMessage = '';
 
+  bool isLoading = true;
+  bool isCancleLoading = false;
+  String errorMessage = '';
+  TextEditingController summaryController = TextEditingController(); // Add this
+  bool isAddingSummary = false;
+  bool isEditingSummary = false;
   @override
   void initState() {
     super.initState();
@@ -43,8 +51,12 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         if (data['status'] == true && data['data'].isNotEmpty) {
           setState(() {
             patientData = data['data'][0];
-            print("patientData");
-            print(patientData);
+            // Safely initialize summaryController
+            if (patientData!['summary'] != null && patientData!['summary'].isNotEmpty) {
+              summaryController.text = patientData!['summary'][0]['summary'] ?? "";
+            } else {
+              summaryController.text = "";
+            }
             isLoading = false;
           });
         } else {
@@ -76,7 +88,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       case 3:
         return 'Other';
       default:
-        return 'Unknown';
+        return '';
     }
   }
 
@@ -117,10 +129,77 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         return 'Pooja Nursing Home';
     // Add other location cases as needed
       default:
-        return 'Unknown location';
+        return 'Not specified';
     }
   }
 
+
+  Future<void> addSummary() async {
+    if (summaryController.text.isEmpty) {
+      showTopRightToast(context,'Please enter a summary',backgroundColor: Colors.red);
+
+
+      return;
+    }
+
+    setState(() => isAddingSummary = true);
+
+    try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
+      final headers = {
+        'Content-Type': 'application/json',
+        'Cookie': 'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.post(
+        Uri.parse('$localurl/summary_add'),
+        headers: headers,
+        body: json.encode({
+          'patient_id': widget.patientId,
+          'summary': summaryController.text,
+        }),
+
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+
+          showTopRightToast(context,data['message'] ?? 'Summary added successfully',backgroundColor: Colors.green);
+          setState(() {
+            isEditingSummary = false; // Add this line
+          });
+          fetchPatientData();
+        } else {
+          showTopRightToast(context,data['message'] ?? 'Failed to add summary',backgroundColor: Colors.red);
+
+        }
+      } else {
+        print("response.body");
+        print(response.body);
+
+        showTopRightToast(context,'Failed to add summary',backgroundColor: Colors.red);
+
+
+
+      }
+    } catch (e) {
+      showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+
+    } finally {
+      setState(() {
+        isAddingSummary = false;
+        summaryController.clear();
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -138,6 +217,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     }
 
     final patient = patientData!['patient'][0];
+
     final dischargeInfo = patientData!['discharge_info'].isNotEmpty
         ? patientData!['discharge_info'][0]
         : null;
@@ -149,9 +229,10 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children:  [
-              Text("PH ID-${patient['phid']}", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
+              Text("${patient['first_name']} ${patient['last_name']} -${_getGenderText(patient['gender'])}", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
+             // Text("PH ID-${patient['phid']}", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
               SizedBox(height: 8),
-              buildInfoBlock("Patient's Name", "${patient['first_name']} ${patient['last_name']} - ${patient['age'] ?? ''}/${_getGenderText(patient['gender'])}"),
+              buildInfoBlock("PH ID", "${patient['phid']}"),
               buildInfoBlock("History", _getHistoryText()),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -198,11 +279,73 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                 ],
               ),
 
-              SizedBox(height: 12),
-              SizedBox(
-                  width: double.infinity,
-                  child: FormInput(label: 'Summary')),
+              Row(
+                children: [
+                  Expanded(
+                    child: buildInfoBlock(
+                        "Summary",
+                        (patientData!['summary'] != null &&
+                            patientData!['summary'].isNotEmpty)
+                            ? patientData!['summary'][0]['summary'] ?? 'Not specified'
+                            : 'Not specified'
+                    ),
+                  ),
+          /*        if (!isEditingSummary &&
+                      patientData!['summary'] != null &&
+                      patientData!['summary'].isNotEmpty)*/
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+                      onPressed: () {
+                        setState(() {
+                          isEditingSummary = true;
+                          summaryController.text = (patientData!['summary'] != null &&
+                              patientData!['summary'].isNotEmpty)
+                              ? patientData!['summary'][0]['summary'] ?? ''
+                              : '';
+                        });
+                      },
+                    ),
+                ],
+              ),
+              if (isEditingSummary)
+                Column(
+                  children: [
+                    SizedBox(height: 12),
+                    CustomTextField(
+                      controller: summaryController,
+                      hintText: 'Summary',
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Animatedbutton(
+                          onPressed: () {
+                            setState(() {
+                              isEditingSummary = false;
+                            });
+                          },
+                          shadowColor: Colors.white,
+                          titlecolor: AppColors.primary,
+                          backgroundColor: Colors.white,
+                          borderColor: AppColors.secondary,
+                          isLoading: isCancleLoading,
+                          title: 'Cancel',
+                        ),
 
+                        SizedBox(width: 8),
+                        Animatedbutton(
+                          onPressed: isAddingSummary ? null : addSummary,
+                          isLoading: isAddingSummary,
+                          title: 'Update Summary',
+                          backgroundColor: AppColors.secondary,
+                          shadowColor: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

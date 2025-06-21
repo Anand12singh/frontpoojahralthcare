@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
+import '../constants/base_url.dart';
+import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../website_code/web_screens/Home_Screen.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/showTopSnackBar.dart';
 
 class RecentPatientsListScreen extends StatefulWidget {
   const RecentPatientsListScreen({super.key});
@@ -32,13 +35,21 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
 
   Future<void> _fetchPatients() async {
     try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
       final headers = {
         'Accept': 'application/json',
-        'Cookie': 'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+        'Cookie': 'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
+        'Authorization': 'Bearer $token',
       };
 
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/get_allpatients'),
+        Uri.parse('$localurl/get_patient'),
         headers: headers,
       );
 
@@ -108,6 +119,46 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
     });
   }
 
+  Future<void> _deletePatient(String patientId) async {
+    try {
+      setState(() => isLoading = true);
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
+      final headers = {
+        'Content-Type': 'application/json',
+        'Cookie': 'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
+      'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.post(
+        Uri.parse('$localurl/soft_delete_patient'),
+        headers: headers,
+        body: json.encode({'patient_id': patientId}),
+      );
+
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          showTopRightToast(context, 'Patient deleted successfully', backgroundColor: Colors.green);
+          _fetchPatients(); // Refresh the list
+        } else {
+          showTopRightToast(context, responseData['message'] ?? 'Failed to delete patient', backgroundColor: Colors.red);
+        }
+      } else {
+        showTopRightToast(context, 'Error: ${response.statusCode}', backgroundColor: Colors.red);
+      }
+    } catch (e) {
+      showTopRightToast(context, 'Error: ${e.toString()}', backgroundColor: Colors.red);
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,12 +281,12 @@ prefixIcon: Icons.search_rounded,
 
                                       },
                                     ),
-                                /*    IconButton(
+                                    IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red),
                                       onPressed: () {
                                         _showDeleteDialog(context, patient['phid']);
                                       },
-                                    ),*/
+                                    ),
                                   ],
                                 ),
                               ),
@@ -255,26 +306,29 @@ prefixIcon: Icons.search_rounded,
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String phid) {
+  void _showDeleteDialog(BuildContext context, String patientId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary)),
+
           title: const Text('Confirm Delete'),
-          content: Text('Are you sure you want to delete patient $phid?'),
+          content: Text('Are you sure you want to delete patient $patientId?'),
           actions: [
             TextButton(
-              child: const Text('Cancel'),
+              child: const Text('Cancel',style: TextStyle(color: AppColors.primary),),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () {
+              onPressed: () async {
                 // Implement delete functionality
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Patient $phid deleted')),
-                );
+                await _deletePatient(patientId);
+
+
+
               },
             ),
           ],

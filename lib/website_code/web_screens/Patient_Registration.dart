@@ -851,7 +851,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
         Navigator.of(context).pop();
-        ShowDialogs.showSnackBar(
+        showTopRightToast(
             context, 'Authentication token not found. Please login again.');
         return;
       }
@@ -866,6 +866,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'Authorization': 'Bearer $token',
       });
       log('_doctorNotesController.text ${_doctorNotesController.text}');
+      log('token $token');
 
       // ✅ Add Form Fields
       Map<String, String> fields = {
@@ -900,7 +901,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'any_other_illness': _ensureString(_otherIllnessController.text),
         'past_surgical_history': _ensureString(_surgicalHistoryController.text),
         'drug_allergy': _ensureString(_drugAllergyController.text),
-        'temp': _tempStatus == 'Febrile' ? '1' : '0',
+        'temp': _ensureString(_tempController.text),
         'pallor': _pallorStatus == '+' ? '1' : '0',
         'icterus': _icterusStatus == '+' ? '1' : '0',
         'lymphadenopathy': _lymphadenopathyStatus == '+' ? '1' : '0',
@@ -926,7 +927,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'comorbidities': _ensureString(_comorbiditiesController.text),
         'plan': _ensureString(_planController.text),
         'advise': _ensureString(_adviseController.text),
-        'status': Global.status ?? GlobalPatientData.patientId.toString(),
+        'status': "2",//Global.status ?? GlobalPatientData.patientId.toString(),
         'doctor_note': _ensureString(_doctorNotesController.text),
         'description': _ensureString(_descriptionController.text),
         'other_location': _ensureString(_otherLocationController.text),
@@ -989,10 +990,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
         'msic_finding': _ensureString(_miscFindingController.text),
       };
-
-      if (Global.status == '2') {
+      fields['patientId'] = Global.phid.toString();
+     /* if (Global.status == '2') {
         fields['patientId'] = Global.phid.toString();
-      }
+      }*/
 
       request.fields.addAll(fields);
       log('Form Fields: ${jsonEncode(fields)}');
@@ -1474,6 +1475,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     onChanged: (value) => _calculateBMI(), // Add this line
                   ),
           FormInput(
+
             label: 'BMI (kg/m²)',
             hintlabel: "Enter BMI",
             controller: _bmiController,
@@ -1552,7 +1554,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
+crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
                         Column(
@@ -1568,26 +1570,50 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
                           ],
                         ),
-                          CustomCheckbox(label: 'Hypertension'
-                            ,initialValue: _hasHypertension
-                          ,onChanged: (value) {
-                            setState(() {
-                              _hasHypertension=value;
-                            });
-                          },
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(label: 'Hypertension'
+                                ,initialValue: _hasHypertension
+                              ,onChanged: (value) {
+                                setState(() {
+                                  _hasHypertension=value;
+                                });
+                              },
+                              ),
+                              const SizedBox(height: 8),
+                              if(_hasHypertension)
+                                FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
+                            ],
                           ),
-                          CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
-                            setState(() {
-                              _hasIHD=value;
-                            });
-                          },),
-                         CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                           setState(() {
-                             print("_hasCOPD");
-                             print(_hasCOPD);
-                             _hasCOPD=value;
-                           });
-                         },),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                                setState(() {
+                                  _hasIHD=value;
+                                });
+                              },),
+                              const SizedBox(height: 8),
+                              if(_hasIHD)
+                                FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
+                            ],
+                          ),
+                         Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                               setState(() {
+                                 print("_hasCOPD");
+                                 print(_hasCOPD);
+                                 _hasCOPD=value;
+                               });
+                             },),
+                             const SizedBox(height: 8),
+                             if(_hasCOPD)
+                               FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
+                           ],
+                         ),
 
                       ],
                     ),
@@ -1656,6 +1682,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                                     value: 'Afebrile',
                                     groupValue: _tempStatus,
                                     onChanged: (value) {
+                                      _tempController.text="0";
                                       setState(() => _tempStatus = value!);
                                     },
                                     label: 'Afebrile',
@@ -1666,7 +1693,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                           ),
                         ),
 
-
+                        if(_tempStatus=='Febrile')
+                         FormInput(label: 'Temperature',controller: _tempController,),
                          FormInput(label: 'Pulse (BPM)',controller: _pulseController,),
                          Container(
                            width: 308,
@@ -2449,6 +2477,7 @@ class FormInput extends StatelessWidget {
                   fontWeight: FontWeight.w600, color: AppColors.primary)),
           const SizedBox(height: 4),
           CustomTextField(
+            enabled: !readOnly,
             maxLines: maxlength,
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,

@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/olddpatientfom.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
 import 'Home_Screen.dart';
@@ -75,14 +77,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     FocusScope.of(context).unfocus();
 
     try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
+
       final headers = {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
         'Cookie':
         'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
       };
 
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/add_patient'),
         headers: headers,
         body: json.encode({
           "first_name": _nameController.text.trim(),

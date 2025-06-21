@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import '../../utils/colors.dart';
 import '../../widgets/DatePickerInput.dart';
+import '../../widgets/DocumentUploadWidget.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
@@ -144,7 +145,17 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Implants', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+        DocumentUploadWidget(
+          label: "Implants",
+          docType: "discharge_images",
+          onFilesSelected: (files) {
+            setState(() {
+              _uploadedFiles['implants_image'] = files;
+            });
+          },
+          initialFiles: _uploadedFiles['implants_image'],
+        ),
+   /*     const Text('Implants', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
         const SizedBox(height: 4),
         InkWell(
           onTap: _pickImage,
@@ -176,8 +187,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
               //  Icon(Icons.cloud_upload, size: 40, color: AppColors.primary),
 
 
-              /*  const SizedBox(height: 4),
-                const Text('Supports JPG, PNG, PDF', style: TextStyle(fontSize: 12)),*/
+              *//*  const SizedBox(height: 4),
+                const Text('Supports JPG, PNG, PDF', style: TextStyle(fontSize: 12)),*//*
               ],
             ),
           ),
@@ -232,7 +243,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
               }).toList(),
             ),
           ),
-        ],
+        ],*/
       ],
     );
   }
@@ -435,7 +446,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             Row(
               children: [
                 Container(
-                    width: 620,
+                    width: 600,
                     child: _buildFormInput('Surgery', _surgeryController)),
                 const SizedBox(width: 16),
                 Expanded(
@@ -465,7 +476,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                 Expanded(child: _buildFormInput('Anaesthesia', _anaesthesiaController)),
                 const SizedBox(width: 16),
                 Container(
-                  width: 275,
+                  width: 285,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -513,7 +524,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildFormInput('Location', _findingsController, maxLines: 1)),
+                Container(
+                    width: 600,
+                    child: _buildFormInput('Location', _findingsController, maxLines: 1)),
                 const SizedBox(width: 12),
                 Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
                 const SizedBox(width: 12),

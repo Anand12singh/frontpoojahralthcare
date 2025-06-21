@@ -65,21 +65,23 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                   Container(
                     width: 600,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       borderRadius:BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12))
                     ),
-                    child: TabBar(
-
-                     // padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 12),  // Space between tabs
+                    child:  TabBar(
+                      // padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
+                      labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 0), // Space between tabs
                       controller: _tabController,
+                      isScrollable: false, // use true if tab texts are long
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+
                       labelColor: AppColors.primary,
                       unselectedLabelColor: AppColors.secondary,
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
-
 
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.normal,
@@ -89,29 +91,56 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                       indicatorSize: null,
 
                       indicator: BoxDecoration(
-
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
                         color: Colors.transparent,
-                        border: Border(
-                          bottom: BorderSide(
-                            color:  Colors.transparent,
-
-                          ),
-                        ),
                       ),
-                      tabs: const [
-                        Tab(text: 'Onboarding'),
-
-                        Tab(text: 'Operation Notes'),
-
-                        Tab(text: 'Discharge Info'),
-
-                        Tab(text: 'Follow Ups'),
+                      tabs: [
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Onboarding')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Operation Notes')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Discharge Info')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Follow Ups')),
                       ],
                     ),
-                  ),
+              ),
+
 
                   Expanded(
                     child: Container(

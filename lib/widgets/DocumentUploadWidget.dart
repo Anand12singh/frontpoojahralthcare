@@ -114,108 +114,99 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   void _showPreviewDialog(BuildContext context, String filePath, String fileType,
       {bool isNetwork = false}) {
     final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
-    final videoTypes = {'mp4', 'mov', 'avi'};
     final fileExtension = fileType.toLowerCase();
 
     if (imageTypes.contains(fileExtension)) {
       showDialog(
         context: context,
-        builder: (context) => Dialog(
-          insetPadding: const EdgeInsets.all(20),
-          child: Stack(
-            children: [
-              InteractiveViewer(
-                panEnabled: true,
-                minScale: 0.5,
-                maxScale: 3.0,
-                child: isNetwork
-                    ? Image.network(filePath, fit: BoxFit.contain)
-                    : (kIsWeb
-                    ? Image.memory(
-                  base64Decode(filePath.split(',').last),
-                  fit: BoxFit.contain,
-                )
-                    : Image.file(File(filePath), fit: BoxFit.contain)),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      child: IconButton(
-                        icon: const Icon(Icons.download, color: Colors.white),
-                        onPressed: () => _downloadFile(filePath, fileExtension, isNetwork),
-                      ),
+        builder: (context) =>
+            Dialog(
+              insetPadding: const EdgeInsets.all(20),
+              child: Stack(
+                children: [
+                  InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 0.5,
+                    maxScale: 3.0,
+                    child: isNetwork
+                        ? Image.network(
+                      filePath,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text('Failed to load image\n${error
+                              .toString()}'),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                    )
+                        : (kIsWeb
+                        ? Image.memory(
+                      base64Decode(filePath
+                          .split(',')
+                          .last),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text('Failed to load image'),
+                        );
+                      },
+                    )
+                        : Image.file(
+                      File(filePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text('Failed to load image'),
+                        );
+                      },
+                    )),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.blue,
+                          child: IconButton(
+                            icon: const Icon(
+                                Icons.download, color: Colors.white),
+                            onPressed: () =>
+                                _downloadFile(
+                                    filePath, fileExtension, isNetwork),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        CircleAvatar(
+                          backgroundColor: Colors.red,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    CircleAvatar(
-                      backgroundColor: Colors.red,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    } else if (fileExtension == 'pdf') {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('PDF Document'),
-          content: Text('File: ${path.basename(filePath)}'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                if (isNetwork) {
-                  // Open network PDF in browser
-                  launchUrl(Uri.parse(filePath));
-                } else if (kIsWeb) {
-                  // For web, show a message about how to download
-                  showTopRightToast(context, 'Right-click and select "Save as" to download', backgroundColor: Colors.green);
-
-
-                } else {
-                  // Open local file
-                  OpenFile.open(filePath);
-                }
-              },
-              child: const Text('Open'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // For unsupported file types or videos (which would need additional setup)
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('File Preview'),
-          content: Text('Preview not available for ${fileExtension.toUpperCase()} files'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
       );
     }
   }
 
-  Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
+    Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
     // Implement your download logic here
     // This would depend on your specific requirements and whether you're on web/mobile
     // You might want to use the flutter_downloader package or similar

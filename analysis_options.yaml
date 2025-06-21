@@ -10,6 +10,7 @@
 analyzer:
   errors:
     annotate_overrides: ignore
+    avoid_print: ignore
     must_be_immutable: ignore
     prefer_typing_uninitialized_variables: ignore
     unnecessary_string_interpolations: ignore

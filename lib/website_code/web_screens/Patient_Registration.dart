@@ -1,3 +1,5 @@
+// ignore_for_file: sized_box_for_whitespace
+
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -426,6 +428,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     'pr_rectum_image': [],
     'doctor_note_image': [],
   };
+
   @override
   void dispose() {
     // Dispose all controllers
@@ -716,120 +719,6 @@ class _OnboardingFormState extends State<OnboardingForm> {
         return null;
     }
   }
-/*  Future<void> _submitForm() async {
-    bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
-    bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
-    bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
-
-    if (!personalValid || !medicalValid || !reportsValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields')),
-      );
-      return;
-    }
-
-    try {
-      setState(() => _isLoading = true);
-
-      String? token = await AuthService.getToken();
-      if (token == null || token.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Authentication token not found. Please login again.')),
-        );
-        return;
-      }
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
-      );
-
-      request.headers.addAll({
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      });
-      print("token : ${token}");
-
-      // Add Form Fields
-      Map<String, String> fields = {
-        'first_name': _ensureString(_firstNameController.text),
-        'last_name': _ensureString(_lastNameController.text),
-        'gender': _ensureGender(_gender),
-        'mobile_no': _ensureString(_phoneController.text),
-        'alternative_no': _ensureString(_altPhoneController.text),
-        'address': _ensureString(_addressController.text),
-        'date': _selectedDate.toIso8601String().split('T')[0],
-        'referral_by': _ensureString(_referralController.text),
-        'location': _selectedLocationId ?? '1',
-        'age': _ensureNumber(_ageController.text),
-        'height': _ensureNumber(_heightController.text),
-        'weight': _ensureNumber(_weightController.text),
-        'bmi': _ensureNumber(_bmiController.text),
-        'rbs': _ensureNumber(_rbsController.text),
-        'chief_complaints': _ensureString(_complaintsController.text),
-        'history_of_dm_status': _ensureStatus(_hasDM),
-        'history_of_dm_description': _ensureString(_dmSinceController.text),
-        'hypertension_status': _ensureStatus(_hasHypertension),
-        'hypertension_description': _ensureString(_hypertensionSinceController.text),
-        'IHD_status': _ensureStatus(_hasIHD),
-        'IHD_description': _ensureString(_ihdDescriptionController.text),
-        'COPD_status': _ensureStatus(_hasCOPD),
-        'COPD_description': _ensureString(_copdDescriptionController.text),
-        'any_other_illness': _ensureString(_otherIllnessController.text),
-        'past_surgical_history': _ensureString(_surgicalHistoryController.text),
-        'drug_allergy': _ensureString(_drugAllergyController.text),
-        'temp': _ensureString(_tempController.text),
-        'pulse': _ensureNumber(_pulseController.text),
-        'bp_systolic': _ensureNumber(_bpSystolicController.text),
-        'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
-        'pallor': _ensureStatus(_hasPallor),
-        'icterus': _ensureStatus(_hasIcterus),
-        'oedema_status': _ensureStatus(_hasOedema),
-        'oedema_description': _ensureString(_oedemaDetailsController.text),
-        'lymphadenopathy': _ensureString(_lymphadenopathyDetailsController.text),
-        'HO_present_medication': _ensureString(_currentMedicationController.text),
-        'respiratory_system': _ensureString(_rsController.text),
-        'cardio_vascular_system': _ensureString(_cvsController.text),
-        'central_nervous_system': _ensureString(_cnsController.text),
-        'pa_abdomen': _ensureString(_paAbdomenController.text),
-        'pr_rectum': _ensureString(_prRectumController.text),
-        'local_examination': _ensureString(_localExamController.text),
-        'clinical_diagnosis': _ensureString(_diagnosisController.text),
-        'comorbidities': _ensureString(_comorbiditiesController.text),
-        'plan': _ensureString(_planController.text),
-        'advise': _ensureString(_adviseController.text),
-        'doctor_note': _ensureString(_doctorNotesController.text),
-        'description': _ensureString(_descriptionController.text),
-      };
-
-      request.fields.addAll(fields);
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-      print("responseBody");
-      print(responseBody);
-      print(request.fields);
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(responseBody);
-        showTopRightToast(context, responseData['message'], backgroundColor: Colors.green);
-
-        // Navigate to success screen or patient info screen
-        */ /*Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => PatientInfoScreen()),
-        );*/ /*
-      } else {
-        showTopRightToast(context, 'Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.red);
-
-      }
-    } catch (e) {
-      showTopRightToast(context, 'Error occurred: ${e.toString()}', backgroundColor: Colors.red);
-
-
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -969,142 +858,144 @@ class _OnboardingFormState extends State<OnboardingForm> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.Containerbackground),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '1. Personal Information',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 20,
-              runSpacing: 16,
-              children: [
-                FormInput(
-                  label: 'First Name',
-                  hintlabel: "Enter First Name",
-                  controller: _firstNameController,
-                ),
-                FormInput(
-                  label: 'Last Name',
-                  hintlabel: "Enter Last Name",
-                  controller: _lastNameController,
-                ),
-                FormInput(
-                  label: 'Phone Number',
-                  hintlabel: "Enter Phone Number",
-                  controller: _phoneController,
-                ),
-                FormInput(
-                  label: 'PH ID',
-                  hintlabel: "Enter PH ID",
-                  controller: _phIdController,
-                ),
-                FormInput(
-                  label: 'Address',
-                  hintlabel: "Enter Address",
-                  controller: _addressController,
-                ),
-                FormInput(
-                  label: 'City',
-                  hintlabel: "Enter City",
-                  controller: _cityController,
-                ),
-                FormInput(
-                  label: 'State',
-                  hintlabel: "Enter State",
-                  controller: _stateController,
-                ),
-                FormInput(
-                  label: 'Pin Code',
-                  hintlabel: "Enter Pin Code",
-                  controller: _pincodeController,
-                ),
-                FormInput(
-                  label: 'Country',
-                  hintlabel: "Enter Country",
-                  controller: _countryController,
-                ),
-                FormInput(
-                  label: 'Age',
-                  hintlabel: "Enter Country",
-                  controller: _ageController,
-                ),
-                DropdownInput<String>(
-                  label: 'Gender',
-                  items: const [
-                    DropdownMenuItem(value: 'Male', child: Text('Male')),
-                    DropdownMenuItem(value: 'Female', child: Text('Female')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _gender = value;
-                      });
-                    }
-                  },
-                  value: _gender,
-                ),
-                DatePickerInput(
-                  label: 'Consultation Date',
-                  hintlabel: 'dd-mm-yyyy',
-                  onDateSelected: (date) {
-                    // Handle selected date
-                    print('Consultation Date: $date');
-                  },
-                ),
-                FormInput(
-                  label: 'Referral by',
-                  hintlabel: "Enter Referral by",
-                  controller: _referralController,
-                ),
-                DropdownInput<String>(
-                  label: 'Clinic Location',
-                  items: _locations.map((loc) {
-                    return DropdownMenuItem<String>(
-                      value: loc['id'].toString(),
-                      child: Text(loc['location'].toString()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedLocationId = value;
-                      // Find the corresponding location name
-                      final selectedLoc = _locations.firstWhere(
-                        (loc) => loc['id'].toString() == value,
-                        orElse: () => {'id': '2', 'location': 'Unknown'},
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '1. Personal Information',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 20,
+                runSpacing: 16,
+                children: [
+                  FormInput(
+                    label: 'First Name',
+                    hintlabel: "Enter First Name",
+                    controller: _firstNameController,
+                  ),
+                  FormInput(
+                    label: 'Last Name',
+                    hintlabel: "Enter Last Name",
+                    controller: _lastNameController,
+                  ),
+                  FormInput(
+                    label: 'Phone Number',
+                    hintlabel: "Enter Phone Number",
+                    controller: _phoneController,
+                  ),
+                  FormInput(
+                    label: 'PH ID',
+                    hintlabel: "Enter PH ID",
+                    controller: _phIdController,
+                  ),
+                  FormInput(
+                    label: 'Address',
+                    hintlabel: "Enter Address",
+                    controller: _addressController,
+                  ),
+                  FormInput(
+                    label: 'City',
+                    hintlabel: "Enter City",
+                    controller: _cityController,
+                  ),
+                  FormInput(
+                    label: 'State',
+                    hintlabel: "Enter State",
+                    controller: _stateController,
+                  ),
+                  FormInput(
+                    label: 'Pin Code',
+                    hintlabel: "Enter Pin Code",
+                    controller: _pincodeController,
+                  ),
+                  FormInput(
+                    label: 'Country',
+                    hintlabel: "Enter Country",
+                    controller: _countryController,
+                  ),
+                  FormInput(
+                    label: 'Age',
+                    hintlabel: "Enter Country",
+                    controller: _ageController,
+                  ),
+                  DropdownInput<String>(
+                    label: 'Gender',
+                    items: const [
+                      DropdownMenuItem(value: 'Male', child: Text('Male')),
+                      DropdownMenuItem(value: 'Female', child: Text('Female')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _gender = value;
+                        });
+                      }
+                    },
+                    value: _gender,
+                  ),
+                  DatePickerInput(
+                    label: 'Consultation Date',
+                    hintlabel: 'dd-mm-yyyy',
+                    onDateSelected: (date) {
+                      // Handle selected date
+                      print('Consultation Date: $date');
+                    },
+                  ),
+                  FormInput(
+                    label: 'Referral by',
+                    hintlabel: "Enter Referral by",
+                    controller: _referralController,
+                  ),
+                  DropdownInput<String>(
+                    label: 'Clinic Location',
+                    items: _locations.map((loc) {
+                      return DropdownMenuItem<String>(
+                        value: loc['id'].toString(),
+                        child: Text(loc['location'].toString()),
                       );
-                      _selectedLocationName =
-                          selectedLoc['location'] ?? 'Unknown';
-                    });
-                  },
-                  value: _selectedLocationId,
-                ),
-                FormInput(
-                  label: 'Other  Location',
-                  hintlabel: "Enter Other  Location",
-                ),
-                FormInput(
-                  label: 'Height (cms)',
-                  hintlabel: "Enter Height (cms)",
-                  controller: _heightController,
-                ),
-                FormInput(
-                  label: 'Weight (kg)',
-                  hintlabel: "Enter Weight",
-                  controller: _weightController,
-                ),
-                FormInput(
-                  label: 'BMI (kg/m²)',
-                  hintlabel: "Enter BMI",
-                  controller: _bmiController,
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildFormNavigationButtons(isFirstStep: true),
-          ],
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLocationId = value;
+                        // Find the corresponding location name
+                        final selectedLoc = _locations.firstWhere(
+                          (loc) => loc['id'].toString() == value,
+                          orElse: () => {'id': '2', 'location': 'Unknown'},
+                        );
+                        _selectedLocationName =
+                            selectedLoc['location'] ?? 'Unknown';
+                      });
+                    },
+                    value: _selectedLocationId,
+                  ),
+                  FormInput(
+                    label: 'Other  Location',
+                    hintlabel: "Enter Other  Location",
+                  ),
+                  FormInput(
+                    label: 'Height (cms)',
+                    hintlabel: "Enter Height (cms)",
+                    controller: _heightController,
+                  ),
+                  FormInput(
+                    label: 'Weight (kg)',
+                    hintlabel: "Enter Weight",
+                    controller: _weightController,
+                  ),
+                  FormInput(
+                    label: 'BMI (kg/m²)',
+                    hintlabel: "Enter BMI",
+                    controller: _bmiController,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildFormNavigationButtons(isFirstStep: true),
+            ],
+          ),
         ),
       ),
     );
@@ -1133,23 +1024,25 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.Containerbackground),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("1. Chief Complaints",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  Container(
-                      width: double.infinity,
-                      child: FormInput(
-                        label: 'Chief Complaints',
-                        maxlength: 5,
-                        controller: _complaintsController,
-                      )),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("1. Chief Complaints",
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Container(
+                        width: double.infinity,
+                        child: FormInput(
+                          label: 'Chief Complaints',
+                          maxlength: 5,
+                          controller: _complaintsController,
+                        )),
+                  ],
+                ),
               ),
             ),
 
@@ -1682,352 +1575,354 @@ class _OnboardingFormState extends State<OnboardingForm> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.Containerbackground),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '1. Reports',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Blood Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '1. Reports',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'Blood Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 16,
-                  children: const [
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Laboratory')),
-                    FormInput(label: 'Hemoglobin'),
-                    FormInput(label: 'Total leucocyte count'),
-                    FormInput(label: 'ESR'),
-                    FormInput(label: 'Platelets'),
-                    FormInput(label: 'Urine Routine'),
-                    FormInput(label: 'Urine Culture'),
-                    FormInput(label: 'BUN'),
-                    FormInput(label: 'Serum Creatinine'),
-                    FormInput(label: 'Serum Electrolytes'),
-                    FormInput(label: 'LFT'),
-                    FormInput(label: 'Prothrombin Time / INR'),
-                    FormInput(label: 'Blood Sugar Fasting'),
-                    FormInput(label: 'Blood Sugar Post Prandial'),
-                    FormInput(label: 'HBA1C'),
-                    FormInput(label: 'HBSAG'),
-                    FormInput(label: 'HIV'),
-                    FormInput(label: 'HCV'),
-                    FormInput(label: 'Thyroid Function Test T3 T4 TSH'),
-                    FormInput(label: 'MISC'),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings')),
-                  ],
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'X-Ray Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'CT Scan Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 20,
+                    runSpacing: 16,
+                    children: const [
+                      SizedBox(
+                          width: double.infinity,
+                          child: FormInput(label: 'Laboratory')),
+                      FormInput(label: 'Hemoglobin'),
+                      FormInput(label: 'Total leucocyte count'),
+                      FormInput(label: 'ESR'),
+                      FormInput(label: 'Platelets'),
+                      FormInput(label: 'Urine Routine'),
+                      FormInput(label: 'Urine Culture'),
+                      FormInput(label: 'BUN'),
+                      FormInput(label: 'Serum Creatinine'),
+                      FormInput(label: 'Serum Electrolytes'),
+                      FormInput(label: 'LFT'),
+                      FormInput(label: 'Prothrombin Time / INR'),
+                      FormInput(label: 'Blood Sugar Fasting'),
+                      FormInput(label: 'Blood Sugar Post Prandial'),
+                      FormInput(label: 'HBA1C'),
+                      FormInput(label: 'HBSAG'),
+                      FormInput(label: 'HIV'),
+                      FormInput(label: 'HCV'),
+                      FormInput(label: 'Thyroid Function Test T3 T4 TSH'),
+                      FormInput(label: 'MISC'),
+                      SizedBox(
+                          width: double.infinity,
+                          child: FormInput(label: 'Findings')),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'X-Ray Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(
-                      label: 'CT Scan',
-                      hintlabel: "Upload CT Scan Reports",
-                    ),
-                    Expanded(child: FormInput(label: 'Media History')),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
-                    DatePickerInput(
-                      label: 'Date',
-                      hintlabel: 'dd-mm-yyyy',
-                      onDateSelected: (date) {
-                        // Handle selected date
-                        print('Date Date: $date');
-                      },
-                    ),
-                    Expanded(child: FormInput(label: 'Findings')),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'MRI Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'PET Scan Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'CT Scan Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'ECG Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(
-                      label: 'ECG Report',
-                      hintlabel: "Upload ECG Reports",
-                    ),
-                    Expanded(child: FormInput(label: 'Media History')),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      '2D ECHO Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    spacing: 10,
+                    children: [
+                      FormInput(
+                        label: 'CT Scan',
+                        hintlabel: "Upload CT Scan Reports",
                       ),
-                    )
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Echocardiogram Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                      Expanded(child: FormInput(label: 'Media History')),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    spacing: 10,
+                    children: [
+                      // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+                      DatePickerInput(
+                        label: 'Date',
+                        hintlabel: 'dd-mm-yyyy',
+                        onDateSelected: (date) {
+                          // Handle selected date
+                          print('Date Date: $date');
+                        },
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'PFT Report',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin:
-                            const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
+                      Expanded(child: FormInput(label: 'Findings')),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'MRI Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(
-                      label: 'MISC',
-                      hintlabel: "Upload MISC",
-                    ),
-                    Expanded(child: FormInput(label: 'Media History')),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Findings')),
-                SizedBox(
-                  height: 10,
-                ),
-              ],
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'PET Scan Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'ECG Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    spacing: 10,
+                    children: [
+                      FormInput(
+                        label: 'ECG Report',
+                        hintlabel: "Upload ECG Reports",
+                      ),
+                      Expanded(child: FormInput(label: 'Media History')),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '2D ECHO Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'Echocardiogram Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        'PFT Report',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(
+                              left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    spacing: 10,
+                    children: [
+                      FormInput(
+                        label: 'MISC',
+                        hintlabel: "Upload MISC",
+                      ),
+                      Expanded(child: FormInput(label: 'Media History')),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings')),
+                  SizedBox(
+                    height: 10,
+                  ),
+                ],
+              ),
             ),
           ),
           Container(
@@ -2306,3 +2201,6 @@ class PatientDetailsSidebar extends StatelessWidget {
     );
   }
 }
+
+
+//ss

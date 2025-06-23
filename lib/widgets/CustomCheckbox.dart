@@ -11,7 +11,7 @@ class CustomCheckbox extends StatefulWidget {
   const CustomCheckbox({
     super.key,
     required this.label,
-    this.initialValue = false,
+    required this.initialValue, // Make this required
     this.onChanged,
   });
 
@@ -26,6 +26,16 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
   void initState() {
     super.initState();
     isChecked = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(CustomCheckbox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue) {
+      setState(() {
+        isChecked = widget.initialValue;
+      });
+    }
   }
 
   @override
@@ -60,6 +70,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
             widget.label,
             style: TextStyle(
               color: isChecked ? AppColors.primary : Colors.grey[700],
+              fontWeight: FontWeight.w600
             ),
           ),
         ],
@@ -67,22 +78,20 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
     );
   }
 }
-
 // Custom Radio Button Widget
 class CustomRadioButton<T> extends StatelessWidget {
   final T value;
-  final T groupValue;
+  final T? groupValue;
   final ValueChanged<T?> onChanged;
   final String label;
 
   const CustomRadioButton({
-    super.key,
     required this.value,
     required this.groupValue,
     required this.onChanged,
     required this.label,
-  });
-
+    Key? key,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     final isSelected = value == groupValue;

@@ -231,12 +231,12 @@ prefixIcon: Icons.search_rounded,
 
                                       },
                                     ),
-                                    IconButton(
+                                /*    IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red),
                                       onPressed: () {
                                         _showDeleteDialog(context, patient['phid']);
                                       },
-                                    ),
+                                    ),*/
                                   ],
                                 ),
                               ),

@@ -2,24 +2,28 @@
 
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/patient_info_screen.dart';
 import '../../utils/colors.dart';
 import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DatePickerInput.dart';
+import '../../widgets/DocumentUploadWidget.dart';
 import '../../widgets/DropdownInput.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
-
+import 'Home_Screen.dart';
 class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
@@ -112,10 +116,108 @@ class _OnboardingFormState extends State<OnboardingForm> {
   final TextEditingController _planController = TextEditingController();
   final TextEditingController _adviseController = TextEditingController();
   final TextEditingController _doctorNotesController = TextEditingController();
-  Map<String, dynamic>? _patientData;
-  Map<String, dynamic>? _visitData;
-  String _gender = 'Male';
-  DateTime _selectedDate = DateTime.now();
+
+
+  //Doc &report controllers
+  // Add these to your existing controllers list
+  final TextEditingController _laboratoryController = TextEditingController();
+  final TextEditingController _hemoglobinController = TextEditingController();
+  final TextEditingController _totalLeucocyteCountController = TextEditingController();
+  final TextEditingController _esrController = TextEditingController();
+  final TextEditingController _plateletsController = TextEditingController();
+  final TextEditingController _urineRoutineController = TextEditingController();
+  final TextEditingController _urineCultureController = TextEditingController();
+  final TextEditingController _bunController = TextEditingController();
+  final TextEditingController _serumCreatinineController = TextEditingController();
+  final TextEditingController _serumElectrolytesController = TextEditingController();
+  final TextEditingController _lftController = TextEditingController();
+  final TextEditingController _prothrombinTimeController = TextEditingController();
+  final TextEditingController _bloodSugarFastingController = TextEditingController();
+  final TextEditingController _bloodSugarPostPrandialController = TextEditingController();
+  final TextEditingController _hba1cController = TextEditingController();
+  final TextEditingController _hbsagController = TextEditingController();
+  final TextEditingController _hivController = TextEditingController();
+  final TextEditingController _hcvController = TextEditingController();
+  final TextEditingController _thyroidFunctionT3TestController = TextEditingController();
+  final TextEditingController _thyroidFunctionT4TestController = TextEditingController();
+  final TextEditingController _thyroidFunctionTSHTestController = TextEditingController();
+  final TextEditingController _miscReportController = TextEditingController();
+  final TextEditingController _bloodReportFindingsController = TextEditingController();
+  final TextEditingController _xrayFindingsController = TextEditingController();
+  final TextEditingController _ctScanFindingsController = TextEditingController();
+  final TextEditingController _mriFindingsController = TextEditingController();
+  final TextEditingController _petScanFindingsController = TextEditingController();
+  final TextEditingController _ecgFindingsController = TextEditingController();
+  final TextEditingController _echoFindingsController = TextEditingController();
+  final TextEditingController _pftFindingsController = TextEditingController();
+  final TextEditingController _miscFindingsController = TextEditingController();
+  final TextEditingController _doctorDiagnosisController = TextEditingController();
+  final TextEditingController _miscTextController = TextEditingController();
+
+
+  final TextEditingController _otherLocationController =
+  TextEditingController();
+
+
+  final TextEditingController _prothrombinTimController =
+  TextEditingController();
+
+  final TextEditingController _hBA1CController = TextEditingController();
+  final TextEditingController _hBSAGController = TextEditingController();
+
+//Thyroid Function tes
+  final TextEditingController _t3Controller = TextEditingController();
+  final TextEditingController _t4Controller = TextEditingController();
+  final TextEditingController _tshController = TextEditingController();
+  final TextEditingController _miscController = TextEditingController();
+  final TextEditingController _xRayLaboratoryController =
+  TextEditingController();
+  DateTime _dateofXRayController = DateTime.now();
+  final TextEditingController _xRayFindingController = TextEditingController();
+//ctscan
+  final TextEditingController _ctscanLaboratoryController =
+  TextEditingController();
+  DateTime _dateofctscanController = DateTime.now();
+  final TextEditingController _ctscanFindingController =
+  TextEditingController();
+//mri
+  final TextEditingController _mriLaboratoryController =
+  TextEditingController();
+  DateTime _dateofmriController = DateTime.now();
+  final TextEditingController _mriFindingController = TextEditingController();
+  final TextEditingController _occupationController = TextEditingController();
+//petscan
+  final TextEditingController _petscanLaboratoryController =
+  TextEditingController();
+  DateTime _dateofpetscanController = DateTime.now();
+  final TextEditingController _petscanFindingController =
+  TextEditingController();
+
+//ecg
+  final TextEditingController _ecgLaboratoryController =
+  TextEditingController();
+  DateTime _dateofecgController = DateTime.now();
+  final TextEditingController _ecgFindingController = TextEditingController();
+
+//2d
+  final TextEditingController _a2dLaboratoryController =
+  TextEditingController();
+  DateTime _dateofe2dController = DateTime.now();
+  final TextEditingController _a2dFindingController = TextEditingController();
+//pet
+  final TextEditingController _pftLaboratoryController =
+  TextEditingController();
+  DateTime _dateofpftController = DateTime.now();
+  final TextEditingController _pftFindingController = TextEditingController();
+//folow
+  DateTime _followupdateFindingController = DateTime.now();
+  //misc
+  final TextEditingController _miscLaboratoryController =
+  TextEditingController();
+  DateTime _dateofmiscController = DateTime.now();
+  final TextEditingController _miscFindingController = TextEditingController();
+
+  // Medical Conditions
   bool _hasDM = false;
   bool _hasHypertension = false;
   bool _hasIHD = false;
@@ -125,12 +227,35 @@ class _OnboardingFormState extends State<OnboardingForm> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
+  DateTime _followUpDate = DateTime.now(); // Initialize with default value
+  DateTime _ConsulationDate = DateTime.now(); // Initialize with default value
+  DateTime _CTScanDate = DateTime.now(); // Initialize with default value
+
+
+  // Other state variables
+  bool _isLoadingLocations = false;
+
+  List<Map<String, dynamic>> _locations = [];
+  String? locationId = '2';
+  Map<String, dynamic>? _patientData;
+  Map<String, dynamic>? _visitData;
+  var _documentData;
+
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+  String _gender = 'Male';
+  DateTime _selectedDate = DateTime.now();
+
   String? _selectedLocationId = '2';
   String _selectedLocationName = '';
-  List<Map<String, dynamic>> _locations = [];
-  var _documentData;
-  String? locationId = '2';
 
+// Add these to your existing state variables
+  String _tempStatus = 'Afebrile'; // 'Febrile' or 'Afebrile'
+  String _pallorStatus = 'Nil';    // '+' or 'Nil'
+  String _icterusStatus = 'Nil';   // '+' or 'Nil'
+  String _lymphadenopathyStatus = 'Nil'; // '+' or 'Nil'
+  String _oedemaStatus = 'Nil';    // '+' or 'Nil'
   String _ensureString(String? value) => value?.trim() ?? '';
   String _ensureNumber(String? value) =>
       value?.trim().isEmpty ?? true ? '0' : value!.trim();
@@ -143,46 +268,109 @@ class _OnboardingFormState extends State<OnboardingForm> {
             : '3';
   }
 
+  late Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
+    'blood_reports': [],
+    'xray_report': [],
+    'ecg_report': [],
+    'ct_scan_report': [],
+    'echocardiagram_report': [],
+    'misc_report': [],
+    'pr_image': [],
+    'pa_abdomen_image': [],
+    'pr_rectum_image': [],
+    'doctor_note_image': [],
+  };
   @override
   void initState() {
     super.initState();
-    _phIdController.text = 'PH-${GlobalPatientData.patientId ?? ''}';
+    _phIdController.text = 'PH-${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
     _phoneController.text = GlobalPatientData.phone ?? '';
-    print("Global.phid");
-    print(GlobalPatientData.phid);
-    if (GlobalPatientData.patientExist == 2) {
-      _fetchPatientData();
-    }
+    _uploadedFiles = {
+      'blood_reports': [],
+      'xray_report': [],
+      'ecg_report': [],
+      'ct_scan_report': [],
+      'echocardiagram_report': [],
+      'misc_report': [],
+      'pr_image': [],
+      'pa_abdomen_image': [],
+      'pr_rectum_image': [],
+      'doctor_note_image': [],
+    };
+    _submit();
+
 
     _fetchLocations();
+  }
+  Future<void> _submit() async {
+
+
+
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        'Cookie':
+        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+      };
+
+      final response = await http.post(
+        Uri.parse('$localurl/checkpatientinfo'),
+        headers: headers,
+        body: json.encode({
+          "first_name": _firstNameController.text.trim(),
+          "last_name": _lastNameController.text.trim(),
+          "mobile_no": _phoneController.text.trim(),
+        }),
+      );
+
+      log('API Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          final data = responseData['data'][0];
+          int patientExist = data['patientExist'] ?? 0;
+          print("patientExist");
+          print(patientExist);
+
+
+
+          GlobalPatientData.patientExist= patientExist;
+
+          if (GlobalPatientData.patientExist == 2) {
+            _fetchPatientData();
+          }
+        } else {
+          showTopRightToast(context,responseData['message'] ?? 'Submission failed',backgroundColor: Colors.red);
+        }
+      } else {
+        showTopRightToast(context,'API Error: ${response.statusCode}',backgroundColor: Colors.red);
+      }
+    } catch (e) {
+      showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+    } finally {
+
+    }
   }
 
   void _calculateBMI() {
     if (_heightController.text.isNotEmpty &&
         _weightController.text.isNotEmpty) {
       try {
-        List<String> parts = _heightController.text.split('.');
-        int feet = int.parse(parts[0]);
-        int inches = parts.length > 1 ? int.parse(parts[1]) : 0;
-
-        if (inches >= 12) {
-          _bmiController.text = 'Invalid inches';
-          return;
-        }
-
-        double heightInMeters = ((feet * 12) + inches) * 0.0254;
+        double heightCm = double.parse(_heightController.text);
+        double heightM = heightCm / 100; // Convert cm to meters
         double weightKg = double.parse(_weightController.text);
 
-        if (heightInMeters > 0 && weightKg > 0) {
-          double bmi = weightKg / (heightInMeters * heightInMeters);
+        if (heightM > 0 && weightKg > 0) {
+          double bmi = weightKg / (heightM * heightM);
           _bmiController.text = bmi.toStringAsFixed(1);
         } else {
           _bmiController.text = '';
         }
       } catch (e) {
-        _bmiController.text = 'Invalid format';
+        _bmiController.text = 'Invalid number';
       }
     } else {
       _bmiController.text = '';
@@ -193,7 +381,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getlocation'),
+        Uri.parse('$localurl/getlocation'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -223,7 +411,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     try {
       final requestBody = {'id': Global.phid};
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        Uri.parse('$localurl/getpatientbyid'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -255,6 +443,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
             _documentData = responseData['PatientDocumentInfo'] ?? {};
 
             log('_documentData $_documentData');
+            log('_patientData $_patientData');
 
             _populateFormFields();
           });
@@ -266,9 +455,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
       }
     } catch (e) {
       debugPrint('Error fetching patient data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading patient data: ${e.toString()}')),
-      );
+
+      showTopRightToast(context,'Error loading patient data: ${e.toString()}',backgroundColor: Colors.red);
+
       _initializeWithEmptyData();
     } finally {
       setState(() => _isLoading = false);
@@ -290,46 +479,107 @@ class _OnboardingFormState extends State<OnboardingForm> {
   }
 
   void _populateFormFields() {
-    try {
+    try {  _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
+    _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
+    _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
+    _altPhoneController.text =
+        _patientData?['alternative_no']?.toString() ?? '';
+    _occupationController.text =
+        _patientData?['occupation']?.toString() ?? '';
+    _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
+    _addressController.text = _patientData?['address']?.toString() ?? '';
+    _cityController.text = _patientData?['city']?.toString() ?? '';
+    _stateController.text = _patientData?['state']?.toString() ?? '';
+    _pincodeController.text = _patientData?['pincode']?.toString() ?? '';
+    _countryController.text = _patientData?['country']?.toString() ?? '';
+
+
+
+    _descriptionController.text =
+        _patientData?['description']?.toString() ?? '';
+    _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
+
+    _selectedDate = DateTime.parse(
+        _patientData?['date']?.toString() ?? DateTime.now().toString());
+
+    _ConsulationDate = DateTime.parse(
+        _patientData?['date']?.toString() ?? DateTime.now().toString());
+
+
+
+    _referralController.text = _patientData?['referral_by']?.toString() ?? '';
+    _selectedLocationId = _patientData?['location']?.toString() ?? '2';
+    log('_selectedLocationId $_selectedLocationId');
+    final location = _locations.firstWhere(
+          (loc) => loc['id'].toString() == _selectedLocationId,
+      orElse: () => {}, // return empty map if not found
+    );
+
+    log('locationlocation: $location');
+    _otherLocationController.text =
+        _patientData?['other_location']?.toString() ?? '';
       // Personal Info
-      _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
-      _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
-      _phoneController.text = _patientData?['mobile_no']?.toString() ?? '';
-      _altPhoneController.text =
-          _patientData?['alternative_no']?.toString() ?? '';
-      _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
-      _addressController.text = _patientData?['address']?.toString() ?? '';
-      _descriptionController.text =
-          _patientData?['description']?.toString() ?? '';
-      _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
-
-      try {
-        _selectedDate = DateTime.parse(
-            _patientData?['date']?.toString() ?? DateTime.now().toString());
-      } catch (e) {
-        _selectedDate = DateTime.now();
-      }
-
-      _referralController.text = _patientData?['referral_by']?.toString() ?? '';
-
-      // Visit Info
+      _tempController.text = _visitData?['temp']?.toString() ?? '';
       _ageController.text = _visitData?['age']?.toString() ?? '';
       _heightController.text = _visitData?['height']?.toString() ?? '';
       _weightController.text = _visitData?['weight']?.toString() ?? '';
       _bmiController.text = _visitData?['bmi']?.toString() ?? '';
+      _laboratoryController.text = _visitData?['blood_laboratory']?.toString() ?? '';
+      _bloodReportFindingsController.text = _visitData?['blood_finding']?.toString() ?? '';
       _rbsController.text = _visitData?['rbs']?.toString() ?? '';
       _complaintsController.text =
           _visitData?['chief_complaints']?.toString() ?? '';
-      _hasDM = _visitData?['history_of_dm_status'] == 1;
-      _dmSinceController.text =
+    // Replace all direct boolean assignments with proper conversions
+    _hasDM = (_visitData?['history_of_dm_status']?.toString() ?? "0") == "1";
+    print('_hasDM: $_hasDM (raw value: ${_visitData?['history_of_dm_status']})');
+
+    _hasHypertension = (_visitData?['hypertension_status']?.toString() ?? "0") == "1";
+    print('_hasHypertension: $_hasHypertension (raw value: ${_visitData?['hypertension_status']})');
+
+    _hasIHD = (_visitData?['IHD_status']?.toString() ?? "0") == "1";
+    print('_hasIHD: $_hasIHD (raw value: ${_visitData?['IHD_status']})');
+
+    _hasCOPD = (_visitData?['COPD_status']?.toString() ?? "0") == "1";
+    print('_hasCOPD: $_hasCOPD (raw value: ${_visitData?['COPD_status']})');
+
+    _hasPallor = (_visitData?['pallor']?.toString() ?? "0") == "1";
+    print('_hasPallor: $_hasPallor (raw value: ${_visitData?['pallor']})');
+
+    _hasIcterus = (_visitData?['icterus']?.toString() ?? "0") == "1";
+    print('_hasIcterus: $_hasIcterus (raw value: ${_visitData?['icterus']})');
+
+    _hasOedema = (_visitData?['oedema_status']?.toString() ?? "0") == "1";
+    print('_hasOedema: $_hasOedema (raw value: ${_visitData?['oedema_status']})');
+
+    _hasLymphadenopathy = (_visitData?['lymphadenopathy']?.toString() ?? "0") == "1";
+    print('_hasLymphadenopathy: $_hasLymphadenopathy (raw value: ${_visitData?['lymphadenopathy']})');
+    _SincewhenController.text =
           _visitData?['history_of_dm_description']?.toString() ?? '';
-      _hasHypertension = _visitData?['hypertension_status'] == 1;
-      _hypertensionSinceController.text =
+
+
+
+    _tempStatus = _visitData?['temp'] == '0' ? 'Afebrile' : 'Febrile';
+
+    // Pallor
+    _pallorStatus = (_visitData?['pallor']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Icterus
+    _icterusStatus = (_visitData?['icterus']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Lymphadenopathy
+    _lymphadenopathyStatus = (_visitData?['lymphadenopathy']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    // Oedema
+    _oedemaStatus = (_visitData?['oedema_status']?.toString() ?? "0") == "1" ? '+' : 'Nil';
+
+    _hypertensionSinceController.text =
           _visitData?['hypertension_description']?.toString() ?? '';
-      _hasIHD = _visitData?['IHD_status'] == 1;
+
+
       _ihdDescriptionController.text =
           _visitData?['IHD_description']?.toString() ?? '';
-      _hasCOPD = _visitData?['COPD_status'] == 1;
+
+
       _copdDescriptionController.text =
           _visitData?['COPD_description']?.toString() ?? '';
       _otherIllnessController.text =
@@ -338,18 +588,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
           _visitData?['past_surgical_history']?.toString() ?? '';
       _drugAllergyController.text =
           _visitData?['drug_allergy']?.toString() ?? '';
-      _tempController.text = _visitData?['temp']?.toString() ?? '';
+      _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
       _pulseController.text = _visitData?['pulse']?.toString() ?? '';
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
           _visitData?['bp_diastolic']?.toString() ?? '';
-      _hasPallor = _visitData?['pallor'] == 1;
-      _hasIcterus = _visitData?['icterus'] == 1;
-      _hasOedema = _visitData?['oedema_status'] == 1;
+
       _oedemaDetailsController.text =
           _visitData?['oedema_description']?.toString() ?? '';
-      _hasLymphadenopathy =
-          (_visitData?['lymphadenopathy']?.toString() ?? '') != '';
+
       _lymphadenopathyDetailsController.text =
           _visitData?['lymphadenopathy']?.toString() ?? '';
       _currentMedicationController.text =
@@ -372,17 +619,107 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _doctorNotesController.text =
           _patientData?['doctor_note']?.toString() ?? '';
 
-      locationId = _patientData?['location']?.toString() ?? '2';
+      _hemoglobinController.text = _visitData?['heamoglobin']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _totalLeucocyteCountController.text =
+          _visitData?['total_leucocyte_count']?.toString() ?? '';
+      _esrController.text = _visitData?['esr']?.toString() ?? '';
+      _plateletsController.text = _visitData?['platelets']?.toString() ?? '';
+      _urineRoutineController.text =
+          _visitData?['urine_routine']?.toString() ?? '';
+      _urineCultureController.text =
+          _visitData?['urine_culture']?.toString() ?? '';
+      _bunController.text = _visitData?['bun']?.toString() ?? '';
+      _serumCreatinineController.text =
+          _visitData?['serum_creatinine']?.toString() ?? '';
+      _serumElectrolytesController.text =
+          _visitData?['serum_electrolytes']?.toString() ?? '';
+      _lftController.text = _visitData?['lft']?.toString() ?? '';
+      _prothrombinTimController.text =
+          _visitData?['prothrombin_time_inr']?.toString() ?? '';
+      _bloodSugarFastingController.text =
+          _visitData?['blood_sugar_fasting']?.toString() ?? '';
+      _bloodSugarPostPrandialController.text =
+          _visitData?['blood_sugar_post_prandial']?.toString() ?? '';
+      _hBA1CController.text = _visitData?['hba1c']?.toString() ?? '';
+      _hBSAGController.text = _visitData?['hbsag']?.toString() ?? '';
+    _followUpDate = DateTime.parse(_visitData?['follow_up_date']?.toString() ?? DateTime.now().toString());
+    _CTScanDate = DateTime.parse(_visitData?['date_of_ct_scan']?.toString() ?? DateTime.now().toString());
+      _hivController.text = _visitData?['hiv']?.toString() ?? '';
+      _hcvController.text = _visitData?['hcv']?.toString() ?? '';
+    _thyroidFunctionT3TestController.text = _visitData?['t3']?.toString() ?? '';
+    _thyroidFunctionT4TestController.text = _visitData?['t4']?.toString() ?? '';
+    _thyroidFunctionTSHTestController.text = _visitData?['tsh']?.toString() ?? '';
+      _miscController.text = _visitData?['misc']?.toString() ?? '';
+      _xRayLaboratoryController.text =
+          _visitData?['x_ray_laboratory']?.toString() ?? '';
+      if (location.isNotEmpty) {
+        _selectedLocationName = location['location'] ?? '';
+        log('_selectedLocationName $_selectedLocationName');
+      } else {
+        _selectedLocationName = '';
+        log('Location not found for ID $_selectedLocationId');
+      }
 
-      _selectedLocationId = _patientData?['location']?.toString() ?? '2';
+      _dateofXRayController = DateTime.parse(
+          _visitData?['date_of_x_ray']?.toString() ??
+              DateTime.now().toString());
 
-      final location = _locations.firstWhere(
-        (loc) => loc['id'].toString() == _selectedLocationId,
-        orElse: () => {'id': '2', 'location': 'Unknown'},
-      );
-      _selectedLocationName = location['location'] ?? 'Unknown';
+      _xRayFindingController.text =
+          _visitData?['x_ray_finding']?.toString() ?? '';
+      _ctscanLaboratoryController.text =
+          _visitData?['ct_scan_laboratory']?.toString() ?? '';
 
-      _uploadedFiles.clear();
+
+      _ctscanFindingController.text =
+          _visitData?['ct_scan_finding']?.toString() ?? '';
+
+      _mriLaboratoryController.text =
+          _visitData?['mri_laboratory']?.toString() ?? '';
+
+      _dateofmriController = DateTime.parse(
+          _visitData?['date_of_mri']?.toString() ?? DateTime.now().toString());
+
+      _mriFindingController.text = _visitData?['mri_finding']?.toString() ?? '';
+      _petscanLaboratoryController.text =
+          _visitData?['pet_scan_laboratory']?.toString() ?? '';
+      _dateofpetscanController = DateTime.parse(
+          _visitData?['date_of_pet_scan']?.toString() ??
+              DateTime.now().toString());
+      _petscanFindingController.text =
+          _visitData?['pet_scan_finding']?.toString() ?? '';
+      _ecgLaboratoryController.text =
+          _visitData?['ecg_laboratory']?.toString() ?? '';
+      _dateofecgController = DateTime.parse(
+          _visitData?['date_of_ecg']?.toString() ?? DateTime.now().toString());
+      _ecgFindingController.text = _visitData?['ecg_finding']?.toString() ?? '';
+      _a2dLaboratoryController.text =
+          _visitData?['a2d_echo_laboratory']?.toString() ?? '';
+      _a2dFindingController.text =
+          _visitData?['a2d_echo_finding']?.toString() ?? '';
+      _dateofe2dController = DateTime.parse(
+          _visitData?['date_of_a2d_echo']?.toString() ??
+              DateTime.now().toString());
+
+      _pftLaboratoryController.text =
+          _visitData?['pft_laboratory']?.toString() ?? '';
+      _pftFindingController.text = _visitData?['pft_finding']?.toString() ?? '';
+      _dateofpftController = DateTime.parse(
+          _visitData?['date_of_pft']?.toString() ?? DateTime.now().toString());
+      _miscLaboratoryController.text =
+          _visitData?['msic_laboratory']?.toString() ?? '';
+      _miscFindingController.text =
+          _visitData?['msic_finding']?.toString() ?? '';
+      _dateofmiscController = DateTime.parse(
+          _visitData?['date_of_msic']?.toString() ?? DateTime.now().toString());
+      _followupdateFindingController = DateTime.parse(
+          _visitData?['follow_up_date']?.toString() ??
+              DateTime.now().toString());
+
+
+      print("Before populating _uploadedFiles:");
+      print(_uploadedFiles);
 
       if (_documentData != null && _documentData is Map) {
         _documentData.forEach((docTypeId, files) {
@@ -396,16 +733,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
               return {
                 'id': file['id'],
                 'path': file['media_url'],
-                'name':
-                    path.basename(file['media_url']?.toString() ?? 'unknown'),
-                'type': path
-                    .extension(file['media_url']?.toString() ?? '')
-                    .replaceAll('.', '')
-                    .toUpperCase(),
+                'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
+                'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
                 'size': 'N/A',
                 'isExisting': true,
               };
             }).toList();
+
+            print("After populating ${docType}:");
+            print(_uploadedFiles[docType]);
+
           } catch (e) {
             log('error $e');
           }
@@ -416,18 +753,6 @@ class _OnboardingFormState extends State<OnboardingForm> {
     }
   }
 
-  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    'blood_reports': [],
-    'xray_report': [],
-    'ecg_report': [],
-    'ct_scan_report': [],
-    'echocardiagram_report': [],
-    'misc_report': [],
-    'pr_image': [],
-    'pa_abdomen_image': [],
-    'pr_rectum_image': [],
-    'doctor_note_image': [],
-  };
 
   @override
   void dispose() {
@@ -480,6 +805,41 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _descriptionController.dispose();
     _copdDescriptionController.dispose();
     _ihdDescriptionController.dispose();
+
+    _laboratoryController.dispose();
+    _hemoglobinController.dispose();
+    _totalLeucocyteCountController.dispose();
+    _esrController.dispose();
+    _plateletsController.dispose();
+    _urineRoutineController.dispose();
+    _urineCultureController.dispose();
+    _bunController.dispose();
+    _serumCreatinineController.dispose();
+    _serumElectrolytesController.dispose();
+    _lftController.dispose();
+    _prothrombinTimeController.dispose();
+    _bloodSugarFastingController.dispose();
+    _bloodSugarPostPrandialController.dispose();
+    _hba1cController.dispose();
+    _hbsagController.dispose();
+    _hivController.dispose();
+    _hcvController.dispose();
+    _thyroidFunctionT3TestController.dispose();
+    _thyroidFunctionT4TestController.dispose();
+    _thyroidFunctionTSHTestController.dispose();
+    _miscReportController.dispose();
+    _bloodReportFindingsController.dispose();
+    _xrayFindingsController.dispose();
+    _ctScanFindingsController.dispose();
+    _mriFindingsController.dispose();
+    _petScanFindingsController.dispose();
+    _ecgFindingsController.dispose();
+    _echoFindingsController.dispose();
+    _pftFindingsController.dispose();
+    _miscFindingsController.dispose();
+    _doctorDiagnosisController.dispose();
+    _miscTextController.dispose();
+
     super.dispose();
   }
 
@@ -503,7 +863,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) =>
-            const Center(child: CircularProgressIndicator()),
+         Center(child: CircularProgressIndicator(
+           color: AppColors.primary,
+        )),
       );
 
       String? token = await AuthService.getToken();
@@ -516,7 +878,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+        Uri.parse('$localurl/storepatient'),
       );
 
       request.headers.addAll({
@@ -533,7 +895,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'mobile_no': _ensureString(_phoneController.text),
         'alternative_no': _ensureString(_altPhoneController.text),
         'address': _ensureString(_addressController.text),
-        'date': _selectedDate.toIso8601String().split('T')[0],
+        'city': _ensureString(_cityController.text),
+        'state': _ensureString(_stateController.text),
+        'pincode': _ensureNumber(_pincodeController.text),
+        'country': _ensureString(_countryController.text),
+        'date': _formatDate(_ConsulationDate),
         'referral_by': _ensureString(_referralController.text),
         'location': _selectedLocationId ?? '1',
         'age': _ensureNumber(_ageController.text),
@@ -543,7 +909,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'rbs': _ensureNumber(_rbsController.text),
         'chief_complaints': _ensureString(_complaintsController.text),
         'history_of_dm_status': _ensureStatus(_hasDM),
-        'history_of_dm_description': _ensureString(_dmSinceController.text),
+        'history_of_dm_description': _ensureString(_SincewhenController.text),
         'hypertension_status': _ensureStatus(_hasHypertension),
         'hypertension_description':
             _ensureString(_hypertensionSinceController.text),
@@ -554,18 +920,22 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'any_other_illness': _ensureString(_otherIllnessController.text),
         'past_surgical_history': _ensureString(_surgicalHistoryController.text),
         'drug_allergy': _ensureString(_drugAllergyController.text),
-        'temp': _ensureString(_tempController.text),
+        'temp': _tempStatus == 'Febrile' ? '1' : '0',
+        'pallor': _pallorStatus == '+' ? '1' : '0',
+        'icterus': _icterusStatus == '+' ? '1' : '0',
+        'lymphadenopathy': _lymphadenopathyStatus == '+' ? '1' : '0',
+        'oedema_status': _oedemaStatus == '+' ? '1' : '0',
         'pulse': _ensureNumber(_pulseController.text),
         'bp_systolic': _ensureNumber(_bpSystolicController.text),
         'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
-        'pallor': _ensureStatus(_hasPallor),
-        'icterus': _ensureStatus(_hasIcterus),
-        'oedema_status': _ensureStatus(_hasOedema),
+
+
         'oedema_description': _ensureString(_oedemaDetailsController.text),
-        'lymphadenopathy':
-            _ensureString(_lymphadenopathyDetailsController.text),
+
         'HO_present_medication':
-            _ensureString(_currentMedicationController.text),
+        _ensureString(_currentMedicationController.text),
+
+        'blood_laboratory': _ensureString(_laboratoryController.text),
         'respiratory_system': _ensureString(_rsController.text),
         'cardio_vascular_system': _ensureString(_cvsController.text),
         'central_nervous_system': _ensureString(_cnsController.text),
@@ -579,6 +949,65 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'status': Global.status ?? GlobalPatientData.patientId.toString(),
         'doctor_note': _ensureString(_doctorNotesController.text),
         'description': _ensureString(_descriptionController.text),
+        'other_location': _ensureString(_otherLocationController.text),
+        //add
+        'follow_up_date': _formatDate(_followUpDate),
+        'date_of_ct_scan': _formatDate(_CTScanDate),
+
+        'heamoglobin': _ensureString(_hemoglobinController.text),
+        'total_leucocyte_count':
+        _ensureString(_totalLeucocyteCountController.text),
+        'esr': _ensureString(_esrController.text),
+        'platelets': _ensureString(_plateletsController.text),
+        'urine_routine': _ensureString(_urineRoutineController.text),
+        'urine_culture': _ensureString(_urineCultureController.text),
+        'bun': _ensureString(_bunController.text),
+        'serum_creatinine': _ensureString(_serumCreatinineController.text),
+        'serum_electrolytes': _ensureString(_serumElectrolytesController.text),
+        'lft': _ensureString(_lftController.text),
+        'prothrombin_time_inr': _ensureString(_prothrombinTimController.text),
+        'blood_finding': _ensureString(_bloodReportFindingsController.text),
+        'blood_sugar_fasting': _ensureString(_bloodSugarFastingController.text),
+        'blood_sugar_post_prandial':
+        _ensureString(_bloodSugarPostPrandialController.text),
+        'hba1c': _ensureString(_hBA1CController.text),
+        'hbsag': _ensureString(_hBSAGController.text),
+        'hiv': _ensureString(_hivController.text),
+        'hcv': _ensureString(_hcvController.text),
+        't3': _ensureString(_thyroidFunctionT3TestController.text),
+        't4': _ensureString(_thyroidFunctionT4TestController.text),
+        'tsh': _ensureString(_thyroidFunctionTSHTestController.text),
+        'misc': _ensureString(_miscController.text),
+        'x_ray_laboratory': _ensureString(_xRayLaboratoryController.text),
+        'date_of_x_ray': _dateofXRayController.toIso8601String().split('T')[0],
+        'x_ray_finding': _ensureString(_xRayFindingController.text),
+        'ct_scan_laboratory': _ensureString(_ctscanLaboratoryController.text),
+
+
+        'ct_scan_finding': _ensureString(_ctscanFindingController.text),
+
+        'mri_laboratory': _ensureString(_mriLaboratoryController.text),
+        'date_of_mri': _dateofmriController.toIso8601String().split('T')[0],
+        'mri_finding': _ensureString(_mriFindingController.text),
+        'pet_scan_laboratory': _ensureString(_petscanLaboratoryController.text),
+        'date_of_pet_scan':
+        _dateofpetscanController.toIso8601String().split('T')[0],
+        'pet_scan_finding': _ensureString(_petscanFindingController.text),
+
+        'ecg_laboratory': _ensureString(_ecgLaboratoryController.text),
+        'date_of_ecg': _dateofecgController.toIso8601String().split('T')[0],
+
+        'ecg_finding': _ensureString(_ecgFindingController.text),
+        'a2d_echo_laboratory': _ensureString(_a2dLaboratoryController.text),
+        'date_of_a2d_echo': _dateofe2dController.toIso8601String().split('T')[0],
+
+        'a2d_echo_finding': _ensureString(_a2dFindingController.text),
+        'pft_laboratory': _ensureString(_pftLaboratoryController.text),
+        'date_of_pft': _dateofpftController.toIso8601String().split('T')[0],
+        'pft_finding': _ensureString(_pftFindingController.text),
+        'msic_laboratory': _ensureString(_miscLaboratoryController.text),
+        'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
+        'msic_finding': _ensureString(_miscFindingController.text),
       };
 
       if (Global.status == '2') {
@@ -588,58 +1017,32 @@ class _OnboardingFormState extends State<OnboardingForm> {
       request.fields.addAll(fields);
       log('Form Fields: ${jsonEncode(fields)}');
       List<String> existingFileIds = [];
-      // ✅ Handle File Uploads (New + Existing)
-      // ✅ Handle File Uploads (New + Existing)
-      for (var entry in _uploadedFiles.entries) {
-        final docType = entry.key;
-        final files = entry.value;
-
-        String? fieldName = _mapDocTypeToField(docType);
+// Inside your _submitForm function
+      for (var docType in _uploadedFiles.keys) {
+        final fieldName = _mapDocTypeToField(docType);
         if (fieldName == null) continue;
 
-        for (var file in files) {
-          if (file['isExisting'] == true) {
-            existingFileIds.add(file['id'].toString());
-          } else {
-            if (kIsWeb) {
-              Uint8List? fileBytes = file['bytes'];
-              String? fileName = file['name'] ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (fileBytes != null && fileName != null) {
-                request.files.add(http.MultipartFile.fromBytes(
-                  fieldName,
-                  fileBytes,
-                  filename: fileName,
-                ));
-              } else {
-                log('❌ Web file data incomplete: bytes=${fileBytes != null}, name=${fileName != null}');
-                continue;
-              }
-            } else {
-              // Mobile handling
-              String? filePath = file['path'];
-              String? fileName = file['name'] ??
-                  path.basename(filePath ?? '') ??
-                  'file_${DateTime.now().millisecondsSinceEpoch}';
-
-              if (filePath != null) {
-                final fileToUpload = File(filePath);
-                if (await fileToUpload.exists()) {
-                  request.files.add(await http.MultipartFile.fromPath(
-                    fieldName,
-                    filePath,
-                    filename: fileName,
-                  ));
-                } else {
-                  log('❌ File not found: $filePath');
-                }
-              }
+        for (var file in _uploadedFiles[docType]!) {
+          if (!file['isExisting']) { // Only upload new files
+            if (kIsWeb && file['bytes'] != null) {
+              request.files.add(http.MultipartFile.fromBytes(
+                fieldName,
+                file['bytes']!,
+                filename: file['name'],
+              ));
+            } else if (!kIsWeb && file['path'] != null) {
+              request.files.add(await http.MultipartFile.fromPath(
+                fieldName,
+                file['path']!,
+                filename: file['name'],
+              ));
             }
+          } else {
+            // For existing files, you might want to send their IDs
+            existingFileIds.add(file['id'].toString());
           }
         }
       }
-
       if (existingFileIds.isNotEmpty) {
         request.fields['existing_file'] = existingFileIds.join(',');
       }
@@ -659,10 +1062,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
         showDialog(
+
             context: context,
             barrierDismissible: false, // Prevents closing without interaction
             builder: (BuildContext context) {
               return AlertDialog(
+                shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary)),
                 title: const Text('Success'),
                 content: Text(responseData['message'] ??
                     'Patient record saved successfully'),
@@ -673,25 +1078,26 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => PatientInfoScreen()),
+                            builder: (context) => HomeScreen(initialPage: 1,)),
                       );
                     },
-                    child: const Text('view'),
+                    child: const Text('view',style: TextStyle(fontWeight:  FontWeight.bold,color: AppColors.primary)),
                   ),
                 ],
               );
             });
         // Navigator.of(context).pop();
       } else {
-        ShowDialogs.showSnackBar(context,
-            '❌ Failed to save patient record. Status code: ${response.statusCode}');
+        showTopRightToast(context, '❌ Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.green);
+
       }
     } catch (e, stackTrace) {
       // Navigator.of(context).pop();s
       log('🚨 Submission Error: $e');
       log('Stack Trace: $stackTrace');
+      showTopRightToast(context, 'Error occurred: ${e.toString()}', backgroundColor: Colors.green);
 
-      ShowDialogs.showSnackBar(context, 'Error occurred: ${e.toString()}');
+
     }
   }
 
@@ -719,6 +1125,122 @@ class _OnboardingFormState extends State<OnboardingForm> {
         return null;
     }
   }
+/*  Future<void> _submitForm() async {
+    bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
+    bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+    bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
+
+    if (!personalValid || !medicalValid || !reportsValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication token not found. Please login again.')),
+        );
+        return;
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+      );
+
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
+      print("token : ${token}");
+
+      // Add Form Fields
+      Map<String, String> fields = {
+        'first_name': _ensureString(_firstNameController.text),
+        'last_name': _ensureString(_lastNameController.text),
+        'gender': _ensureGender(_gender),
+        'mobile_no': _ensureString(_phoneController.text),
+        'alternative_no': _ensureString(_altPhoneController.text),
+        'address': _ensureString(_addressController.text),
+        'date': _selectedDate.toIso8601String().split('T')[0],
+        'referral_by': _ensureString(_referralController.text),
+        'location': _selectedLocationId ?? '1',
+        'age': _ensureNumber(_ageController.text),
+        'height': _ensureNumber(_heightController.text),
+        'weight': _ensureNumber(_weightController.text),
+        'bmi': _ensureNumber(_bmiController.text),
+        'rbs': _ensureNumber(_rbsController.text),
+        'chief_complaints': _ensureString(_complaintsController.text),
+        'history_of_dm_status': _ensureStatus(_hasDM),
+        'history_of_dm_description': _ensureString(_dmSinceController.text),
+        'hypertension_status': _ensureStatus(_hasHypertension),
+        'hypertension_description': _ensureString(_hypertensionSinceController.text),
+        'IHD_status': _ensureStatus(_hasIHD),
+        'IHD_description': _ensureString(_ihdDescriptionController.text),
+        'COPD_status': _ensureStatus(_hasCOPD),
+        'COPD_description': _ensureString(_copdDescriptionController.text),
+        'any_other_illness': _ensureString(_otherIllnessController.text),
+        'past_surgical_history': _ensureString(_surgicalHistoryController.text),
+        'drug_allergy': _ensureString(_drugAllergyController.text),
+        'temp': _ensureString(_tempController.text),
+        'pulse': _ensureNumber(_pulseController.text),
+        'bp_systolic': _ensureNumber(_bpSystolicController.text),
+        'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
+        'pallor': _ensureStatus(_hasPallor),
+        'icterus': _ensureStatus(_hasIcterus),
+        'oedema_status': _ensureStatus(_hasOedema),
+        'oedema_description': _ensureString(_oedemaDetailsController.text),
+        'lymphadenopathy': _ensureString(_lymphadenopathyDetailsController.text),
+        'HO_present_medication': _ensureString(_currentMedicationController.text),
+        'respiratory_system': _ensureString(_rsController.text),
+        'cardio_vascular_system': _ensureString(_cvsController.text),
+        'central_nervous_system': _ensureString(_cnsController.text),
+        'pa_abdomen': _ensureString(_paAbdomenController.text),
+        'pr_rectum': _ensureString(_prRectumController.text),
+        'local_examination': _ensureString(_localExamController.text),
+        'clinical_diagnosis': _ensureString(_diagnosisController.text),
+        'comorbidities': _ensureString(_comorbiditiesController.text),
+        'plan': _ensureString(_planController.text),
+        'advise': _ensureString(_adviseController.text),
+        'doctor_note': _ensureString(_doctorNotesController.text),
+        'description': _ensureString(_descriptionController.text),
+      };
+
+      request.fields.addAll(fields);
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      print("responseBody");
+      print(responseBody);
+      print(request.fields);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(responseBody);
+        showTopRightToast(context, responseData['message'], backgroundColor: Colors.green);
+
+        // Navigate to success screen or patient info screen
+        */
+
+  /*Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => PatientInfoScreen()),
+        );*//*
+      } else {
+        showTopRightToast(context, 'Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.red);
+
+      }
+    } catch (e) {
+      showTopRightToast(context, 'Error occurred: ${e.toString()}', backgroundColor: Colors.red);
+
+
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -734,6 +1256,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
+
         children: [
           // Step Indicator
           _buildStepNavigation(),
@@ -751,6 +1274,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
               ],
             ),
           ),
+
+
+
         ],
       ),
     );
@@ -863,69 +1389,40 @@ class _OnboardingFormState extends State<OnboardingForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '1. Personal Information',
+                '1. Basic Details',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               Wrap(
                 spacing: 20,
                 runSpacing: 16,
-                children: [
-                  FormInput(
-                    label: 'First Name',
-                    hintlabel: "Enter First Name",
-                    controller: _firstNameController,
-                  ),
-                  FormInput(
-                    label: 'Last Name',
-                    hintlabel: "Enter Last Name",
-                    controller: _lastNameController,
-                  ),
-                  FormInput(
-                    label: 'Phone Number',
-                    hintlabel: "Enter Phone Number",
-                    controller: _phoneController,
-                  ),
-                  FormInput(
-                    label: 'PH ID',
-                    hintlabel: "Enter PH ID",
-                    controller: _phIdController,
-                  ),
-                  FormInput(
-                    label: 'Address',
-                    hintlabel: "Enter Address",
-                    controller: _addressController,
-                  ),
-                  FormInput(
-                    label: 'City',
-                    hintlabel: "Enter City",
-                    controller: _cityController,
-                  ),
-                  FormInput(
-                    label: 'State',
-                    hintlabel: "Enter State",
-                    controller: _stateController,
-                  ),
-                  FormInput(
-                    label: 'Pin Code',
-                    hintlabel: "Enter Pin Code",
-                    controller: _pincodeController,
-                  ),
-                  FormInput(
-                    label: 'Country',
-                    hintlabel: "Enter Country",
-                    controller: _countryController,
-                  ),
-                  FormInput(
-                    label: 'Age',
-                    hintlabel: "Enter Country",
-                    controller: _ageController,
-                  ),
+                children:  [
+                  FormInput(label: 'First Name',hintlabel: "Enter First Name",  controller: _firstNameController,),
+                  FormInput(label: 'Last Name',hintlabel: "Enter Last Name",  controller: _lastNameController,),
+                  FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number", controller: _phoneController,
+          
+                    inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                  ],),
+                  FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,),
+                  FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
+                  FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
+                  FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),
+                  FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
+          
+                      inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                ],),
+                  FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController,),
+                  FormInput(label: 'Age',hintlabel: "Enter Country",controller: _ageController, inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                  ],),
                   DropdownInput<String>(
                     label: 'Gender',
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
                       DropdownMenuItem(value: 'Female', child: Text('Female')),
+          
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -940,15 +1437,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     label: 'Consultation Date',
                     hintlabel: 'dd-mm-yyyy',
                     onDateSelected: (date) {
-                      // Handle selected date
-                      print('Consultation Date: $date');
+                      setState(() {
+                        _ConsulationDate = date; // Update the selected date
+                      });
                     },
+                    initialDate: _ConsulationDate, // Pass the initial date if needed
                   ),
-                  FormInput(
-                    label: 'Referral by',
-                    hintlabel: "Enter Referral by",
-                    controller: _referralController,
-                  ),
+          
+                  FormInput(label: 'Referral by',hintlabel: "Enter Referral by",controller: _referralController,),
                   DropdownInput<String>(
                     label: 'Clinic Location',
                     items: _locations.map((loc) {
@@ -962,34 +1458,45 @@ class _OnboardingFormState extends State<OnboardingForm> {
                         _selectedLocationId = value;
                         // Find the corresponding location name
                         final selectedLoc = _locations.firstWhere(
-                          (loc) => loc['id'].toString() == value,
+                              (loc) => loc['id'].toString() == value,
                           orElse: () => {'id': '2', 'location': 'Unknown'},
                         );
-                        _selectedLocationName =
-                            selectedLoc['location'] ?? 'Unknown';
+                        _selectedLocationName = selectedLoc['location'] ?? 'Unknown';
                       });
                     },
                     value: _selectedLocationId,
                   ),
-                  FormInput(
-                    label: 'Other  Location',
-                    hintlabel: "Enter Other  Location",
-                  ),
+
+
+
+                  if(_selectedLocationName=="Others")
+                  FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
+
                   FormInput(
                     label: 'Height (cms)',
                     hintlabel: "Enter Height (cms)",
                     controller: _heightController,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
+                    onChanged: (value) => _calculateBMI(), // Add this line
                   ),
                   FormInput(
                     label: 'Weight (kg)',
                     hintlabel: "Enter Weight",
                     controller: _weightController,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
+                    onChanged: (value) => _calculateBMI(), // Add this line
                   ),
-                  FormInput(
-                    label: 'BMI (kg/m²)',
-                    hintlabel: "Enter BMI",
-                    controller: _bmiController,
-                  ),
+          FormInput(
+            label: 'BMI (kg/m²)',
+            hintlabel: "Enter BMI",
+            controller: _bmiController,
+            readOnly: true, // Add this property
+          ),
+          
                 ],
               ),
               const SizedBox(height: 20),
@@ -1005,501 +1512,462 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return Form(
       key: _medicalInfoFormKey,
       child: Container(
-        width: double.infinity,
+          width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.Offwhitebackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.Containerbackground),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Chief Complaints
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-              child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+
+              // 1. Chief Complaints
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text("1. Chief Complaints",
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+
                     const SizedBox(height: 8),
                     Container(
+
                         width: double.infinity,
-                        child: FormInput(
-                          label: 'Chief Complaints',
-                          maxlength: 5,
-                          controller: _complaintsController,
-                        )),
+                        child: FormInput(label: 'Chief Complaints',maxlength: 5,controller: _complaintsController,)),
+
                   ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 2. History
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("2. History",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CustomCheckbox(
-                        label: 'H/O DM',
-                        onChanged: (value) => setState(() => _hasDM = value),
-                      ),
-                      CustomCheckbox(label: 'Hypertension'),
-                      CustomCheckbox(label: 'IHD'),
-                      CustomCheckbox(label: 'COPD'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  FormInput(
-                    label: 'Since when',
-                    maxlength: 1,
-                    controller: _SincewhenController,
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      FormInput(
-                        label: 'Any Other Illness',
-                        maxlength: 5,
-                        controller: _otherIllnessController,
-                      ),
-                      FormInput(
-                        label: 'Past Surgical History',
-                        maxlength: 5,
-                        controller: _surgicalHistoryController,
-                      ),
-                      FormInput(
-                        label: 'H/O Drug Allergy',
-                        maxlength: 5,
-                        controller: _drugAllergyController,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+              // 2. History
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("2. History",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
-            const SizedBox(height: 20),
+                      children: [
 
-            // 3. General Examination
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("3. General Examination",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      Container(
-                        width: 275,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Temp",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary)),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
-                              children: [
-                                CustomRadioButton<String>(
-                                  value: 'Febrile',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Febrile',
-                                ),
-                                SizedBox(
-                                  width: 8,
-                                ),
-                                CustomRadioButton<String>(
-                                  value: 'Afebrile',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Afebrile',
-                                ),
-                              ],
-                            ),
+                            CustomCheckbox(
+                            label: 'H/O DM',
+                            initialValue: _hasDM,
+                            onChanged: (value) => setState(() => _hasDM = value),
+                                                  ),
+                            const SizedBox(height: 8),
+                            if(_hasDM)
+                            FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
                           ],
                         ),
-                      ),
+                          CustomCheckbox(label: 'Hypertension'
+                            ,initialValue: _hasHypertension
+                          ,onChanged: (value) {
+                            setState(() {
+                              _hasHypertension=value;
+                            });
+                          },
+                          ),
+                          CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                            setState(() {
+                              _hasIHD=value;
+                            });
+                          },),
+                         CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                           setState(() {
+                             print("_hasCOPD");
+                             print(_hasCOPD);
+                             _hasCOPD=value;
+                           });
+                         },),
 
-                      FormInput(label: 'Pulse (BPM)'),
-                      Container(
-                        width: 308,
-                        child: Row(
-                          spacing: 8,
-                          children: [
-                            SizedBox(
-                                width: 140,
-                                child: FormInput(
-                                  label: 'BP (mmHg)',
-                                  hintlabel: 'Systolic',
-                                  controller: _bpSystolicController,
-                                )),
-                            Text(
-                              "/",
-                              style: TextStyle(fontSize: 26),
-                            ),
-                            SizedBox(
-                                width: 140,
-                                child: FormInput(
-                                  label: '',
-                                  hintlabel: 'Diastolic',
-                                  controller: _bpDiastolicController,
-                                )),
-                          ],
-                        ),
-                      ),
-                      // const DropdownInput(label: 'Pallor'),
-                      Container(
-                        width: 275,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Pallor",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary)),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
-                              children: [
-                                CustomRadioButton<String>(
-                                  value: '',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: '',
-                                ),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                Text("+"),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                CustomRadioButton<String>(
-                                  value: 'Nil',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Nil',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 275,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Icterus",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary)),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
-                              children: [
-                                CustomRadioButton<String>(
-                                  value: ' ',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: ' ',
-                                ),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                Text("+"),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                CustomRadioButton<String>(
-                                  value: 'Nil',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Nil',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 275,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Lymphadenopathy",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary)),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
-                              children: [
-                                CustomRadioButton<String>(
-                                  value: '',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: '',
-                                ),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                Text("+"),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                CustomRadioButton<String>(
-                                  value: 'Nil',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Nil',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 275,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Oedema",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary)),
-                            SizedBox(
-                              height: 8,
-                            ),
-                            Row(
-                              children: [
-                                CustomRadioButton<String>(
-                                  value: ' ',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: ' ',
-                                ),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                Text("+"),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                CustomRadioButton<String>(
-                                  value: 'Nil',
-                                  groupValue: radioValue,
-                                  onChanged: (value) {
-                                    setState(() => radioValue = value!);
-                                  },
-                                  label: 'Nil',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
+                    ),
 
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(
-                            label: 'H/O Present Medication',
-                            controller: _currentMedicationController,
-                          )),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 8),
+
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 16,
+                      children:  [
+                        FormInput(label: 'Any Other Illness',maxlength: 5,controller: _otherIllnessController,),
+                        FormInput(label: 'Past Surgical History',maxlength: 5,controller: _surgicalHistoryController,),
+                        FormInput(label: 'H/O Drug Allergy',maxlength: 5,controller: _drugAllergyController,),
+                      ],
+                    ),
+
+                  ],
+
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 4. Systemic Examination
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("4. Systemic Examination",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      FormInput(
-                        label: 'RS (Respiratory System)',
-                        controller: _rsController,
-                      ),
-                      FormInput(
-                        label: 'CVS (Cardio Vascular System)',
-                        controller: _cvsController,
-                      ),
-                      FormInput(
-                        label: 'CNS (Central Nervous System)',
-                        controller: _cnsController,
-                      ),
-                      FormInput(
-                        label: 'P/A Per Abdomen',
-                        controller: _paAbdomenController,
-                      ),
-                      FormInput(label: 'Upload Attachments'),
-                      FormInput(
-                        label: 'P/A Abdomen Notes',
-                        controller: _paAbdomenController,
-                      ),
-                      FormInput(
-                        label: 'P/R Rectum Notes',
-                        controller: _prRectumController,
-                      ),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(
-                            label: 'Local Examination',
-                            maxlength: 2,
-                            controller: _localExamController,
-                          )),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+              // 3. General Examination
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
-            const SizedBox(height: 20),
+                  children: [
+                    const Text("3. General Examination",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 16,
+                      children: [
 
-            // 5. Diagnosis & Plan
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
+                        Container(
+                          width: 275,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Temp",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CustomRadioButton<String>(
+                                    value: 'Febrile',
+                                    groupValue: _tempStatus,
+                                    onChanged: (value) {
+                                      setState(() => _tempStatus = value!);
+                                    },
+                                    label: 'Febrile',
+                                  ),
+                                  SizedBox(width: 8),
+                                  CustomRadioButton<String>(
+                                    value: 'Afebrile',
+                                    groupValue: _tempStatus,
+                                    onChanged: (value) {
+                                      setState(() => _tempStatus = value!);
+                                    },
+                                    label: 'Afebrile',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+
+                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,),
+                         Container(
+                           width: 308,
+                           child: Row(
+                             spacing: 8,
+                             children: [
+                               SizedBox(
+                                   width: 140,
+                                   child: FormInput(label: 'BP (mmHg)',hintlabel: 'Systolic',controller: _bpSystolicController,)),
+                               Text("/",style: TextStyle(fontSize: 26),),
+                               SizedBox(
+                                   width: 140,
+                                   child: FormInput(label: '',hintlabel: 'Diastolic',controller: _bpDiastolicController,)),
+                             ],
+                           ),
+                         ),
+                       // const DropdownInput(label: 'Pallor'),
+                        // Pallor
+                        Container(
+                          width: 275,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Pallor",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CustomRadioButton<String>(
+                                    value: '+',
+                                    groupValue: _pallorStatus,
+                                    onChanged: (value) {
+                                      setState(() => _pallorStatus = value!);
+                                    },
+                                    label: '+',
+                                  ),
+                                  SizedBox(width: 4),
+                                  SizedBox(width: 4),
+                                  CustomRadioButton<String>(
+                                    value: 'Nil',
+                                    groupValue: _pallorStatus,
+                                    onChanged: (value) {
+                                      setState(() => _pallorStatus = value!);
+                                    },
+                                    label: 'Nil',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+          // Icterus
+                        Container(
+                          width: 275,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Icterus",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                              SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  CustomRadioButton<String>(
+                                    value: '+',
+                                    groupValue: _icterusStatus,
+                                    onChanged: (value) {
+                                      setState(() => _icterusStatus = value!);
+                                    },
+                                    label: '+',
+                                  ),
+                                  SizedBox(width: 4),
+                                  SizedBox(width: 4),
+                                  CustomRadioButton<String>(
+                                    value: 'Nil',
+                                    groupValue: _icterusStatus,
+                                    onChanged: (value) {
+                                      setState(() => _icterusStatus = value!);
+                                    },
+                                    label: 'Nil',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+
+                        Container(
+                          width: 275,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Lymphadenopathy",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+
+                              SizedBox(height: 8,),
+
+                              Row(
+                                children: [
+                                  CustomRadioButton<String>(
+                                    value: '+',
+                                    groupValue: _lymphadenopathyStatus,
+                                    onChanged: (value) {
+                                      setState(() => _lymphadenopathyStatus = value!);
+                                    },
+                                    label: '+',
+                                  ),
+                                  SizedBox(width: 4,),
+
+                                  SizedBox(width: 4,),
+                                  CustomRadioButton<String>(
+                                    value: 'Nil',
+                                    groupValue: _lymphadenopathyStatus,
+                                    onChanged: (value) {
+                                      setState(() => _lymphadenopathyStatus = value!);
+                                    },
+                                    label: 'Nil',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                     Container(
+                          width: 275,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Oedema",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+
+                              SizedBox(height: 8,),
+
+                              Row(
+                                children: [
+                                  CustomRadioButton<String>(
+                                    value: '+',
+                                    groupValue: _oedemaStatus,
+                                    onChanged: (value) {
+                                      setState(() => _oedemaStatus = value!);
+                                    },
+                                    label: '+',
+                                  ),
+                                  SizedBox(width: 4,),
+
+                                  SizedBox(width: 4,),
+                                  CustomRadioButton<String>(
+                                    value: 'Nil',
+                                    groupValue: _oedemaStatus,
+                                    onChanged: (value) {
+                                      setState(() => _oedemaStatus = value!);
+                                    },
+                                    label: 'Nil',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                         SizedBox(
+                            width: double.infinity,
+                            child:  FormInput(label: 'H/O Present Medication',controller: _currentMedicationController,)),
+                      ],
+                    ),
+
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("5. Diagnosis & Plan",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      SizedBox(
+
+
+              const SizedBox(height: 20),
+
+              // 4. Systemic Examination
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("4. Systemic Examination",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 16,
+                      children:  [
+                        FormInput(label: 'RS (Respiratory System)',controller: _rsController,),
+                        FormInput(label: 'CVS (Cardio Vascular System)',controller: _cvsController,),
+                        FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,),
+                        FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,),
+
+                        SizedBox(
                           width: double.infinity,
-                          child: FormInput(
-                            label: 'Clinical Diagnosis',
-                            controller: _diagnosisController,
-                          )),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(
-                            label: 'Comorbidities',
-                            controller: _comorbiditiesController,
-                          )),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(
-                            label: 'Plan',
-                            controller: _planController,
-                          )),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(
-                            label: 'Advice',
-                            controller: _adviseController,
-                          )),
-                    ],
-                  ),
-                ],
+                          child:    DocumentUploadWidget(
+                            docType: 'pa_abdomen_image', // This should match one of your map keys
+                            label: "P/A Per Abdomen",
+
+                            onFilesSelected: (files) {
+                              setState(() {
+                                _uploadedFiles['pa_abdomen_image'] = files;
+                              });
+                            },
+                            initialFiles: _uploadedFiles['pa_abdomen_image'],
+                          ),),
+                        FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
+                        FormInput(label: 'P/R Rectum Notes',controller: _prRectumController,),
+                        SizedBox(
+                            width: double.infinity,
+                            child:  FormInput(label: 'Local Examination',maxlength: 2,controller: _localExamController,)),
+
+                        SizedBox(
+                            width: double.infinity,
+                            child:    DocumentUploadWidget(
+                              docType: 'ct_scan_report', // This should match one of your map keys
+                              label: "Media History",
+                              onFilesSelected: (files) {
+                                setState(() {
+                                  _uploadedFiles['ct_scan_report'] = files;
+                                });
+                              },
+                              initialFiles: _uploadedFiles['ct_scan_report'],
+                            ),),
+                      ],
+                    ),
+
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            _buildFormNavigationButtons(),
-          ],
+
+
+              const SizedBox(height: 20),
+
+              // 5. Diagnosis & Plan
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("5. Diagnosis & Plan",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 16,
+                      children:  [
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Clinical Diagnosis',controller: _diagnosisController,)),
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Comorbidities',controller: _comorbiditiesController,)),
+                        SizedBox(
+
+                            width: double.infinity,
+                            child: FormInput(label: 'Plan',controller: _planController,)),
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Advice',controller: _adviseController,)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildFormNavigationButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -1513,7 +1981,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.transparent,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -1561,21 +2029,45 @@ class _OnboardingFormState extends State<OnboardingForm> {
     );
   }
 
+
+
+  Future<void> _pickImage() async {
+    final pickedFiles = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowMultiple: true,
+      withData: true,
+    );
+
+    if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
+      setState(() {
+        _uploadedFiles['implants_image'] ??= [];
+        _uploadedFiles['implants_image']!.addAll(pickedFiles.files.map((file) {
+          return {
+            'bytes': file.bytes!,
+            'name': file.name,
+            'type': path.extension(file.name).replaceAll('.', '').toLowerCase(),
+            'isExisting': false,
+          };
+        }).toList());
+      });
+    }
+  }
   Widget _buildAdditionalInfoForm() {
     return Form(
       key: _reportsFormKey,
-      child: Column(
-        spacing: 10,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.Offwhitebackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.Containerbackground),
-            ),
-            child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Column(
+          spacing: 10,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1583,437 +2075,360 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     '1. Reports',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'Blood Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                  SizedBox(height: 20,),
+                  Row(children: [
+                    Text(
+                      'Blood Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
                       ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 20,
                     runSpacing: 16,
-                    children: const [
+                    children:  [
                       SizedBox(
                           width: double.infinity,
-                          child: FormInput(label: 'Laboratory')),
-                      FormInput(label: 'Hemoglobin'),
-                      FormInput(label: 'Total leucocyte count'),
-                      FormInput(label: 'ESR'),
-                      FormInput(label: 'Platelets'),
-                      FormInput(label: 'Urine Routine'),
-                      FormInput(label: 'Urine Culture'),
-                      FormInput(label: 'BUN'),
-                      FormInput(label: 'Serum Creatinine'),
-                      FormInput(label: 'Serum Electrolytes'),
-                      FormInput(label: 'LFT'),
-                      FormInput(label: 'Prothrombin Time / INR'),
-                      FormInput(label: 'Blood Sugar Fasting'),
-                      FormInput(label: 'Blood Sugar Post Prandial'),
-                      FormInput(label: 'HBA1C'),
-                      FormInput(label: 'HBSAG'),
-                      FormInput(label: 'HIV'),
-                      FormInput(label: 'HCV'),
-                      FormInput(label: 'Thyroid Function Test T3 T4 TSH'),
-                      FormInput(label: 'MISC'),
+                          child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
+                      FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
+                      FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
+                      FormInput(label: 'ESR',controller: _esrController,),
+                      FormInput(label: 'Platelets',controller: _plateletsController,),
+                      FormInput(label: 'Urine Routine',controller:_urineRoutineController),
+                      FormInput(label: 'Urine Culture',controller:_urineCultureController),
+                      FormInput(label: 'BUN',controller:_bunController),
+                      FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
+                      FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
+                      FormInput(label: 'LFT',controller:_lftController),
+                      FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController),
+                      FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
+                      FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
+                      FormInput(label: 'HBA1C',controller:_hBA1CController),
+                      FormInput(label: 'HBSAG',controller:_hBSAGController),
+                      FormInput(label: 'HIV',controller:_hivController),
+                      FormInput(label: 'HCV',controller:_hcvController),
+                      FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
+                      FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
+                      FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController),
+                      FormInput(label: 'MISC',controller:_miscController),
                       SizedBox(
                           width: double.infinity,
-                          child: FormInput(label: 'Findings')),
+                          child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
+        
                     ],
                   ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'X-Ray Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                  SizedBox(height: 20,),
+                  Row(children: [
+                    Text(
+                      'X-Ray Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
                       ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
+                      child: FormInput(label: 'Findings',controller:_xRayFindingController)),
+                  SizedBox(height: 10,),
                   Row(
+        
                     children: [
-                      Text(
-                        'CT Scan Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                    Text(
+                      'CT Scan Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
                       ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
+        
+                  DocumentUploadWidget(
+                    docType: 'ct_scan_report', // This should match one of your map keys
+                    label: "CT Scan Report",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['ct_scan_report'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['ct_scan_report'],
+                  ),
+               /*   Row(
+                    spacing: 10,
+                    children: [
+        
+                      FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
+        
                       Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
+        
+                          child: FormInput(label: 'Media History',)),
                     ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                  ),*/
+                  SizedBox(height: 10,),
                   Row(
                     spacing: 10,
                     children: [
-                      FormInput(
-                        label: 'CT Scan',
-                        hintlabel: "Upload CT Scan Reports",
-                      ),
-                      Expanded(child: FormInput(label: 'Media History')),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    spacing: 10,
-                    children: [
-                      // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+                     // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
                       DatePickerInput(
                         label: 'Date',
                         hintlabel: 'dd-mm-yyyy',
                         onDateSelected: (date) {
-                          // Handle selected date
-                          print('Date Date: $date');
+                          setState(() {
+                            _CTScanDate = date; // Update the selected date
+                          });
                         },
-                      ),
-                      Expanded(child: FormInput(label: 'Findings')),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'MRI Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                        initialDate: _CTScanDate, // Pass the initial date if needed
                       ),
                       Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
+        
+                          child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
                     ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                  ),     SizedBox(height: 10,),
+        
+                  Row(children: [
+                    Text(
+                      'MRI Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
+                      ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'PET Scan Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                      child: FormInput(label: 'Findings',controller: _mriFindingController,)),
+                  SizedBox(height: 10,),
+                  Row(children: [
+                    Text(
+                      'PET Scan Report',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 8), // Add some spacing
+                        color: AppColors.backgroundcolor,
                       ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
+        
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
+                      child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
+                  SizedBox(height: 10,),
                   Row(
+        
                     children: [
                       Text(
                         'ECG Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
                       ),
                       Expanded(
                         child: Container(
                           height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
+                          margin: const EdgeInsets.only(left: 8), // Add some spacing
                           color: AppColors.backgroundcolor,
                         ),
                       ),
-                    ],
+                    ],),
+                  SizedBox(height: 10,),
+                  DocumentUploadWidget(
+                    docType: 'ecg_report', // This should match one of your map keys
+                    label: "Upload ECG Reports",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['ecg_report'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['ecg_report'],
                   ),
+        
+                  SizedBox(height: 10,),
                   SizedBox(
-                    height: 10,
-                  ),
+            width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
+                  SizedBox(height: 10,),
+        
                   Row(
-                    spacing: 10,
-                    children: [
-                      FormInput(
-                        label: 'ECG Report',
-                        hintlabel: "Upload ECG Reports",
-                      ),
-                      Expanded(child: FormInput(label: 'Media History')),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
+        
                     children: [
                       Text(
                         '2D ECHO Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
                       ),
                       Expanded(
                         child: Container(
                           height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
+                          margin: const EdgeInsets.only(left: 8), // Add some spacing
                           color: AppColors.backgroundcolor,
-                        ),
-                      )
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                        ),)
+                    ],),
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
+                      child: FormInput(label: 'Findings',controller:_a2dFindingController)),
+               /*   SizedBox(height: 10,),
                   Row(
+        
                     children: [
                       Text(
                         'Echocardiogram Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
                       ),
                       Expanded(
                         child: Container(
                           height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
+                          margin: const EdgeInsets.only(left: 8), // Add some spacing
                           color: AppColors.backgroundcolor,
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                    ],),
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
+                      child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
+                  SizedBox(height: 10,),
                   Row(
+        
                     children: [
                       Text(
                         'PFT Report',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.hinttext),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
                       ),
                       Expanded(
                         child: Container(
                           height: 1,
-                          margin: const EdgeInsets.only(
-                              left: 8), // Add some spacing
+                          margin: const EdgeInsets.only(left: 8), // Add some spacing
                           color: AppColors.backgroundcolor,
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                    ],),
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
+                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),
+                  SizedBox(height: 10),
+        
+                  DocumentUploadWidget(
+                    docType: 'misc_report', // This should match one of your map keys
+                    label: "Upload MISC",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['misc_report'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['misc_report'],
                   ),
-                  Row(
-                    spacing: 10,
-                    children: [
-                      FormInput(
-                        label: 'MISC',
-                        hintlabel: "Upload MISC",
-                      ),
-                      Expanded(child: FormInput(label: 'Media History')),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
+        
+                  SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings')),
-                  SizedBox(
-                    height: 10,
-                  ),
+                      child: FormInput(label: 'Findings',controller: _miscFindingController,)),
+                  SizedBox(height: 10,),
+        
                 ],
               ),
             ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.Offwhitebackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.Containerbackground),
-            ),
+            Container( width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '2. Doctor Notes',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(
-                      label: 'Diagnosis',
-                      hintlabel: "Text",
-                      maxlength: 5,
-                    )),
-
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  spacing: 10,
-                  children: [
-                    FormInput(
-                      label: 'Media Upload',
-                      hintlabel: "Upload Media",
-                    ),
-                    Expanded(child: FormInput(label: 'Media History')),
-                  ],
-                ),
-                SizedBox(
-                  height: 10,
-                ),
+              const Text(
+                '2. Doctor Notes',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 20,),
+              SizedBox(
+                  width: double.infinity,
+                  child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
+        
+        
+                SizedBox(height: 10,),
                 DatePickerInput(
-                  label: 'Follow up date',
+                  label: 'Flollow up date',
                   hintlabel: 'dd-mm-yyyy',
                   onDateSelected: (date) {
-                    // Handle selected date
-                    print('Follow up date: $date');
+                    setState(() {
+                      _followUpDate = date; // Update the selected date
+                    });
                   },
+                  initialDate: _followUpDate, // Pass the initial date if needed
                 ),
-                //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
-              ],
+              //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
+            ],),
             ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.Offwhitebackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.Containerbackground),
-            ),
+            Container( width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '2. Misc',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              const Text(
+                '3. Misc',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 20,),
+              SizedBox(
+                  width: double.infinity,
+                  child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
+        
+                SizedBox(height: 10,),
+                DocumentUploadWidget(
+                  docType: 'misc_report', // This should match one of your map keys
+                  label: "MISC Upload",
+                  onFilesSelected: (files) {
+                    setState(() {
+                      _uploadedFiles['misc_report'] = files;
+                    });
+                  },
+                  initialFiles: _uploadedFiles['misc_report'],
                 ),
-                SizedBox(
-                  height: 20,
-                ),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(
-                      label: 'Text',
-                      hintlabel: "Text",
-                      maxlength: 5,
-                    )),
-              ],
+        
+            ],),
             ),
-          ),
-          const SizedBox(height: 20),
-          _buildFormNavigationButtons(isLastStep: true),
-        ],
+            const SizedBox(height: 20),
+            _buildFormNavigationButtons(isLastStep: true),
+          ],
+        ),
       ),
     );
   }
 }
+
+
 
 class FormInput extends StatelessWidget {
   final String label;
@@ -2021,6 +2436,9 @@ class FormInput extends StatelessWidget {
   final bool isDate;
   final int maxlength;
   final TextEditingController? controller;
+  final List<TextInputFormatter>? inputFormatters;
+  final bool readOnly; // Add this
+  final Function(String)? onChanged; // Add this
 
   const FormInput({
     super.key,
@@ -2029,6 +2447,9 @@ class FormInput extends StatelessWidget {
     this.isDate = false,
     this.hintlabel = "",
     this.controller,
+    this.inputFormatters,
+    this.readOnly = false, // Default to false
+    this.onChanged, // Add this
   });
 
   @override
@@ -2047,10 +2468,13 @@ class FormInput extends StatelessWidget {
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,
             keyboardType: TextInputType.text,
+            inputFormatters: inputFormatters,
             textInputAction: TextInputAction.next,
             validator: (value) {
               return null;
             },
+            readOnly: readOnly, // Add this
+            onChanged: onChanged, // Add this
           ),
         ],
       ),
@@ -2058,149 +2482,7 @@ class FormInput extends StatelessWidget {
   }
 }
 
-class PatientDetailsSidebar extends StatelessWidget {
-  const PatientDetailsSidebar({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sidebarCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('PH ID– 75842152',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
-                      color: AppColors.primary)),
-              SizedBox(height: 8),
-              buildInfoBlock("Patient's Name", "Balasubramaniam Tiwari - 42/M"),
-              buildInfoBlock("History", "H/O DM  |  IHD  |  COPD"),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  buildInfoBlock("Location", "Pooja Nursing\nHome"),
-                  Container(
-                    width: 150,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        buildInfoBlock("Occupation", "Service"),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  buildInfoBlock("Diagnosis", "Lorem Ipsum"),
-                  Container(
-                      width: 150,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          buildInfoBlock("Surgery Type", "No"),
-                        ],
-                      )),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  buildInfoBlock("Chief Complaints", "Lorem Ipsum"),
-                  Container(
-                      width: 150,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          buildInfoBlock("Clinical Diagnosis", "Lorem Ipsum"),
-                        ],
-                      )),
-                ],
-              ),
-              SizedBox(height: 12),
-              SizedBox(
-                  width: double.infinity, child: FormInput(label: 'Summary')),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        _sidebarCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Contact Patient",
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.secondary),
-              ),
-              ListTile(
-                leading: Image.asset(
-                  "assets/whatsapp.png",
-                  height: 20,
-                ),
-                title: const Text('Connect on Whatsapp'),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: Image.asset(
-                  "assets/call.png",
-                  height: 20,
-                ),
-                title: const Text('Connect on Call'),
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildInfoBlock(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(fontSize: 14, color: Colors.black),
-          children: [
-            TextSpan(
-              text: '$title\n',
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF5B5B5B),
-              ),
-            ),
-            TextSpan(
-              text: content,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-                color: Color(0xFF132A3E),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sidebarCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: child,
-    );
-  }
-}
 
 
 //ss

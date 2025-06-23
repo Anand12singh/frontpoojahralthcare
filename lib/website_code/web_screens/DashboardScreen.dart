@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import '../../constants/global_variable.dart';
@@ -541,21 +542,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(color: AppColors.secondary),
             ),
             const SizedBox(height: 24),
-            _buildField('First Name', 'Enter first name', firstNameController,    validator: (value) => value?.isEmpty ?? true
+            _buildField('First Name', 'Enter first name',   [
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')), // Only letters allowed
+            ],firstNameController,    validator: (value) => value?.isEmpty ?? true
                 ? 'Please enter patient name'
                 : null,),
             const SizedBox(height: 16),
-            _buildField('Last Name', 'Enter last name', lastNameController,validator: (value) => value?.isEmpty ?? true
+            _buildField('Last Name', 'Enter last name', [
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')), // Only letters allowed
+            ], lastNameController,validator: (value) => value?.isEmpty ?? true
                 ? 'Please enter patient name'
                 : null,),
             const SizedBox(height: 16),
-            _buildField('Phone Number', 'Enter Phone Number', phoneController,    validator: (value) {
+            _buildField('Phone Number', 'Enter Phone Number', [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+            ], phoneController,    validator: (value) {
               if (value?.isEmpty ?? true)
                 return 'Please enter phone number';
               if (!RegExp(r'^[0-9]{10}$').hasMatch(value!))
                 return 'Enter a valid 10-digit number';
               return null;
-            },),
+            },
+            ),
             const SizedBox(height: 24),
             Row(
               spacing: 10,
@@ -605,6 +613,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildField(
       String label,
       String hint,
+  final List<TextInputFormatter>? inputFormatters,
       TextEditingController controller, {
         String? Function(String?)? validator,
       }) {
@@ -622,9 +631,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         CustomTextField(
           controller: controller,
           hintText: hint,
+          inputFormatters:inputFormatters,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           validator: validator,
+
         ),
       ],
     );

@@ -53,6 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  final List<int> nonHighlightablePageIndices = [
+    2,
+  ];
+
   final List<Widget> pages = [
     KeepAlivePage(child: DashboardScreen()),
     KeepAlivePage(child: RecentPatientsListScreen()),
@@ -97,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Patient list',
                     index: 1,
                   ),
-                  _buildSidebarItem(
+                 /* _buildSidebarItem(
                     assetPath: 'assets/DrSchedule.png',
                     label: 'Dr. Schedule',
                     index: 2,
@@ -111,12 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     assetPath: 'assets/UserManagement.png',
                     label: 'User Management',
                     index: 4,
-                  ),
+                  )
                   _buildSidebarItem(
                     assetPath: 'assets/Master.png',
                     label: 'Masters',
                     index: 5,
-                  ),
+                  ),*/
                   const Spacer(),
                   _buildSidebarItem(
                     assetPath: 'assets/settingicon.png',
@@ -227,7 +231,9 @@ class _HomeScreenState extends State<HomeScreen> {
     required String label,
     required int index,
   }) {
-    final bool isSelected = selectedPageIndex == index;
+
+    final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
+    final bool isSelected = selectedPageIndex == index && isHighlightable;
 
     return Container(
       decoration: BoxDecoration(
@@ -240,8 +246,11 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: InkWell(
           onTap: () {
-            setState(() => selectedPageIndex = index);
-            _pageController.jumpToPage(index);
+            if(isHighlightable)
+            {
+              setState(() => selectedPageIndex = index);
+              _pageController.jumpToPage(index);
+            }
           },
           child: Row(
             children: [
@@ -266,4 +275,5 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 }

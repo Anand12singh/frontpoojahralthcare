@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DischargeTabContent.dart';
+import '../../constants/global_variable.dart';
 import '../../utils/colors.dart';
 import '../../widgets/KeepAlivePage.dart';
 import 'FollowUpsTabContent.dart';
+import 'PatientDetailsSidebar.dart';
 import 'Patient_Registration.dart';
 import 'SurgeryTabContent.dart';
 
@@ -63,49 +65,88 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                   Container(
                     width: 600,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
                       ),
                     ),
                     child: TabBar(
+                      // padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
+                      labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 0), // Space between tabs
                       controller: _tabController,
                       isScrollable: false, // use true if tab texts are long
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+
                       labelColor: AppColors.primary,
                       unselectedLabelColor: AppColors.secondary,
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
+
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.normal,
                         fontSize: 14,
                       ),
-                      indicatorSize: TabBarIndicatorSize.label,
+
+                      indicatorSize: null,
+
                       indicator: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
                         color: Colors.transparent,
                       ),
-                      tabs: const [
-                        Tab(text: 'Onboarding'),
-                        Tab(text: 'Surgery'),
-                        Tab(text: 'Discharge Info'),
-                        Tab(text: 'Follow Ups'),
+                      tabs: [
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Onboarding')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Operation Notes')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Discharge Info')),
+                        Container(
+                            width: 144,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Tab(text: 'Follow Ups')),
                       ],
                     ),
                   ),
-
-                  // const SizedBox(
-                  //     height: 1), // Small gap between tab bar and content
-                  Flexible(
+                  Expanded(
                     child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Colors.red,
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
@@ -118,9 +159,18 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                             KeepAlivePage(
                                 child: SingleChildScrollView(
                                     child: OnboardingForm())),
-                            KeepAlivePage(child: SurgeryTabContent()),
-                            KeepAlivePage(child: DischargeTabContent()),
-                            KeepAlivePage(child: FollowUpsTabContent()),
+                            KeepAlivePage(
+                                child: SurgeryTabContent(
+                              patientId: GlobalPatientData.patientId.toString(),
+                            )),
+                            KeepAlivePage(
+                                child: DischargeTabContent(
+                              patientId: GlobalPatientData.patientId.toString(),
+                            )),
+                            KeepAlivePage(
+                                child: FollowUpsTabContent(
+                              patientId: GlobalPatientData.patientId.toString(),
+                            )),
                           ],
                         )),
                   ),
@@ -128,9 +178,11 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
               ),
             ),
             const SizedBox(width: 20),
-            const Expanded(
+            Expanded(
               flex: 1,
-              child: PatientDetailsSidebar(),
+              child: PatientDetailsSidebar(
+                patientId: GlobalPatientData.patientId!,
+              ),
             ),
           ],
         ),

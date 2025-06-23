@@ -1,15 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/colors.dart';
-
+import 'VideoPlayerWidget.dart';
+import 'dart:html' as html; // For web-specific functionality
+import 'dart:typed_data'; // For Uint8List
+import 'package:universal_html/html.dart' as universal_html; // Alternative if needed
 class DocumentUploadWidget extends StatefulWidget {
   final String docType;
   final String label;
@@ -56,10 +61,20 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'mp4', 'mov', 'avi'],
       );
 
       if (result != null) {
+  /*      for (var file in result.files) {
+          if (file.size > 50 * 1024 * 1024) { // 50MB limit
+            showTopRightToast(
+                context,
+                'File ${file.name} is too large (max 50MB)',
+                backgroundColor: Colors.red
+            );
+            return;
+          }
+        }*/
         List<Map<String, dynamic>> newFiles = result.files.map((file) {
           return {
             'path': kIsWeb ? file.name : file.path!,
@@ -111,108 +126,293 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     _showPreviewDialog(context, fullPath, fileType, isNetwork: isNetwork);
   }
 
-  void _showPreviewDialog(BuildContext context, String filePath, String fileType,
-      {bool isNetwork = false}) {
-    final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
-    final fileExtension = fileType.toLowerCase();
-
-    if (imageTypes.contains(fileExtension)) {
-      showDialog(
-        context: context,
-        builder: (context) =>
-            Dialog(
-              insetPadding: const EdgeInsets.all(20),
-              child: Stack(
+  void _showVideoPreviewDialog(BuildContext context, String filePath, {bool isNetwork = false}) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: 16/9,
+              child: isNetwork
+                  ? _buildNetworkVideoPlayer(filePath)
+                  : (kIsWeb
+                  ? _buildWebVideoPlayer(filePath)
+                  : _buildFileVideoPlayer(filePath)),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  InteractiveViewer(
-                    panEnabled: true,
-                    minScale: 0.5,
-                    maxScale: 3.0,
-                    child: isNetwork
-                        ? Image.network(
-                      filePath,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text('Failed to load image\n${error
-                              .toString()}'),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        );
-                      },
-                    )
-                        : (kIsWeb
-                        ? Image.memory(
-                      base64Decode(filePath
-                          .split(',')
-                          .last),
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text('Failed to load image'),
-                        );
-                      },
-                    )
-                        : Image.file(
-                      File(filePath),
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text('Failed to load image'),
-                        );
-                      },
-                    )),
+                  CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: IconButton(
+                      icon: const Icon(Icons.download, color: Colors.white),
+                      onPressed: () => _downloadFile(filePath, 'mp4', isNetwork),
+                    ),
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.blue,
-                          child: IconButton(
-                            icon: const Icon(
-                                Icons.download, color: Colors.white),
-                            onPressed: () =>
-                                _downloadFile(
-                                    filePath, fileExtension, isNetwork),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        CircleAvatar(
-                          backgroundColor: Colors.red,
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 10),
+                  CircleAvatar(
+                    backgroundColor: Colors.red,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNetworkVideoPlayer(String url) {
+    return VideoPlayerWidget(url: url, isNetwork: true);
+  }
+
+  Widget _buildWebVideoPlayer(String filePath) {
+    // For web, you might need to use a different approach
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.videocam, size: 50),
+          Text('Video playback not supported in preview\n${path.basename(filePath)}'),
+          TextButton(
+            onPressed: () => launchUrl(Uri.parse(filePath)),
+            child: const Text('Open in new tab'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileVideoPlayer(String filePath) {
+    return VideoPlayerWidget(filePath: filePath);
+  }
+
+  void _showPreviewDialog(BuildContext context, String filePath, String fileType,
+      {bool isNetwork = false}) {
+    final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
+    final videoTypes = {'mp4', 'mov', 'avi'};
+    final fileExtension = fileType.toLowerCase();
+
+    if (imageTypes.contains(fileExtension)) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                panEnabled: true,
+                minScale: 0.5,
+                maxScale: 3.0,
+                child: isNetwork
+                    ? Image.network(
+                  filePath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Text('Failed to load image\n${error.toString()}'),
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                )
+                    : (kIsWeb
+                    ? Image.memory(
+                  base64Decode(filePath.split(',').last),
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Text('Failed to load image'),
+                    );
+                  },
+                )
+                    : Image.file(
+                  File(filePath),
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Text('Failed to load image'),
+                    );
+                  },
+                )),
+              ),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: IconButton(
+                        icon: const Icon(Icons.download, color: Colors.white),
+                        onPressed: () => _downloadFile(filePath, fileExtension, isNetwork),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    CircleAvatar(
+                      backgroundColor: Colors.red,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    else if (videoTypes.contains(fileExtension)) {
+      _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
+    }
+    }
+
+
+  Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
+    try {
+      if (kIsWeb) {
+        // Web implementation - triggers browser download
+        await _downloadFileWeb(filePath, fileType, isNetwork);
+      } else {
+        // Mobile implementation - saves to downloads folder
+        await _downloadFileMobile(filePath, fileType, isNetwork);
+      }
+     /* showTopRightToast(
+        context,
+        'Downloaded ${path.basename(filePath)}',
+        backgroundColor: Colors.green,
+      );*/
+    } catch (e) {
+      debugPrint('Download error: $e');
+      showTopRightToast(
+        context,
+        'Failed to download file',
+        backgroundColor: Colors.red,
       );
     }
   }
 
-    Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
-    // Implement your download logic here
-    // This would depend on your specific requirements and whether you're on web/mobile
-    // You might want to use the flutter_downloader package or similar
-    showTopRightToast(context, 'Downloading ${path.basename(filePath)}', backgroundColor: Colors.green);
+  Future<void> _downloadFileWeb(String filePath, String fileType, bool isNetwork) async {
+    if (isNetwork) {
+      // For network files on web, let the browser handle the download
+      await launchUrl(Uri.parse(filePath), mode: LaunchMode.externalApplication);
+    } else {
+      // For local files selected in web
+      final file = _selectedFiles.firstWhere(
+            (f) => f['path'] == filePath || f['name'] == path.basename(filePath),
+        orElse: () => {},
+      );
 
+      if (file.isNotEmpty && file['bytes'] != null) {
+        final bytes = file['bytes'] as Uint8List;
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', file['name'])
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      }
+    }
   }
+
+  Future<void> _downloadFileMobile(String filePath, String fileType, bool isNetwork) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final downloadsDir = Directory('${dir.path}/downloads');
+    if (!await downloadsDir.exists()) {
+      await downloadsDir.create(recursive: true);
+    }
+
+    final fileName = path.basename(filePath);
+    final savePath = '${downloadsDir.path}/$fileName';
+
+    if (isNetwork) {
+      // Download network file
+      final response = await Dio().get(
+        filePath,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      await File(savePath).writeAsBytes(response.data);
+    } else {
+      // Copy local file to downloads
+      if (filePath.startsWith('content://')) {
+        // Handle content URIs (Android)
+        final file = await File(filePath).create();
+        await file.copy(savePath);
+      } else {
+        await File(filePath).copy(savePath);
+      }
+    }
+
+    // Optionally open the file after download
+    await OpenFile.open(savePath);
+  }
+/*  Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
+    try {
+      if (kIsWeb) {
+        // Handle web download
+        if (isNetwork) {
+          // For network files, use the URL directly
+          await launchUrl(Uri.parse(filePath));
+        } else {
+          // For local files selected in web, create a download link
+          final file = _selectedFiles.firstWhere(
+                (f) => f['path'] == filePath || f['name'] == path.basename(filePath),
+            orElse: () => {},
+          );
+
+          if (file.isNotEmpty && file['bytes'] != null) {
+            final bytes = file['bytes'] as Uint8List;
+            final blob = html.Blob([bytes]);
+            final url = html.Url.createObjectUrlFromBlob(blob);
+            final anchor = html.AnchorElement(href: url)
+              ..setAttribute('download', file['name'])
+              ..click();
+            html.Url.revokeObjectUrl(url);
+          }
+        }
+      } else {
+        // Handle mobile download
+        if (isNetwork) {
+          await launchUrl(Uri.parse(filePath));
+        } else {
+          OpenFile.open(filePath);
+        }
+      }
+      showTopRightToast(
+        context,
+        'Downloading ${path.basename(filePath)}',
+        backgroundColor: Colors.green,
+      );
+    } catch (e) {
+      debugPrint('Download error: $e');
+      showTopRightToast(
+        context,
+        'Failed to download file',
+        backgroundColor: Colors.red,
+      );
+    }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +464,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
 
             // Uploaded Files Display
             Expanded(
@@ -379,6 +579,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     if (type == 'pdf') return Icons.picture_as_pdf;
     if (['jpg', 'jpeg', 'png'].contains(type)) return Icons.image;
     if (['doc', 'docx'].contains(type)) return Icons.description;
+    if (['mp4', 'mov', 'avi'].contains(type)) return Icons.videocam;
     return Icons.insert_drive_file;
   }
 
@@ -387,6 +588,9 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     if (type == 'pdf') return Colors.red;
     if (['jpg', 'jpeg', 'png'].contains(type)) return Colors.blue;
     if (['doc', 'docx'].contains(type)) return Colors.blue.shade800;
+    if (['mp4', 'mov', 'avi'].contains(type)) return Colors.purple;
     return Colors.grey;
   }
+
 }
+

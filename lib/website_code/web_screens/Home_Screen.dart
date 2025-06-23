@@ -229,7 +229,8 @@ SizedBox(width: 8,),
     required String assetPath,
     required String label,
     required int index,
-  }) {
+  })
+  {
 
     final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
     final bool isSelected = selectedPageIndex == index && isHighlightable;

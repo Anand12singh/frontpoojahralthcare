@@ -316,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SizedBox(height: 12),
 
 
-        Row(
+    /*    Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
@@ -356,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen>
           ],
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 14),*/
         SizedBox(
           width: double.infinity,
           child: Animatedbutton(

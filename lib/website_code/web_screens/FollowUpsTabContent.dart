@@ -84,7 +84,9 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
 
   void _addFollowUp() {
     setState(() {
-      followUpEntries.add(FollowUpEntry());
+    //  followUpEntries.add(FollowUpEntry());
+      followUpEntries.insert(0, FollowUpEntry());
+
     });
   }
 
@@ -224,6 +226,22 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Animatedbutton(
+                onPressed: _addFollowUp,
+                shadowColor: Colors.white,
+                titlecolor: AppColors.primary,
+                backgroundColor: Colors.white,
+                borderColor: AppColors.secondary,
+                isLoading: false,
+                title: '+ Follow up',
+              ),
+
+            ],
+          ),
+          const SizedBox(height: 16),
           ...followUpEntries.asMap().entries.map(
                 (entry) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -241,7 +259,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Follow up ${entry.key + 1}',
+                          'Follow up ${followUpEntries.length - entry.key}',
+
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -289,7 +308,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                         ),
                       ],
                     ),
-                    if (_hasInitialData && entry.value.id != null) ...[
+                 /*   if (_hasInitialData && entry.value.id != null) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -306,13 +325,13 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                           Text(entry.value.status ? 'Active' : 'Inactive'),
                         ],
                       ),
-                    ],
+                    ],*/
                   ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+     /*     const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -326,7 +345,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                 onPressed: _addFollowUp,
               ),
             ],
-          ),
+          ),*/
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

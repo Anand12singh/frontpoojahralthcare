@@ -1388,7 +1388,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                   ],),
-                  FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,),
+                  FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,    fillColor: Colors.grey.shade100,
+                    readOnly: true,),
                   FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
                   FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
                   FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),
@@ -1397,7 +1398,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                 ],),
-                  FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController,),
+                  FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController, inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
+                  ]),
                   FormInput(label: 'Age',hintlabel: "Enter Country",controller: _ageController, inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                   ],),
@@ -1479,6 +1482,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
             label: 'BMI (kg/m²)',
             hintlabel: "Enter BMI",
             controller: _bmiController,
+            fillColor: Colors.grey.shade100,
             readOnly: true, // Add this property
           ),
           
@@ -2105,7 +2109,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 20,
-                    runSpacing: 16,
+                    runSpacing: 14,
                     children:  [
                       SizedBox(
                           width: double.infinity,
@@ -2448,10 +2452,11 @@ class FormInput extends StatelessWidget {
   final String hintlabel;
   final bool isDate;
   final int maxlength;
+  final Color fillColor; // Fixed type and naming
   final TextEditingController? controller;
   final List<TextInputFormatter>? inputFormatters;
-  final bool readOnly; // Add this
-  final Function(String)? onChanged; // Add this
+  final bool readOnly;
+  final Function(String)? onChanged;
 
   const FormInput({
     super.key,
@@ -2459,10 +2464,11 @@ class FormInput extends StatelessWidget {
     this.maxlength = 1,
     this.isDate = false,
     this.hintlabel = "",
+    this.fillColor=Colors.transparent, // Make this required
     this.controller,
     this.inputFormatters,
-    this.readOnly = false, // Default to false
-    this.onChanged, // Add this
+    this.readOnly = false,
+    this.onChanged,
   });
 
   @override
@@ -2477,6 +2483,7 @@ class FormInput extends StatelessWidget {
                   fontWeight: FontWeight.w600, color: AppColors.primary)),
           const SizedBox(height: 4),
           CustomTextField(
+            fillColor: fillColor, // Use the passed fillColor
             enabled: !readOnly,
             maxLines: maxlength,
             controller: controller ?? TextEditingController(),
@@ -2487,13 +2494,14 @@ class FormInput extends StatelessWidget {
             validator: (value) {
               return null;
             },
-            readOnly: readOnly, // Add this
-            onChanged: onChanged, // Add this
+            readOnly: readOnly,
+            onChanged: onChanged,
           ),
         ],
       ),
     );
   }
 }
+
 
 

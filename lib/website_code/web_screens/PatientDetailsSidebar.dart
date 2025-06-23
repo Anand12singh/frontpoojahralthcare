@@ -293,6 +293,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
           /*        if (!isEditingSummary &&
                       patientData!['summary'] != null &&
                       patientData!['summary'].isNotEmpty)*/
+                  if (!isEditingSummary)
                     IconButton(
                       icon: Icon(Icons.edit_outlined, color: AppColors.primary),
                       onPressed: () {
@@ -305,18 +306,38 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                         });
                       },
                     ),
+
+                  if (isEditingSummary)
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.check_rounded, color: AppColors.primary),
+                        onPressed: isAddingSummary ? null : addSummary,
+                      ),
+
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            isEditingSummary = false;
+
+                          });
+                        },
+                      ),
+                    ],
+                  )
                 ],
               ),
               if (isEditingSummary)
                 Column(
                   children: [
-                    SizedBox(height: 12),
+                    //SizedBox(height: 12),
                     CustomTextField(
                       controller: summaryController,
                       hintText: 'Summary',
                       maxLines: 2,
                     ),
-                    SizedBox(height: 8),
+               /*     SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -343,7 +364,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                           shadowColor: Colors.white,
                         ),
                       ],
-                    ),
+                    ),*/
                   ],
                 ),
             ],

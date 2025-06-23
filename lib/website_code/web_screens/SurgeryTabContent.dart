@@ -527,9 +527,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                 Container(
                     width: 600,
                     child: _buildFormInput('Location', _findingsController, maxLines: 1)),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(child: _buildFormInput('Implants used, if any', _implantsController, maxLines: 3)),
 
               ],

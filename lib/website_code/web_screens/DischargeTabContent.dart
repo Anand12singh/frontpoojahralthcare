@@ -660,14 +660,25 @@ maxlength: 4,
                     },
                     initialFiles: _uploadedFiles['discharge_images'],
                   ),
+                  const SizedBox(height: 16),
+                  // Follow Up Date
+                  DatePickerInput(
+                    label: 'Follow Up Date',
+                    initialDate: _followUpDate,
+                    onDateSelected: (date) {
+                      setState(() => _followUpDate = date);
+                    }, hintlabel: '',
+                  ),
+
+
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+           // const SizedBox(height: 32),
 
             // 4. Investigations
-            Container(
+     /*       Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -743,17 +754,8 @@ maxlength: 4,
                   ),
                 ],
               ),
-            ),
-            // Follow Up Date
-           /* DatePickerInput(
-              label: 'Follow Up Date',
-              initialDate: _followUpDate,
-              onDateSelected: (date) {
-                setState(() => _followUpDate = date);
-              }, hintlabel: '',
-            ),
+            ),*/
 
-            const SizedBox(height: 32),*/
             const SizedBox(height: 32),
             // Buttons
             Row(

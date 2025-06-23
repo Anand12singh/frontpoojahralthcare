@@ -63,84 +63,108 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
+                    padding: EdgeInsets.all(0),
                     width: 600,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius:BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12))
-                    ),
-                    child:  TabBar(
-                      // padding: const EdgeInsets.symmetric(horizontal: 8),  // Overall padding
-                      labelPadding: const EdgeInsets.symmetric(
-                          horizontal: 0), // Space between tabs
-                      controller: _tabController,
-                      isScrollable: false, // use true if tab texts are long
-                      padding: const EdgeInsets.symmetric(horizontal: 0),
-
-                      labelColor: AppColors.primary,
-                      unselectedLabelColor: AppColors.secondary,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-
-                      unselectedLabelStyle: const TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 14,
-                      ),
-
-                      indicatorSize: null,
-
-                      indicator: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
+                    color: Colors.transparent,
+                    // decoration: BoxDecoration(
+                    //   color: Colors.red,
+                    //   borderRadius: BorderRadius.only(
+                    //     topLeft: Radius.circular(12),
+                    //     topRight: Radius.circular(12),
+                    //   ),
+                    // ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(0),
+                      child: TabBar(
+                        indicatorWeight: 0.0,
+                        labelPadding: const EdgeInsets.all(0),
+                        controller: _tabController,
+                        isScrollable: false,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 0),
+                        labelColor: AppColors.primary,
+                        unselectedLabelColor: AppColors.secondary,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
-                        color: Colors.transparent,
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        indicator: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          color: Colors.transparent,
+                        ),
+                        tabs: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                                padding: EdgeInsets.all(0),
+                                width: 144,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Tab(
+                                    iconMargin: EdgeInsets.all(0),
+                                    text: 'Onboarding')),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                                width: 144,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Tab(
+                                    iconMargin: EdgeInsets.all(0),
+                                    text: 'Operation Notes')),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                                width: 144,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Tab(
+                                    iconMargin: EdgeInsets.all(0),
+                                    text: 'Discharge Info')),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Container(
+                                width: 144,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Tab(
+                                    iconMargin: EdgeInsets.all(0),
+                                    text: 'Follow Ups')),
+                          ),
+                        ],
                       ),
-                      tabs: [
-                        Container(
-                            width: 144,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: Tab(text: 'Onboarding')),
-                        Container(
-                            width: 144,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: Tab(text: 'Operation Notes')),
-                        Container(
-                            width: 144,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: Tab(text: 'Discharge Info')),
-                        Container(
-                            width: 144,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: Tab(text: 'Follow Ups')),
-                      ],
                     ),
-              ),
-
+                  ),
 
                   Expanded(
                     child: Container(

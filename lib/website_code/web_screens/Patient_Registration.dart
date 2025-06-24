@@ -1050,8 +1050,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
               return AlertDialog(
                 shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary)),
                 title: const Text('Success'),
-                content: Text(responseData['message'] ??
-                    'Patient record saved successfully'),
+                content: Text(
+
+                    //responseData['message'] ??
+                    'Patient record saved successfully.'
+
+                ),
                 actions: [
                   TextButton(
                     onPressed: () {
@@ -1062,7 +1066,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             builder: (context) => HomeScreen(initialPage: 1,)),
                       );
                     },
-                    child: const Text('view',style: TextStyle(fontWeight:  FontWeight.bold,color: AppColors.primary)),
+                    child: const Text('ok',style: TextStyle(fontWeight:  FontWeight.bold,color: AppColors.primary,fontSize: 16)),
                   ),
                 ],
               );

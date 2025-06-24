@@ -251,7 +251,7 @@ prefixIcon: Icons.search_rounded,
                                 child: Row(
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.edit, color: AppColors.primary),
+                                      icon: const Icon(Icons.edit_outlined , color: AppColors.primary),
                                       onPressed: () {
 
                                         GlobalPatientData.firstName = patient['name'].split(' ')[0];
@@ -282,7 +282,7 @@ prefixIcon: Icons.search_rounded,
                                       },
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red),
                                       onPressed: () {
                                         _showDeleteDialog(context, patient['phid']);
                                       },

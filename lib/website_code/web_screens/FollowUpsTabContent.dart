@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:hugeicons/hugeicons.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../widgets/AnimatedButton.dart';
@@ -25,7 +26,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   bool _isLoading = false;
   bool _isSaving = false;
   bool _hasInitialData = false;
-
+  List<bool> isEditingList = [];
+  bool _isAddingFollowUp = false;
   @override
   void initState() {
     super.initState();
@@ -59,14 +61,18 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
           followUpEntries = data.map((item) => FollowUpEntry(
             id: item['id'],
             date: DateTime.parse(item['follow_up_dates']),
+            nextfollowupdates: item['next_follow_up_dates'] != null
+                ? DateTime.parse(item['next_follow_up_dates'])
+                : null,
             notes: item['notes'] ?? '',
             treatment: item['treatment'] ?? '',
             status: item['follow_up_status'] == 1,
           )).toList();
+          isEditingList = List<bool>.generate(followUpEntries.length, (index) => false);
 
-          // Add one empty entry if no existing data
           if (followUpEntries.isEmpty) {
             followUpEntries.add(FollowUpEntry());
+            isEditingList.add(true);
           } else {
             _hasInitialData = true;
           }
@@ -83,13 +89,109 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   }
 
   void _addFollowUp() {
-    setState(() {
-    //  followUpEntries.add(FollowUpEntry());
-      followUpEntries.insert(0, FollowUpEntry());
+    if (_isAddingFollowUp) {
+      showTopRightToast(
+          context,
+          'Please complete the current follow-up before adding another',
+          backgroundColor: Colors.orange
+      );
+      return;
+    }
 
+    setState(() {
+      _isAddingFollowUp = true;
+      followUpEntries = [...followUpEntries];
+      isEditingList = [...isEditingList];
+      followUpEntries.insert(0, FollowUpEntry());
+      isEditingList.insert(0, true);
+    });
+  }
+// Add this method to toggle edit state
+  void _toggleEditMode(int index) {
+    setState(() {
+      isEditingList[index] = !isEditingList[index];
     });
   }
 
+  Future<void> _UpdateSingleFollowUp(int index) async {
+    final entry = followUpEntries[index];
+    if (entry.date == null) {
+      showTopRightToast(context, 'Please select a date', backgroundColor: Colors.red);
+      return;
+    }
+   if (entry.nextfollowupdates == null) {
+      showTopRightToast(context, 'Please select a  next follow up date', backgroundColor: Colors.red);
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        showTopRightToast(
+            context,
+            'Authentication token not found. Please login again.',
+            backgroundColor: Colors.red
+        );
+        return;
+      }
+
+      final headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+
+      };
+
+      final endpoint = '$localurl/follow_up_date';
+      final Map<String, dynamic> requestBody = {
+        "id":entry.id,
+        "patient_id": widget.patientId,
+        "follow_up_dates": DateFormat('dd-MM-yyyy').format(entry.date!),
+        "next_follow_up_dates": entry.nextfollowupdates != null
+            ? DateFormat('dd-MM-yyyy').format(entry.nextfollowupdates!)
+            : null,
+        "notes": entry.notesController.text,
+        "treatment": entry.treatmentController.text,
+        "follow_up_status": 1
+      };
+
+
+
+      final body = json.encode(requestBody);
+      print("body");
+      print(body);
+      final response =  await http.post(Uri.parse(endpoint), headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        showTopRightToast(context, 'Follow-up saved successfully', backgroundColor: Colors.green);
+        setState(() {
+          isEditingList[index] = false;
+          _isAddingFollowUp = false; // Reset the flag
+          _fetchFollowUpData();
+        });
+      } else {
+        final responseData = json.decode(response.body);
+        showTopRightToast(
+            context,
+            'Error saving follow-up: ${responseData['message']}',
+            backgroundColor: Colors.red
+        );
+        print(response.statusCode);
+        print(endpoint);
+        print(responseData['message']);
+      }
+    } catch (e) {
+      print(e);
+      showTopRightToast(context, 'Error: $e', backgroundColor: Colors.red);
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
   Future<void> _saveFollowUps() async {
     setState(() {
       _isSaving = true;
@@ -98,10 +200,10 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
     try {
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
-         showTopRightToast(
+        showTopRightToast(
           context,
           'Authentication token not found. Please login again.',
-           backgroundColor: Colors.red
+          backgroundColor: Colors.red,
         );
         return;
       }
@@ -115,45 +217,67 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       // Save all follow-ups
       for (var entry in followUpEntries) {
         if (entry.date == null) {
-           showTopRightToast(context, 'Please select a date for all follow-ups',
-               backgroundColor: Colors.red);
+          showTopRightToast(
+            context,
+            'Please select a date for all follow-ups',
+            backgroundColor: Colors.red,
+          );
           return;
         }
 
-        final endpoint = entry.id == null
-            ? '$localurl/follow_up_date'  // Create new
-            : '$localurl/follow_up_date';  // Update existing
-
-        final body = json.encode({
+        final endpoint = '$localurl/follow_up_date';
+        final Map<String, dynamic> requestBody = {
           "patient_id": widget.patientId,
           "follow_up_dates": DateFormat('yyyy-MM-dd').format(entry.date!),
+          "next_follow_up_dates": DateFormat('yyyy-MM-dd').format(entry.nextfollowupdates!),
           "notes": entry.notesController.text,
           "treatment": entry.treatmentController.text,
           "follow_up_status": entry.status ? 1 : 0,
-        });
+        };
 
-        final response = entry.id == null
-            ? await http.post(Uri.parse(endpoint), headers: headers, body: body)
-            : await http.put(Uri.parse(endpoint), headers: headers, body: body);
+        // Add ID only for existing entries
+        if (entry.id != null) {
+          requestBody['id'] = entry.id;
+        }
+
+        final body = json.encode(requestBody);
+        print("body");
+        print(endpoint);
+        print(body);
+        final response =  await http.put(Uri.parse(endpoint), headers: headers, body: body);
 
         if (response.statusCode != 200) {
           final responseData = json.decode(response.body);
-           showTopRightToast(
+          print("responseData['message");
+          print(responseData['message']);
+          print(responseData['status']);
+          showTopRightToast(
             context,
             'Error saving follow-up: ${responseData['message']}',
-               backgroundColor: Colors.red
+            backgroundColor: Colors.red,
           );
           return;
         }
       }
 
-       showTopRightToast(context, 'Follow-ups saved successfully',
-           backgroundColor: Colors.green);
+      showTopRightToast(
+        context,
+        'Follow-ups saved successfully',
+        backgroundColor: Colors.green,
+      );
+      setState(() {
+        _isAddingFollowUp = false; // Reset the flag
+      });
+
       // Refresh data after save
       await _fetchFollowUpData();
     } catch (e) {
-       showTopRightToast(context, 'Error: $e',
-           backgroundColor: Colors.red);
+
+      showTopRightToast(
+        context,
+        'Error: $e',
+        backgroundColor: Colors.red,
+      );
     } finally {
       setState(() {
         _isSaving = false;
@@ -161,56 +285,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
     }
   }
 
-  Future<void> _deleteFollowUp(int? id, int index) async {
-    if (id == null) {
-      // Just remove from local list if it's a new entry
-      setState(() {
-        followUpEntries.removeAt(index);
-      });
-      return;
-    }
 
-    try {
-      String? token = await AuthService.getToken();
-      if (token == null || token.isEmpty) {
-         showTopRightToast(
-          context,
-          'Authentication token not found. Please login again.',
-             backgroundColor: Colors.red
-        );
-        return;
-      }
-
-      final headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
-      final response = await http.delete(
-        Uri.parse('$localurl/follow_up_date/$id'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-         showTopRightToast(context, 'Follow-up deleted successfully',
-             backgroundColor: Colors.green);
-        setState(() {
-          followUpEntries.removeAt(index);
-        });
-      } else {
-        final responseData = json.decode(response.body);
-         showTopRightToast(
-          context,
-          'Error deleting follow-up: ${responseData['message']}',
-             backgroundColor: Colors.red
-        );
-      }
-    } catch (e) {
-       showTopRightToast(context, 'Error deleting follow-up: $e',
-           backgroundColor: Colors.red);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +305,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Animatedbutton(
-                onPressed: _addFollowUp,
+                onPressed: _isAddingFollowUp ? null : _addFollowUp,
                 shadowColor: Colors.white,
                 titlecolor: AppColors.primary,
                 backgroundColor: Colors.white,
@@ -238,7 +313,6 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                 isLoading: false,
                 title: '+ Follow up',
               ),
-
             ],
           ),
           const SizedBox(height: 16),
@@ -260,17 +334,37 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       children: [
                         Text(
                           'Follow up ${followUpEntries.length - entry.key}',
-
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (entry.value.id != null || entry.key > 0)
+                        if (!isEditingList[entry.key])
                           IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteFollowUp(entry.value.id, entry.key),
+                            icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+                            onPressed: () => _toggleEditMode(entry.key),
                           ),
+                        if (isEditingList[entry.key])
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _UpdateSingleFollowUp(entry.key),
+                                child: HugeIcon(
+                                  icon: HugeIcons.strokeRoundedTick04,
+                                  color: AppColors.primary,
+
+                                ),
+                              ),
+                          /*    IconButton(
+                                icon: Icon(Icons.check_rounded, color: AppColors.primary),
+                                onPressed: () => _UpdateSingleFollowUp(entry.key),
+                              ),*/
+                              IconButton(
+                                icon: Icon(Icons.close_rounded, color: Colors.red),
+                                onPressed: () => _toggleEditMode(entry.key),
+                              ),
+                            ],
+                          )
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -308,6 +402,17 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                         ),
                       ],
                     ),
+                    DatePickerInput(
+                      label: 'Next follow up date',
+                      hintlabel: 'Next follow up date',
+                      initialDate: entry.value.nextfollowupdates,
+                      onDateSelected: (date) {
+                        setState(() {
+                          entry.value.nextfollowupdates = date;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 12),
                  /*   if (_hasInitialData && entry.value.id != null) ...[
                       const SizedBox(height: 8),
                       Row(
@@ -346,7 +451,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
               ),
             ],
           ),*/
-          const SizedBox(height: 32),
+          //const SizedBox(height: 32),
+          /*
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -370,7 +476,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                 title: _hasInitialData ? 'Update' : 'Save',
               ),
             ],
-          ),
+          ),*/
         ],
       ),
     );
@@ -380,6 +486,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
 class FollowUpEntry {
   int? id;
   DateTime? date;
+  DateTime? nextfollowupdates;
   final TextEditingController notesController = TextEditingController();
   final TextEditingController treatmentController = TextEditingController();
   bool status;
@@ -387,6 +494,7 @@ class FollowUpEntry {
   FollowUpEntry({
     this.id,
     this.date,
+    this.nextfollowupdates,
     String? notes,
     String? treatment,
     this.status = true,

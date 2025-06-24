@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:hugeicons/hugeicons.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import 'package:poojaheakthcare/widgets/custom_text_field.dart';
 import 'dart:convert';
@@ -310,10 +311,16 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   if (isEditingSummary)
                   Row(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.check_rounded, color: AppColors.primary),
-                        onPressed: isAddingSummary ? null : addSummary,
+
+                      GestureDetector(
+                        onTap: isAddingSummary ? null : addSummary,
+                        child: HugeIcon(
+                          icon: HugeIcons.strokeRoundedTick04,
+                          color: AppColors.primary,
+
+                        ),
                       ),
+
 
                       IconButton(
                         icon: Icon(Icons.close_rounded, color: Colors.red),

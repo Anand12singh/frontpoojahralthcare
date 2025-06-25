@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_list.dart';
+import '../constants/base_url.dart';
 import '../utils/colors.dart';
 import '../widgets/custom_text_field.dart';
 import 'patient_form_screen.dart';
@@ -112,7 +113,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       };
 
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/get_allpatients'),
+        Uri.parse('$localurl/get_allpatients'),
         headers: headers,
       );
 
@@ -155,7 +156,7 @@ class _PatientInfoScreenState extends State<PatientInfoScreen>
       };
 
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/checkpatientinfo'),
+        Uri.parse('$localurl/checkpatientinfo'),
         headers: headers,
         body: json.encode({
           "first_name": _nameController.text.trim(),

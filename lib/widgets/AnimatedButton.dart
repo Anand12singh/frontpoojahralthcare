@@ -12,7 +12,7 @@ class Animatedbutton extends StatelessWidget {
 
   const Animatedbutton({
     super.key,
-    required this.isLoading,
+    this.isLoading=false,
     required this.onPressed,
     this.title = 'Login',
     this.titlecolor = Colors.white,

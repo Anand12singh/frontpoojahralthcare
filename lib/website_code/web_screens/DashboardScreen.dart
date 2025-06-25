@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
+import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/olddpatientfom.dart';
 import '../../services/auth_service.dart';
@@ -93,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       };
 
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/add_patient'),
+        Uri.parse('$localurl/add_patient'),
         headers: headers,
         body: json.encode({
           "first_name": _nameController.text.trim(),
@@ -133,12 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    showTopRightToast(context,message,backgroundColor: Colors.red);
+
   }
 
 

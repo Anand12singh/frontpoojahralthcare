@@ -64,13 +64,15 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
         });
       } else {
         setState(() {
-          errorMessage = 'Failed to load patients: ${response.reasonPhrase}';
+          log('${response.reasonPhrase}');
+          errorMessage = 'Failed to load patients.';
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Error fetching patients: ${e.toString()}';
+        log('${e.toString()}');
+        errorMessage = 'Error fetching patients.';
         isLoading = false;
       });
     }

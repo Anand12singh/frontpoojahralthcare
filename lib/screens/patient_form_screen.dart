@@ -9,6 +9,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import '../constants/base_url.dart';
 import '../constants/global_variable.dart';
 import '../services/auth_service.dart';
 import '../widgets/show_dialog.dart';
@@ -223,7 +224,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     try {
       final requestBody = {'id': Global.phid};
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getpatientbyid'),
+        Uri.parse('$localurl/getpatientbyid'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -422,7 +423,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     setState(() => _isLoadingLocations = true);
     try {
       final response = await http.get(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/getlocation'),
+        Uri.parse('$localurl/getlocation'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -497,7 +498,7 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+        Uri.parse('$localurl/storepatient'),
       );
 
       request.headers.addAll({

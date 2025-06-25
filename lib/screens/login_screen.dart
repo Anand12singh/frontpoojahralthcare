@@ -1,11 +1,14 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/AnimatedButton.dart';
 import '../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../widgets/showTopSnackBar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -81,8 +84,8 @@ class _LoginScreenState extends State<LoginScreen>
       try {
         final response = await http
             .post(
-              // Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
-              Uri.parse('https://pooja-healthcare.ortdemo.com/api/login'),
+              // Uri.parse('$localurl/login'),
+              Uri.parse('$localurl/login'),
 
               headers: {
                 'Accept': 'application/json',
@@ -105,24 +108,16 @@ class _LoginScreenState extends State<LoginScreen>
             }
             Navigator.pushReplacementNamed(context, '/HomeScreen');
           } else {
-            log('error messgae ');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(responseData['message'] ?? 'Login failed'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            print('error messgae ');
+            showTopRightToast(context,responseData['message'] ?? 'Login failed',backgroundColor: Colors.red);
+
           }
         }
       } catch (e) {
-        log('error $e');
+        print('error $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+
         }
       } finally {
         if (mounted) {

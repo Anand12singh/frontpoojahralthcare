@@ -1043,35 +1043,67 @@ class _OnboardingFormState extends State<OnboardingForm> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
         showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Dialog(
+              shape: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary),
+              ),
+              child: Container(
+                width: 400,
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // GIF Animation
+                    SizedBox(
+                      height: 100, // Adjust height as needed
+                      child: Image.asset('assets/list.gif'),
+                    ),
 
-            context: context,
-            barrierDismissible: false, // Prevents closing without interaction
-            builder: (BuildContext context) {
-              return AlertDialog(
-                shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary)),
-                title: const Text('Success'),
-                content: Text(
 
-                    //responseData['message'] ??
-                    'Patient record saved successfully.'
+                    const SizedBox(height: 16),
+                    // Message
+                    const Text(
+                      'Patient record saved successfully.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
 
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // OK Button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(initialPage: 1),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => HomeScreen(initialPage: 1,)),
-                      );
-                    },
-                    child: const Text('ok',style: TextStyle(fontWeight:  FontWeight.bold,color: AppColors.primary,fontSize: 16)),
-                  ),
-                ],
-              );
-            });
-        // Navigator.of(context).pop();
+              ),
+            );
+          },
+        );
       } else {
         showTopRightToast(context, '❌ Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.green);
 
@@ -1135,7 +1167,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/storepatient'),
+        Uri.parse('$localurl/storepatient'),
       );
 
       request.headers.addAll({

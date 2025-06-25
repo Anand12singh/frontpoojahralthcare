@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/base_url.dart';
 import '../../utils/colors.dart';
 import '../../widgets/DatePickerInput.dart';
 import '../../widgets/DocumentUploadWidget.dart';
@@ -104,9 +105,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
       });
     } catch (e) {
       log('Failed to delete file: ${e.toString()}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete file: ${e.toString()}')),
-      );
+      showTopRightToast(context,'Failed to delete file: ${e.toString()}',backgroundColor: Colors.red);
+
     }
   }
 
@@ -252,7 +252,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   Future<void> _loadExistingData() async {
     try {
       final response = await http.post(
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/get_post_operation'),
+        Uri.parse('$localurl/get_post_operation'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({"patient_id": widget.patientId}),
       );
@@ -324,7 +324,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://pooja-healthcare.ortdemo.com/api/postoperations'),
+        Uri.parse('$localurl/postoperations'),
       );
 
       request.headers.addAll({

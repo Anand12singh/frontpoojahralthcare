@@ -429,9 +429,17 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
     _complicationsController.dispose();
     super.dispose();
   }
-
+  double responsiveWidth(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return (screenWidth > 800 ? 600 : screenWidth * 0.8).toDouble();
+  }
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 800;
+    final formFieldWidth = responsiveWidth(context);
+    final fieldSpacing = isLargeScreen ? 16.0 : 8.0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -442,42 +450,136 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             const Text('1. Surgery Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // Row 1
-            Row(
-              children: [
-                Container(
-                    width: 600,
-                    child: _buildFormInput('Surgery', _surgeryController)),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DatePickerInput(
+
+            // Row 1 - Modified to be responsive
+            if (isLargeScreen) ...[
+              Row(
+                children: [
+                  Container(
+                    width:  screenWidth * 0.313,
+                    child: _buildFormInput('Surgery', _surgeryController),
+                  ),
+                  SizedBox(width: fieldSpacing),
+                  Expanded(
+                    child: DatePickerInput(
+                      label: 'Date',
+                      initialDate: _selectedDate,
+                      onDateSelected: (date) {
+                        setState(() => _selectedDate = date);
+                      },
+                      hintlabel: '',
+                    ),
+                  ),
+                  SizedBox(width: fieldSpacing),
+                  Expanded(child: _buildFormInput('Surgeon', _surgeonController)),
+                ],
+              ),
+            ] else ...[
+              Column(
+                children: [
+                  Container(
+                    width: formFieldWidth,
+                    child: _buildFormInput('Surgery', _surgeryController),
+                  ),
+                  SizedBox(height: fieldSpacing),
+                  DatePickerInput(
                     label: 'Date',
                     initialDate: _selectedDate,
                     onDateSelected: (date) {
                       setState(() => _selectedDate = date);
-                    }, hintlabel: '',
+                    },
+                    hintlabel: '',
                   ),
-                ),
-           /*     const SizedBox(width: 12),
-                Expanded(child: _buildDatePickerField()),*/
-                const SizedBox(width: 16),
-                Expanded(child: _buildFormInput('Surgeon', _surgeonController)),
-              ],
-            ),
-            const SizedBox(height: 12),
+                  SizedBox(height: fieldSpacing),
+                  _buildFormInput('Surgeon', _surgeonController),
+                ],
+              ),
+            ],
+            SizedBox(height: fieldSpacing),
 
-            // Row 2
-            Row(
-              children: [
-                Expanded(child: _buildFormInput('Assistant', _assistantController)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildFormInput('Anaesthetist/s', _anaesthetistController)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildFormInput('Anaesthesia', _anaesthesiaController)),
-                const SizedBox(width: 16),
-                Container(
-                  width: 285,
-                  child: Column(
+            // Row 2 - Modified to be responsive
+            if (isLargeScreen) ...[
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  final timeFieldWidth = isMobile ? constraints.maxWidth * 1.0 : 285.0; // Explicitly convert to double
+
+                  return Wrap(
+                    spacing: fieldSpacing,
+                    runSpacing: fieldSpacing,
+                    alignment: WrapAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: isMobile ? constraints.maxWidth * 1.0 : constraints.maxWidth * 0.240, // Convert to double
+                        child: _buildFormInput('Assistant', _assistantController),
+                      ),
+                      SizedBox(
+                        width: isMobile ? constraints.maxWidth * 1.0 : constraints.maxWidth * 0.240, // Convert to double
+                        child: _buildFormInput('Anaesthetist/s', _anaesthetistController),
+                      ),
+                      SizedBox(
+                        width: isMobile ? constraints.maxWidth * 1.0 : constraints.maxWidth * 0.240, // Convert to double
+                        child: _buildFormInput('Anaesthesia', _anaesthesiaController),
+                      ),
+                      Container(
+                        width: timeFieldWidth, // Now properly typed as double
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Time taken:',
+                                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  child: CustomTextField(
+                                    maxLength: 2,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                    ],
+                                    controller: _timetakenHrController,
+                                    hintText: '00',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Hr',
+                                    style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 60,
+                                  child: CustomTextField(
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                    ],
+                                    maxLength: 2,
+                                    controller: _timetakenMinController,
+                                    hintText: '00',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Min',
+                                    style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              )
+            ] else ...[
+              Column(
+                children: [
+                  _buildFormInput('Assistant', _assistantController),
+                  SizedBox(height: fieldSpacing),
+                  _buildFormInput('Anaesthetist/s', _anaesthetistController),
+                  SizedBox(height: fieldSpacing),
+                  _buildFormInput('Anaesthesia', _anaesthesiaController),
+                  SizedBox(height: fieldSpacing),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
@@ -486,8 +588,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                           SizedBox(
                             width: 60,
                             child: CustomTextField(
+                              maxLength: 2,
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                               ],
                               controller: _timetakenHrController,
                               hintText: '00',
@@ -501,8 +604,9 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                             width: 60,
                             child: CustomTextField(
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                               ],
+                              maxLength: 2,
                               controller: _timetakenMinController,
                               hintText: '00',
                               keyboardType: TextInputType.number,
@@ -514,48 +618,57 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
+            SizedBox(height: fieldSpacing),
 
-            const SizedBox(height: 12),
-
-            // Row 3
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                    width: 600,
-                    child: _buildFormInput('Location', _findingsController, maxLines: 1)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildFormInput('Implants used, if any', _implantsController, maxLines: 3)),
-
-              ],
-            ),
-            const SizedBox(height: 12),
+            // Row 3 - Modified to be responsive
+            if (isLargeScreen) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width:  screenWidth * 0.313,
+                    child: _buildFormInput('Location', _findingsController, maxLines: 1),
+                  ),
+                  SizedBox(width: fieldSpacing),
+                  Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
+                  SizedBox(width: fieldSpacing),
+                  Expanded(child: _buildFormInput('Implants used, if any', _implantsController, maxLines: 3)),
+                ],
+              ),
+            ] else ...[
+              Column(
+                children: [
+                  Container(
+                    width: formFieldWidth,
+                    child: _buildFormInput('Location', _findingsController, maxLines: 1),
+                  ),
+                  SizedBox(height: fieldSpacing),
+                  _buildFormInput('Findings', _findingsController, maxLines: 3),
+                  SizedBox(height: fieldSpacing),
+                  _buildFormInput('Implants used, if any', _implantsController, maxLines: 3),
+                ],
+              ),
+            ],
+            SizedBox(height: fieldSpacing),
 
             // Implants Upload
             _buildImageUploadField(),
-            const SizedBox(height: 12),
+            SizedBox(height: fieldSpacing),
 
-            // Row 4
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildFormInput('Complications, if any', _complicationsController, maxLines: 3)),
-              ],
-            ),
-            const SizedBox(height: 12),
+            // Row 4 - Modified to be responsive
+            _buildFormInput('Complications, if any', _complicationsController, maxLines: 3),
+            SizedBox(height: fieldSpacing),
 
             // Procedure
             _buildFormInput('Procedure', _procedureController, maxLines: 4),
-            const SizedBox(height: 12),
+            SizedBox(height: fieldSpacing),
 
             // Notes
             _buildFormInput('Notes', _furtherPlanController, maxLines: 2),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Buttons
             Row(

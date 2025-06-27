@@ -72,7 +72,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
     } catch (e) {
       setState(() {
         log('${e.toString()}');
-        errorMessage = 'Error fetching patients.';
+        errorMessage = 'No results found.';
         isLoading = false;
       });
     }

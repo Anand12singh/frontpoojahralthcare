@@ -324,11 +324,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     index: 5,
                   ),*/
                   const Spacer(),
-                  _buildSidebarItem(
+                /*  _buildSidebarItem(
                     assetPath: 'assets/settingicon.png',
                     label: 'Settings',
                     index: 5,
-                  ),
+                  ),*/
                   _buildSidebarItem(
                     assetPath: 'assets/logouticon.png',
                     label: 'Logout',

@@ -76,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
+
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
       if (!mounted) return;
@@ -102,7 +103,10 @@ class _LoginScreenState extends State<LoginScreen>
 
         if (mounted) {
           if (response.statusCode == 200 && responseData['status'] == true) {
+
+
             final token = responseData['token'] ?? responseData['access_token'];
+
             if (token != null) {
               await AuthService.saveToken(token);
             }

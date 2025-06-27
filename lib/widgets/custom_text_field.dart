@@ -315,6 +315,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       autocorrect: widget.autocorrect,
       enableSuggestions: widget.enableSuggestions,
       decoration: InputDecoration(
+        counterText: "",
         labelText: widget.label,
         hintText: widget.hintText,
         helperText: widget.helperText,
@@ -346,7 +347,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         contentPadding: effectiveContentPadding,
         filled: effectiveFilled,
         fillColor: effectiveFillColor,
-        counterText: widget.counterText,
+
         counterStyle: widget.errorStyle,
         alignLabelWithHint: true,
         floatingLabelBehavior: FloatingLabelBehavior.auto,

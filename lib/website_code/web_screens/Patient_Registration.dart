@@ -1420,7 +1420,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   FormInput(label: 'First Name',hintlabel: "Enter First Name",  controller: _firstNameController,),
                   FormInput(label: 'Last Name',hintlabel: "Enter Last Name",  controller: _lastNameController,),
                   FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number", controller: _phoneController,
-          
+         maxcount: 10,
                     inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                   ],),
@@ -1430,14 +1430,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
                   FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),
                   FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
-          
+          maxcount: 6,
                       inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                 ],),
                   FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController, inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
                   ]),
-                  FormInput(label: 'Age',hintlabel: "Enter Country",controller: _ageController, inputFormatters: [
+                  FormInput(label: 'Age',hintlabel: "Enter Country",maxcount: 3,controller: _ageController, inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                   ],),
                   DropdownInput<String>(
@@ -1499,6 +1499,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     label: 'Height (cms)',
                     hintlabel: "Enter Height (cms)",
                     controller: _heightController,
+                    maxcount: 4,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                     ],
@@ -1507,6 +1508,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   FormInput(
                     label: 'Weight (kg)',
                     hintlabel: "Enter Weight",
+                    maxcount: 4,
                     controller: _weightController,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
@@ -1734,8 +1736,12 @@ crossAxisAlignment: CrossAxisAlignment.start,
                         ),
 
                         if(_tempStatus=='Febrile')
-                         FormInput(label: 'Temperature',controller: _tempController,),
-                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,),
+                         FormInput(label: 'Temperature',controller: _tempController,maxcount: 4,   inputFormatters: [
+                           FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                         ],),
+                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5,   inputFormatters: [
+                         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+      ],),
                          Container(
                            width: 308,
                            child: Row(
@@ -2488,6 +2494,7 @@ class FormInput extends StatelessWidget {
   final String hintlabel;
   final bool isDate;
   final int maxlength;
+  final int maxcount;
   final Color fillColor; // Fixed type and naming
   final TextEditingController? controller;
   final List<TextInputFormatter>? inputFormatters;
@@ -2498,6 +2505,7 @@ class FormInput extends StatelessWidget {
     super.key,
     required this.label,
     this.maxlength = 1,
+    this.maxcount = 200,
     this.isDate = false,
     this.hintlabel = "",
     this.fillColor=Colors.transparent, // Make this required
@@ -2519,12 +2527,15 @@ class FormInput extends StatelessWidget {
                   fontWeight: FontWeight.w600, color: AppColors.primary)),
           const SizedBox(height: 4),
           CustomTextField(
+
             fillColor: fillColor, // Use the passed fillColor
             enabled: !readOnly,
             maxLines: maxlength,
+            maxLength: maxcount,
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,
             keyboardType: TextInputType.text,
+
             inputFormatters: inputFormatters,
             textInputAction: TextInputAction.next,
             validator: (value) {

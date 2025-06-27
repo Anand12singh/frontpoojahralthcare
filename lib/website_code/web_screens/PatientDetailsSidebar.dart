@@ -52,6 +52,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         if (data['status'] == true && data['data'].isNotEmpty) {
           setState(() {
             patientData = data['data'][0];
+            print("patientData");
+            print(patientData);
             // Safely initialize summaryController
             if (patientData!['summary'] != null && patientData!['summary'].isNotEmpty) {
               summaryController.text = patientData!['summary'][0]['summary'] ?? "";
@@ -101,16 +103,16 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     final visitInfo = patientData!['PatientVisitInfo'][0];
     List<String> historyParts = [];
 
-    if (visitInfo['history_of_dm_status'] == true) {
+    if (visitInfo['history_of_dm_status'] == 1) {
       historyParts.add('DM');
     }
-    if (visitInfo['hypertension_status'] == true) {
+    if (visitInfo['hypertension_status'] == 1) {
       historyParts.add('Hypertension');
     }
-    if (visitInfo['IHD_status'] == true) {
+    if (visitInfo['IHD_status'] == 1) {
       historyParts.add('IHD');
     }
-    if (visitInfo['COPD_status'] == true) {
+    if (visitInfo['COPD_status'] == 1) {
       historyParts.add('COPD');
     }
 
@@ -121,8 +123,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     if (patientData == null || patientData!['patient'].isEmpty) return 'Unknown';
 
     final patient = patientData!['patient'][0];
-    if (patient['other_location'] != null && patient['other_location'].isNotEmpty) {
-      return patient['other_location'];
+    if (patient['location'] != null && patient['location'].isNotEmpty) {
+      return patient['location'];
     }
 
     switch (patient['location']) {
@@ -203,6 +205,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
   }
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     if (isLoading) {
       return const Center(child: CircularProgressIndicator(
         color: AppColors.primary,
@@ -235,50 +238,108 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
               SizedBox(height: 8),
               buildInfoBlock("PH ID", "${patient['phid']}"),
               buildInfoBlock("History", _getHistoryText()),
-              Row(
+              screenWidth > 600
+                  ? Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  buildInfoBlock("Location", _getLocationText()),
-                  Container(
-                    width: 150,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        buildInfoBlock("Occupation", patient['occupation'] ?? 'Not specified'),
-                      ],
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Location",
+                      patient['location'] != 'Others'
+                          ? patient['location'] ??'Not specified'
+                          : patient['other_location']??'Not specified',
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Occupation",
+                      patient['occupation'] ?? 'Not specified',
+                    ),
+                  ),
+                ],
+              )
+                  : Column(
+                children: [
+                  buildInfoBlock(
+                    "Location",
+                    patient['location'] != 'Others'
+                        ? patient['location']
+                        : patient['other_location'],
+                  ),
+                  buildInfoBlock(
+                    "Occupation",
+                    patient['occupation'] ?? 'Not specified',
                   ),
                 ],
               ),
 
-              Row(
+              // Row 2
+              screenWidth > 600
+                  ? Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  buildInfoBlock("Diagnosis", dischargeInfo?['diagnosis'] ?? 'Not specified'),
-                  Container(
-                      width: 150,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          buildInfoBlock("Surgery Type", dischargeInfo?['operation_type'] ?? 'Not specified'),
-                        ],
-                      )),
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Diagnosis",
+                      dischargeInfo?['diagnosis'] ?? 'Not specified',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Surgery Type",
+                      dischargeInfo?['operation_type'] ?? 'Not specified',
+                    ),
+                  ),
+                ],
+              )
+                  : Column(
+                children: [
+                  buildInfoBlock(
+                    "Diagnosis",
+                    dischargeInfo?['diagnosis'] ?? 'Not specified',
+                  ),
+                  buildInfoBlock(
+                    "Surgery Type",
+                    dischargeInfo?['operation_type'] ?? 'Not specified',
+                  ),
                 ],
               ),
 
-              Row(
+              // Row 3
+              screenWidth > 600
+                  ? Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  buildInfoBlock("Chief Complaints", patient['doctor_note'] ?? 'Not specified'),
-                  Container(width: 150,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          buildInfoBlock("Clinical Diagnosis", dischargeInfo?['diagnosis'] ?? 'Not specified'),
-                        ],
-                      )),
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Chief Complaints",
+                      patient['chief_complaints'] ?? 'Not specified',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: buildInfoBlock(
+                      "Clinical Diagnosis",
+                      dischargeInfo?['diagnosis'] ?? 'Not specified',
+                    ),
+                  ),
+                ],
+              )
+                  : Column(
+                children: [
+                  buildInfoBlock(
+                    "Chief Complaints",
+                    patient['doctor_note'] ?? 'Not specified',
+                  ),
+                  buildInfoBlock(
+                    "Clinical Diagnosis",
+                    dischargeInfo?['diagnosis'] ?? 'Not specified',
+                  ),
                 ],
               ),
+
 
               Row(
                 children: [

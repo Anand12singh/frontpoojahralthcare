@@ -517,14 +517,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                             ),
                             margin: const EdgeInsets.only(bottom: 2),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
+                              color: AppColors.primaryLight,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
+                             // border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   _getFileIcon(file['type']),
+                                  size: 16,
                                   color: _getFileIconColor(file['type']),
                                 ),
                                 const SizedBox(width: 8),
@@ -535,7 +536,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                                       Text(
                                         file['name'],
                                         style: const TextStyle(
-                                          fontSize: 14,
+
                                           fontWeight: FontWeight.w500,
                                         ),
                                         overflow: TextOverflow.ellipsis,
@@ -554,7 +555,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                                   icon: const Icon(
                                     Icons.close,
                                     color: Colors.red,
-                                    size: 18,
+                                    size: 16,
                                   ),
                                   onPressed: () => _removeFile(index),
                                 ),

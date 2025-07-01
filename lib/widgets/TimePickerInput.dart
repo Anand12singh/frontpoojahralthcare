@@ -94,8 +94,27 @@ class _TimePickerInputState extends State<TimePickerInput> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+
+    double fieldWidth;
+
+    if (screenWidth < 600) {
+      // Small screens - use full width
+      fieldWidth = double.infinity;
+    }  else if (screenWidth < 1200) {
+      // Medium screens - half screen
+      fieldWidth = screenWidth * 0.45;
+    } else if (screenWidth == 1440) {
+      // Medium screens - half screen
+      fieldWidth = 250;
+    }else {
+      // Large screens - fixed comfortable width
+      fieldWidth = 275;
+    }
+
     return SizedBox(
-      width: 275,
+      width: fieldWidth,
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

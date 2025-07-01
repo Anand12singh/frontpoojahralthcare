@@ -11,6 +11,7 @@ import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/patient_info_screen.dart';
+import '../../services/api_services.dart';
 import '../../utils/colors.dart';
 import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DatePickerInput.dart';
@@ -287,55 +288,48 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _fetchLocations();
   }
   Future<void> _submit() async {
+    final params = {
+      "first_name": _firstNameController.text.trim(),
+      "last_name": _lastNameController.text.trim(),
+      "mobile_no": _phoneController.text.trim(),
+    };
 
+    await APIManager().apiRequest(
+      context,
+      API.checkpatientinfo,
+      params: params,
+      onSuccess: (responseBody) {
+        final responseData = json.decode(responseBody);
 
-
-    try {
-      final headers = {
-        'Content-Type': 'application/json',
-        'Cookie':
-        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
-      };
-
-      final response = await http.post(
-        Uri.parse('$localurl/checkpatientinfo'),
-        headers: headers,
-        body: json.encode({
-          "first_name": _firstNameController.text.trim(),
-          "last_name": _lastNameController.text.trim(),
-          "mobile_no": _phoneController.text.trim(),
-        }),
-      );
-
-      log('API Response: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
         if (responseData['status'] == true) {
           final data = responseData['data'][0];
           int patientExist = data['patientExist'] ?? 0;
-          print("patientExist");
-          print(patientExist);
+          debugPrint("patientExist: $patientExist");
 
-
-
-          GlobalPatientData.patientExist= patientExist;
+          GlobalPatientData.patientExist = patientExist;
 
           if (GlobalPatientData.patientExist == 2) {
+            // Patient exists — fetch patient data
             _fetchPatientData();
           }
         } else {
-          showTopRightToast(context,responseData['message'] ?? 'Submission failed',backgroundColor: Colors.red);
+          showTopRightToast(
+            context,
+            responseData['message'] ?? 'Submission failed',
+            backgroundColor: Colors.red,
+          );
         }
-      } else {
-        showTopRightToast(context,'API Error: ${response.statusCode}',backgroundColor: Colors.red);
-      }
-    } catch (e) {
-      showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
-    } finally {
-
-    }
+      },
+      onFailure: (error) {
+        showTopRightToast(
+          context,
+          'Error: $error',
+          backgroundColor: Colors.red,
+        );
+      },
+    );
   }
+
   void _calculateBMI() {
     if (_heightController.text.isNotEmpty && _weightController.text.isNotEmpty) {
       try {
@@ -359,14 +353,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
   Future<void> _fetchLocations() async {
     setState(() => _isLoading = true);
-    try {
-      final response = await http.get(
-        Uri.parse('$localurl/getlocation'),
-        headers: {'Accept': 'application/json'},
-      );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+    await APIManager().apiRequest(
+      context,
+      API.getlocation,
+      params: {}, // No parameters for GET
+      onSuccess: (responseBody) {
+        final data = json.decode(responseBody);
+
         if (data['success'] == true) {
           setState(() {
             _locations = List<Map<String, dynamic>>.from(data['locations']);
@@ -374,21 +368,93 @@ class _OnboardingFormState extends State<OnboardingForm> {
               _selectedLocationId ??= _locations.first['id'].toString();
               _selectedLocationName = _locations.first['location'].toString();
             }
-            print("_locations");
-            print(_locations);
+            debugPrint("_locations: $_locations");
           });
+        } else {
+          showTopRightToast(
+            context,
+            data['message'] ?? "Failed to fetch locations.",
+            backgroundColor: Colors.red,
+          );
         }
-      }
+      },
+      onFailure: (error) {
+        showTopRightToast(
+          context,
+          "Error fetching locations: $error",
+          backgroundColor: Colors.red,
+        );
+      },
+    );
+
+    setState(() => _isLoading = false);
+  }
+
+
+  Future<void> _fetchPatientData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final requestBody = {'id': Global.phid};
+
+      await APIManager().apiRequest(
+        context,
+        API.getPatientById,
+        params: requestBody,
+        onSuccess: (responseBody) {
+          final data = json.decode(responseBody);
+          log('Patient data: $data');
+
+          if (data['status'] == true && data['data'] != null) {
+            final responseData =
+            data['data'] is List ? data['data'][0] : data['data'];
+
+            setState(() {
+              _patientData = responseData['patient'] is List
+                  ? responseData['patient'][0]
+                  : responseData['patient'] ?? {};
+
+              _visitData = responseData['PatientVisitInfo'] is List
+                  ? (responseData['PatientVisitInfo'].isNotEmpty
+                  ? responseData['PatientVisitInfo'][0]
+                  : {})
+                  : responseData['PatientVisitInfo'] ?? {};
+
+              _documentData = responseData['PatientDocumentInfo'] ?? {};
+
+              log('_documentData $_documentData');
+              log('_patientData $_patientData');
+
+              _populateFormFields();
+            });
+          } else {
+            throw Exception('API returned false status or no data');
+          }
+        },
+        onFailure: (error) {
+          debugPrint('Error fetching patient data: $error');
+          showTopRightToast(
+            context,
+            'Error loading patient data: $error',
+            backgroundColor: Colors.red,
+          );
+          _initializeWithEmptyData();
+        },
+      );
     } catch (e) {
-      debugPrint('Error fetching locations: $e');
+      debugPrint('Unexpected error: $e');
+      showTopRightToast(
+        context,
+        'Unexpected error loading patient data: ${e.toString()}',
+        backgroundColor: Colors.red,
+      );
+      _initializeWithEmptyData();
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-
-
-  Future<void> _fetchPatientData() async {
+/*  Future<void> _fetchPatientData() async {
     setState(() => _isLoading = true);
     try {
       final requestBody = {'id': Global.phid};
@@ -444,7 +510,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     } finally {
       setState(() => _isLoading = false);
     }
-  }
+  }*/
 
   void _initializeWithEmptyData() {
     setState(() {
@@ -1414,7 +1480,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
               ),
               const SizedBox(height: 20),
               Wrap(
-                spacing: 20,
+                spacing: 16,
                 runSpacing: 16,
                 children:  [
                   FormInput(label: 'First Name',hintlabel: "Enter First Name",  controller: _firstNameController,),
@@ -1445,7 +1511,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
                       DropdownMenuItem(value: 'Female', child: Text('Female')),
-          
+
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -1466,7 +1532,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     },
                     initialDate: _ConsulationDate, // Pass the initial date if needed
                   ),
-          
+
                   FormInput(label: 'Referral by',hintlabel: "Enter Referral by",controller: _referralController,),
                   DropdownInput<String>(
                     label: 'Clinic Location',
@@ -1523,7 +1589,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
             fillColor: Colors.grey.shade100,
             readOnly: true, // Add this property
           ),
-          
+
                 ],
               ),
               const SizedBox(height: 20),
@@ -1594,9 +1660,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     const Text("2. History",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-crossAxisAlignment: CrossAxisAlignment.start,
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 14,
+                     // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     // crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.spaceBetween,
+
                       children: [
 
                         Column(
@@ -1663,7 +1733,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                     const SizedBox(height: 8),
 
                     Wrap(
-                      spacing: 20,
+                      spacing: 16,
                       runSpacing: 16,
                       children:  [
                         FormInput(label: 'Any Other Illness',maxlength: 5,controller: _otherIllnessController,),
@@ -1696,7 +1766,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 20,
+                      spacing: 16,
                       runSpacing: 16,
                       children: [
 
@@ -1935,7 +2005,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 20,
+                      spacing: 16,
                       runSpacing: 16,
                       children:  [
                         FormInput(label: 'RS (Respiratory System)',controller: _rsController,),
@@ -2000,7 +2070,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 20,
+                      spacing: 16,
                       runSpacing: 16,
                       children:  [
                         SizedBox(
@@ -2150,8 +2220,8 @@ crossAxisAlignment: CrossAxisAlignment.start,
                   ],),
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 20,
-                    runSpacing: 14,
+                    spacing: 16,
+                    runSpacing: 16,
                     children:  [
                       SizedBox(
                           width: double.infinity,
@@ -2242,7 +2312,7 @@ crossAxisAlignment: CrossAxisAlignment.start,
                   ),*/
                   SizedBox(height: 10,),
                   Row(
-                    spacing: 10,
+                    spacing: 16,
                     children: [
                      // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
                       DatePickerInput(
@@ -2487,15 +2557,13 @@ crossAxisAlignment: CrossAxisAlignment.start,
   }
 }
 
-
-
 class FormInput extends StatelessWidget {
   final String label;
   final String hintlabel;
   final bool isDate;
   final int maxlength;
   final int maxcount;
-  final Color fillColor; // Fixed type and naming
+  final Color fillColor;
   final TextEditingController? controller;
   final List<TextInputFormatter>? inputFormatters;
   final bool readOnly;
@@ -2508,7 +2576,7 @@ class FormInput extends StatelessWidget {
     this.maxcount = 200,
     this.isDate = false,
     this.hintlabel = "",
-    this.fillColor=Colors.transparent, // Make this required
+    this.fillColor = Colors.transparent,
     this.controller,
     this.inputFormatters,
     this.readOnly = false,
@@ -2517,30 +2585,49 @@ class FormInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+
+    double fieldWidth;
+
+    if (screenWidth < 600) {
+      // Small screens - use full width
+      fieldWidth = double.infinity;
+    }  else if (screenWidth < 1200) {
+      // Medium screens - half screen
+      fieldWidth = screenWidth * 0.45;
+    } else if (screenWidth == 1440) {
+      // Medium screens - half screen
+      fieldWidth = 250;
+    }else {
+      // Large screens - fixed comfortable width
+      fieldWidth = 275;
+    }
+
     return SizedBox(
-      width: 275,
+      width: fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, color: AppColors.primary)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
           const SizedBox(height: 4),
           CustomTextField(
-
-            fillColor: fillColor, // Use the passed fillColor
+            fillColor: fillColor,
             enabled: !readOnly,
             maxLines: maxlength,
             maxLength: maxcount,
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,
             keyboardType: TextInputType.text,
-
             inputFormatters: inputFormatters,
             textInputAction: TextInputAction.next,
-            validator: (value) {
-              return null;
-            },
+            validator: (value) => null,
             readOnly: readOnly,
             onChanged: onChanged,
           ),

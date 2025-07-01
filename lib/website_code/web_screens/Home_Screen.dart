@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
@@ -283,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: isSidebarCollapsed ? 80 : 220,
             color:Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.only(right: 20,left: 20,bottom: 20,top: 10),
               child: Column(
                 spacing: 4,
                 children: [
@@ -293,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : 'assets/companyNameLogo.png',
                     height: 44,
                   ),
+                  SizedBox(height: 20,),
                   _buildSidebarItem(
                     assetPath: 'assets/Dashboard.png',
                     label: 'Dashboard',
@@ -324,25 +326,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     index: 5,
                   ),*/
                   const Spacer(),
-                /*  _buildSidebarItem(
+                  _buildSidebarItem(
                     assetPath: 'assets/settingicon.png',
                     label: 'Settings',
-                    index: 5,
-                  ),*/
+                    index: 3,
+                  ),
                   _buildSidebarItem(
                     assetPath: 'assets/logouticon.png',
                     label: 'Logout',
-                    index: 5,
+                    index: 4,
                     onTap: _showLogoutConfirmation, // Add this parameter
                   ),
                   Divider(color: AppColors.secondary,),
-                  Image.asset(
+                  isSidebarCollapsed
+                      ?SvgPicture.asset(
+                    'assets/applelogosvg.svg',
+                    height: 20,
+                    // height: null,   // Remove or specify a height if needed
+                  )
+                      : Image.asset(
                     'assets/appstore.png',
-                    //height: 18,
 
-                  ), Image.asset(
-                    'assets/googleplay.png',
-                   // height: 18,
+                  ),
+                  Image.asset(
+
+                    isSidebarCollapsed
+                        ?  'assets/playstorelogo.png'
+                        : 'assets/googleplay.png',
+                    height: isSidebarCollapsed ?20 :null,
 
                   ),
                 ],
@@ -421,9 +432,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: PageView(
                         controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
                         children: pages,
                       ),
                     ),
+
                   ],
                 ),
                 if (_showSearchResults)
@@ -528,12 +541,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Image.asset(
                 assetPath,
-                height: 18,
+                height: 20,
                 color: isSelected ? AppColors.primary : AppColors.secondary,
               ),
               if (!isSidebarCollapsed) ...[
                 const SizedBox(width: 12),
-                Text(
+                 Text(
                   label,
                   style: TextStyle(
                     fontSize: 12,

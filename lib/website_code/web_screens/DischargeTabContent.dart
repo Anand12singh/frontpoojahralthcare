@@ -378,7 +378,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                   const Text('1. Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   Wrap(
-                    spacing: 20,
+                    spacing: 16,
                     runSpacing: 16,
                     children: [
                       FormInput(
@@ -457,7 +457,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                             hintlabel: 'Enter surgery type'
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: FormInput(
                             controller: _drugAllergyController,
@@ -478,7 +478,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 maxlength: 4,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: FormInput(
                             controller: _chiefComplaintsController,
@@ -509,9 +509,13 @@ maxlength: 4,
                 children: [
                   const Text('2. Past History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 14,
+                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // crossAxisAlignment: WrapCrossAlignment.center,
+                    alignment: WrapAlignment.spaceBetween,
+
                     children: [
 
                       Column(
@@ -576,7 +580,7 @@ maxlength: 4,
                   ),
                   const SizedBox(height: 16),
                   Wrap(
-                    spacing: 12,
+                    spacing: 16,
                     runSpacing: 12,
                     children: [
                       FormInput(

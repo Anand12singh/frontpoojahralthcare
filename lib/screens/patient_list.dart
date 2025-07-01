@@ -169,6 +169,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFEAF2FF),
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Patient List',
           style: TextStyle(
@@ -177,11 +178,8 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
             fontSize: 26,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
+
 
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))

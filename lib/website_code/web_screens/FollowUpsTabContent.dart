@@ -347,18 +347,18 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                         if (isEditingList[entry.key])
                           Row(
                             children: [
-                              GestureDetector(
+                            /*  GestureDetector(
                                 onTap: () => _UpdateSingleFollowUp(entry.key),
                                 child: HugeIcon(
                                   icon: HugeIcons.strokeRoundedTick04,
                                   color: AppColors.primary,
 
                                 ),
-                              ),
-                          /*    IconButton(
+                              ),*/
+                              IconButton(
                                 icon: Icon(Icons.check_rounded, color: AppColors.primary),
                                 onPressed: () => _UpdateSingleFollowUp(entry.key),
-                              ),*/
+                              ),
                               IconButton(
                                 icon: Icon(Icons.close_rounded, color: Colors.red),
                                 onPressed: () => _toggleEditMode(entry.key),

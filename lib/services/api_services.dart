@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -8,22 +9,15 @@ enum HTTPMethod { GET, POST, PUT, DELETE }
 
 class ConnectionDetector {
   static Future<bool> checkInternetConnection() async {
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        return true; // Internet is available
-      }
-    } catch (_) {
-      // Internet is not available
-    }
-    return false;
+    var result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
   }
 }
 
 class ConfigManager {
-  static String baseURL = 'https://pooja-healthcare.ortdemo.com/';
+  static String baseURL = 'https://uatpoojahealthcare.ortdemo.com/api';
   static String apiVersion = '';
-  static Duration timeout = Duration();
+  static Duration timeout = const Duration(seconds: 30);
 
   static void loadConfiguration(String configString) {
     Map config = jsonDecode(configString);
@@ -34,18 +28,16 @@ class ConfigManager {
     print('Configuration loaded: $configString');
   }
 
-  static String getBaseURL() {
-    return baseURL;
-  }
+  static String getBaseURL() => baseURL;
 }
 
-// api/api_endpoints.dart
 enum API {
-  // General
-  getLocation,
-  addPatient
-
-  // Other APIs as required...
+  getlocation,
+  frontpatientbyid,
+  addPatient,
+  getPatientById,
+  summaryadd,
+  checkpatientinfo,
 }
 
 class APIManager {
@@ -53,175 +45,96 @@ class APIManager {
 
   APIManager._privateConstructor();
 
-  factory APIManager() {
-    return _instance;
-  }
-  //String? userId =  UserManager().getUserId() ; // Modify the method as per your UserManager
-  Future<String> apiEndPoint(API api,
-      {Map<String, dynamic>? queryParams}) async {
-    var apiPathString = "";
+  factory APIManager() => _instance;
 
+  /// Returns the API endpoint path for a given API enum.
+  Future<String> apiEndPoint(API api) async {
     switch (api) {
-      case API.getLocation:
-        apiPathString = "api/getlocation";
-        break;
-      case API.addPatient:
-        apiPathString = "api/storepatient";
-        break;
-      default:
-        apiPathString = "HomeheaderResponse";
-    }
 
-    print("URL:");
-    print("${ConfigManager.getBaseURL() + apiPathString}");
-    return ConfigManager.getBaseURL() + apiPathString;
+      case API.addPatient:
+        return '${ConfigManager.getBaseURL()}/api/storepatient';
+      case API.getPatientById:
+        return '${ConfigManager.getBaseURL()}/getpatientbyid';
+        case API.frontpatientbyid:
+        return '${ConfigManager.getBaseURL()}/front_patient_by_id';
+        case API.summaryadd:
+        return '${ConfigManager.getBaseURL()}/summary_add';
+        case API.checkpatientinfo:
+        return '${ConfigManager.getBaseURL()}/checkpatientinfo';
+        case API.getlocation:
+        return '${ConfigManager.getBaseURL()}/getlocation';
+      default:
+        throw Exception('API not defined');
+    }
   }
 
+  /// Returns HTTP method type for the API.
   HTTPMethod apiHTTPMethod(API api) {
     switch (api) {
       case API.addPatient:
+      case API.getPatientById:
+      case API.frontpatientbyid:
+      case API.checkpatientinfo:
+      case API.summaryadd:
         return HTTPMethod.POST;
       default:
         return HTTPMethod.GET;
     }
   }
 
+  /// Main method to perform API requests.
   Future<void> apiRequest(
-    BuildContext context,
-    API api, {
-    required dynamic params,
-    required Function onSuccess,
-    required Function onFailure,
-    String? contactid,
-    Map<String, dynamic>? queryParams,
-    String? token,
-  }) async {
+      BuildContext context,
+      API api, {
+        dynamic params,
+        required Function(String) onSuccess,
+        required Function(String) onFailure,
+        String? token,
+      }) async {
     final isConnected = await ConnectionDetector.checkInternetConnection();
 
     if (!isConnected) {
       onFailure("Please check your Internet Connection.");
-      return; // Exit early if no internet connection
+      return;
     }
 
     try {
-      // Pass the queryParams when calling apiEndPoint
-      final String url = await apiEndPoint(api, queryParams: queryParams);
-      final body = params != null && params.isNotEmpty
-          ? jsonEncode(params) // Send JSON when params exist
-          : null;
-
-      var response;
-
-      // Define headers
-      Map<String, String> headers = {
-        //"Content-Type": "application/x-www-form-urlencoded",
+      final url = await apiEndPoint(api);
+      final method = apiHTTPMethod(api);
+      final headers = {
         'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty)
+          'Authorization': 'Bearer $token',
       };
 
-      // Add Authorization Bearer token if provided
-      if (token != null && token.isNotEmpty) {
-        print("token : $token");
-        headers['Authorization'] = 'Bearer $token';
-      }
-
-      // Detect if there are any files in params
-      bool hasFiles = params != null &&
-          (params['adhaar_image'] != null || params['pancard_image'] != null);
-
-      // Debugging details
       print("Request URL: $url");
       print("Request Headers: $headers");
       print("Request Params: $params");
 
-      // Choose HTTP method based on the API type
-      if (apiHTTPMethod(api) == HTTPMethod.GET) {
-        // Send GET request with token in headers
+      http.Response response;
+
+      if (method == HTTPMethod.GET) {
         response = await http
-            .get(
-              Uri.parse(url),
-              headers: headers,
-            )
-            .timeout(const Duration(seconds: 30));
+            .get(Uri.parse(url), headers: headers)
+            .timeout(ConfigManager.timeout);
       } else {
-        // Check if any file is being uploaded
-        if (params != null &&
-            (params['adhaar_front_image'] != null ||
-                params['adhaar_back_image'] != null ||
-                params['pancard_image'] != null)) {
-          var request = http.MultipartRequest("POST", Uri.parse(url));
-
-          // Add headers to multipart request
-          request.headers.addAll(headers);
-
-          // Add normal params to the request
-          params.forEach((key, value) {
-            if (value != null &&
-                key != 'adhaar_front_image' &&
-                key != 'adhaar_back_image' &&
-                key != 'pancard_image') {
-              request.fields[key] = value.toString();
-            }
-          });
-
-          // Add Aadhaar image if present
-          if (params['adhaar_front_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath(
-                'adhaar_front_image', params['adhaar_front_image']));
-          }
-
-          if (params['adhaar_back_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath(
-                'adhaar_back_image', params['adhaar_back_image']));
-          }
-
-          // Add Pancard image if present
-          if (params['pancard_image'] != null) {
-            request.files.add(await http.MultipartFile.fromPath(
-                'pancard_image', params['pancard_image']));
-          }
-
-          // Send the multipart request
-          response = await http.Response.fromStream(await request.send());
+        if (_containsFileParams(params)) {
+          response = await _sendMultipartRequest(url, params, headers);
         } else {
-          // Send POST request without files
           response = await http
               .post(
-                Uri.parse(url),
-                headers: headers,
-                body: body,
-              )
-              .timeout(const Duration(seconds: 30));
+            Uri.parse(url),
+            headers: headers,
+            body: params != null ? jsonEncode(params) : null,
+          )
+              .timeout(ConfigManager.timeout);
         }
       }
 
-      /*if (apiHTTPMethod(api) == HTTPMethod.GET) {
-        // Send GET request with token in headers
-        response = await http.get(
-          Uri.parse(url),
-          headers: headers,
-        ).timeout(const Duration(seconds: 30)); // Set the timeout to 30 seconds
-      } else {
-        // Send POST request
-        response = await http.post(
-          Uri.parse(url),
-          headers: headers,
-          */ /*body: params != null
-              ? Uri(queryParameters: params).query // Encode parameters as form-data
-              : null,*/ /*
-          body: body,
-          //body: jsonEncode(params)
-        ).timeout(const Duration(seconds: 30)); // Set the timeout to 30 seconds
-      }*/
-
-      // Handle response
       if (response.statusCode == 200) {
         onSuccess(response.body);
-        print("params");
-        print(params.toString());
       } else {
         onFailure('Error: ${response.statusCode}');
-        print("params");
-        print(params.toString());
       }
     } catch (e) {
       if (e is TimeoutException) {
@@ -230,5 +143,52 @@ class APIManager {
         onFailure("Request failed: $e");
       }
     }
+  }
+
+  /// Helper to check if parameters contain file uploads.
+  bool _containsFileParams(Map? params) {
+    if (params == null) return false;
+    return params.containsKey('adhaar_front_image') ||
+        params.containsKey('adhaar_back_image') ||
+        params.containsKey('pancard_image');
+  }
+
+  /// Handles multipart file upload requests.
+  Future<http.Response> _sendMultipartRequest(
+      String url,
+      Map params,
+      Map<String, String> headers,
+      ) async {
+    var request = http.MultipartRequest("POST", Uri.parse(url))
+      ..headers.addAll(headers);
+
+    // Add regular fields
+    params.forEach((key, value) {
+      if (value != null &&
+          key != 'adhaar_front_image' &&
+          key != 'adhaar_back_image' &&
+          key != 'pancard_image') {
+        request.fields[key] = value.toString();
+      }
+    });
+
+    // Add files if present
+    if (params['adhaar_front_image'] != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+          'adhaar_front_image', params['adhaar_front_image']));
+    }
+
+    if (params['adhaar_back_image'] != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+          'adhaar_back_image', params['adhaar_back_image']));
+    }
+
+    if (params['pancard_image'] != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+          'pancard_image', params['pancard_image']));
+    }
+
+    final streamedResponse = await request.send();
+    return await http.Response.fromStream(streamedResponse);
   }
 }

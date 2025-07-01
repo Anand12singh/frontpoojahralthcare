@@ -528,6 +528,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                           children: [
                             const Text('Time taken:',
                                 style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
                                 SizedBox(

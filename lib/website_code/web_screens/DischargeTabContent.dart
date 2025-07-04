@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 import 'package:toast/toast.dart';
 
+import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
@@ -375,7 +376,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('1. Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                   Text('1. Information', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 16,
@@ -507,7 +508,7 @@ maxlength: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('2. Past History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                   Text('2. Past History', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 16,
@@ -652,7 +653,7 @@ maxlength: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('3. Upload Documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                   Text('3. Upload Documents', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   DocumentUploadWidget(
                     label: "Upload Documents",

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
+import '../constants/ResponsiveUtils.dart';
 import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
@@ -189,9 +190,9 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding:  EdgeInsets.all(16),
             child: SizedBox(
-              width: 350,
+              width:  ResponsiveUtils.scaleWidth(context, 350),
               child: CustomTextField(
                 controller: searchController,
                 onChanged: filterPatients,
@@ -203,6 +204,7 @@ prefixIcon: Icons.search_rounded,
           ),
           Expanded(
             child: Container(
+
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -219,15 +221,15 @@ prefixIcon: Icons.search_rounded,
                         topLeft: Radius.circular(12),
                       ),
                     ),
-                    child: const Padding(
+                    child:  Padding(
                       padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
                       child: Row(
                         children: [
-                          Expanded(flex: 2, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
-                          Expanded(flex: 2, child: Text("Patient Name", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
-                          Expanded(flex: 2, child: Text("Phone Number", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
-                          Expanded(flex: 2, child: Text("Last Visit", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
-                          Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
+                          Expanded(flex: 2, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                          Expanded(flex: 2, child: Text("Patient Name", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                          Expanded(flex: 2, child: Text("Phone Number", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                          Expanded(flex: 2, child: Text("Last Visit", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                          Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                         ],
                       ),
                     ),
@@ -242,16 +244,16 @@ prefixIcon: Icons.search_rounded,
                           padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 2, child: Text(patient['phid'] ?? '')),
-                              Expanded(flex: 2, child: Text(patient['name'] ?? '')),
-                              Expanded(flex: 2, child: Text(patient['phone'] ?? '')),
-                              Expanded(flex: 2, child: Text(patient['lastVisit'] ?? '')),
+                              Expanded(flex: 2, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                              Expanded(flex: 2, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                              Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                              Expanded(flex: 2, child: Text(patient['lastVisit'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                               Expanded(
                                 flex: 1,
-                                child: Row(
+                                child: Wrap(
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.edit_outlined , color: AppColors.primary),
+                                      icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
                                       onPressed: () {
 
                                         GlobalPatientData.firstName = patient['name'].split(' ')[0];
@@ -282,7 +284,7 @@ prefixIcon: Icons.search_rounded,
                                       },
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                      icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
                                       onPressed: () {
                                         _showDeleteDialog(context, patient['phid']);
                                       },

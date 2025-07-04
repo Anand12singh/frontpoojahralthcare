@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../utils/colors.dart';
 import '../../widgets/DatePickerInput.dart';
@@ -447,7 +448,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('1. Surgery Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+             Text('1. Surgery Details', style: TextStyle(      fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold,)),
             const SizedBox(height: 16),
 
 
@@ -526,8 +527,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Time taken:',
-                                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                             Text('Time taken:',
+                                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary,      fontSize: ResponsiveUtils.fontSize(context, 14))),
                             const SizedBox(height: 4),
                             Row(
                               children: [
@@ -704,7 +705,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+        Text(label, style:  TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
         const SizedBox(height: 4),
         CustomTextField(
           controller: controller,

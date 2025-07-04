@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 
 class DropdownInput<T> extends StatefulWidget {
@@ -87,9 +88,10 @@ class _DropdownInputState<T> extends State<DropdownInput<T>> {
           Text(
             widget.label,
             style: widget.labelStyle ??
-                const TextStyle(
+                 TextStyle(
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
+                    fontSize: ResponsiveUtils.fontSize(context, 14)
                 ),
           ),
           const SizedBox(height: 4),

@@ -50,6 +50,7 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_pdfview: ^1.4.0
   syncfusion_flutter_pdfviewer: ^29.1.35
+  syncfusion_flutter_datepicker: ^29.1.38
   url_launcher: ^6.3.1
   html: ^0.15.5
   video_player: ^2.7.0

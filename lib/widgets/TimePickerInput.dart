@@ -137,9 +137,12 @@ class _TimePickerInputState extends State<TimePickerInput> {
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Icon(Icons.access_time_rounded,color: AppColors.primary,size: 20,),
+                  child: GestureDetector(
+                    onTap: () => _selectTime(context),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Icon(Icons.access_time_rounded,color: AppColors.primary,size: 20,),
+                    ),
                   ))
             ],
           ),

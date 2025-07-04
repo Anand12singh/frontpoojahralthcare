@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:hugeicons/hugeicons.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import '../../constants/ResponsiveUtils.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/DatePickerInput.dart';
 import '../../widgets/showTopSnackBar.dart';
@@ -334,8 +335,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       children: [
                         Text(
                           'Follow up ${followUpEntries.length - entry.key}',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style:  TextStyle(
+                            fontSize: ResponsiveUtils.fontSize(context, 16),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -368,9 +369,12 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Wrap(
+                      runSpacing: 12,
+                    spacing: 16,
+                 alignment: WrapAlignment.spaceBetween,
+                    //  mainAxisAlignment: MainAxisAlignment.start,
+                   //   crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         DatePickerInput(
                           label: 'Date',
@@ -382,7 +386,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             });
                           },
                         ),
-                        const SizedBox(width: 12),
+
                         Expanded(
                           child: FormInput(
                             controller: entry.value.notesController,
@@ -391,7 +395,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             maxlength: 4,
                           ),
                         ),
-                        const SizedBox(width: 12),
+
                         Expanded(
                           child: FormInput(
                             controller: entry.value.treatmentController,
@@ -400,18 +404,19 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             maxlength: 4,
                           ),
                         ),
+                        DatePickerInput(
+                          label: 'Next follow up date',
+                          hintlabel: 'Next follow up date',
+                          initialDate: entry.value.nextfollowupdates,
+                          onDateSelected: (date) {
+                            setState(() {
+                              entry.value.nextfollowupdates = date;
+                            });
+                          },
+                        ),
                       ],
                     ),
-                    DatePickerInput(
-                      label: 'Next follow up date',
-                      hintlabel: 'Next follow up date',
-                      initialDate: entry.value.nextfollowupdates,
-                      onDateSelected: (date) {
-                        setState(() {
-                          entry.value.nextfollowupdates = date;
-                        });
-                      },
-                    ),
+
                     const SizedBox(width: 12),
                  /*   if (_hasInitialData && entry.value.id != null) ...[
                       const SizedBox(height: 8),

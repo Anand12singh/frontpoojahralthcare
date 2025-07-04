@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -257,24 +258,25 @@ class _CustomTextFieldState extends State<CustomTextField> {
           horizontal: 16,
         );
 
-    final effectiveFillColor = widget.fillColor ?? AppColors.surface;
+    final effectiveFillColor = widget.fillColor ?? Colors.white;
     final effectiveFilled = widget.filled ?? true;
 
     final effectiveLabelStyle = widget.labelStyle ??
         TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 16,
+          fontSize:  ResponsiveUtils.fontSize(context, 16)
         );
 
     final effectiveHintStyle = widget.hintStyle ??
         TextStyle(
           color: AppColors.hinttext,
+          fontSize:    ResponsiveUtils.fontSize(context, 16)
         );
 
     final effectiveStyle = widget.style ??
         TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 16,
+          fontSize: ResponsiveUtils.fontSize(context, 16)
         );
 
     final effectiveSuffixIcon = widget.obscureText
@@ -315,7 +317,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
       autocorrect: widget.autocorrect,
       enableSuggestions: widget.enableSuggestions,
       decoration: InputDecoration(
-        counterText: "",
         labelText: widget.label,
         hintText: widget.hintText,
         helperText: widget.helperText,
@@ -328,7 +329,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ? Icon(
           widget.prefixIcon,
           color: AppColors.primary.withOpacity(0.8),
-          size: 20,
+          size:ResponsiveUtils.fontSize(context, 20)
         )
             : null,
 
@@ -346,8 +347,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
         focusedErrorBorder: effectiveFocusedErrorBorder,
         contentPadding: effectiveContentPadding,
         filled: effectiveFilled,
-        fillColor: effectiveFillColor,
 
+        fillColor: effectiveFillColor,
+        counterText: '',
         counterStyle: widget.errorStyle,
         alignLabelWithHint: true,
         floatingLabelBehavior: FloatingLabelBehavior.auto,

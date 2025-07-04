@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 
+import '../constants/ResponsiveUtils.dart';
+
 // Custom Checkbox Widget
 class CustomCheckbox extends StatefulWidget {
   final String label;
@@ -51,8 +53,8 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: ResponsiveUtils.scaleWidth(context, 24),
+            height: ResponsiveUtils.scaleHeight(context, 24),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
@@ -62,7 +64,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
               color: isChecked ? AppColors.secondary : Colors.transparent,
             ),
             child: isChecked
-                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                ?  Icon(Icons.check, size:  ResponsiveUtils.fontSize(context, 16), color: Colors.white)
                 : null,
           ),
           const SizedBox(width: 12),
@@ -70,7 +72,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
             widget.label,
             style: TextStyle(
               color: isChecked ? AppColors.primary : Colors.grey[700],
-              fontWeight: FontWeight.w600
+              fontWeight: FontWeight.w600,fontSize:  ResponsiveUtils.fontSize(context, 14)
             ),
           ),
         ],
@@ -102,8 +104,8 @@ class CustomRadioButton<T> extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width:  ResponsiveUtils.scaleWidth(context, 24),
+            height:  ResponsiveUtils.scaleHeight(context, 24),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -112,7 +114,7 @@ class CustomRadioButton<T> extends StatelessWidget {
               ),
             ),
             child: isSelected
-                ? Image.asset("assets/checkbox.png")
+                ?Center(child: Icon(Icons.check_circle_rounded,color: AppColors.secondary,size:  ResponsiveUtils.fontSize(context, 20),)) //Image.asset("assets/checkbox.png")
                 : null,
           ),
           const SizedBox(width: 12),

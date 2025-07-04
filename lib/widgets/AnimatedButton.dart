@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../constants/ResponsiveUtils.dart';
+
 class Animatedbutton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onPressed;
@@ -27,7 +29,7 @@ class Animatedbutton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
      // width: double.infinity,
-      height: 50,
+      height:  ResponsiveUtils.scaleHeight(context, 50),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: isLoading
@@ -59,9 +61,9 @@ class Animatedbutton extends StatelessWidget {
           elevation: 0,
         ),
         child: isLoading
-            ? const SizedBox(
-          width: 24,
-          height: 24,
+            ?  SizedBox(
+          width:  ResponsiveUtils.scaleWidth(context, 24),
+          height:  ResponsiveUtils.scaleHeight(context, 24),
           child: CircularProgressIndicator(
             strokeWidth: 3,
             color: Colors.white,
@@ -70,7 +72,7 @@ class Animatedbutton extends StatelessWidget {
             : Text(
           title,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
             color: titlecolor,
             fontWeight: FontWeight.w500,
           ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
+import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 import 'custom_text_field.dart';
 
@@ -59,6 +61,55 @@ class _DatePickerInputState extends State<DatePickerInput> {
   Future<void> _selectDate(BuildContext context) async {
     if (!widget.enabled) return;
 
+    DateTime? pickedDate;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          contentPadding: EdgeInsets.zero,
+          content: SizedBox(
+            width: 600,
+            height: 350,
+            child: SfDateRangePicker(
+              selectionColor: AppColors.secondary,
+
+              selectionMode: DateRangePickerSelectionMode.single,
+              initialSelectedDate: _selectedDate ?? DateTime.now(),
+              showActionButtons: true,
+              onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
+                pickedDate = args.value as DateTime?;
+              },
+              selectionTextStyle: TextStyle(color: Colors.white),
+              todayHighlightColor: AppColors.primary,
+              onSubmit: (Object? val) {
+                Navigator.of(context).pop();
+              },
+              onCancel: () {
+                pickedDate = null;
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+        _controller.text = _formatDate(pickedDate!);
+      });
+      widget.onDateSelected(pickedDate!);
+    }
+  }
+
+
+
+/*
+  Future<void> _selectDate(BuildContext context) async {
+    if (!widget.enabled) return;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -68,7 +119,7 @@ class _DatePickerInputState extends State<DatePickerInput> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: AppColors.primary, // Header background color
+              primary: AppColors.secondary, // Header background color
               onPrimary: Colors.white, // Header text color
               onSurface: Colors.black, // Body text color
             ),
@@ -91,6 +142,7 @@ class _DatePickerInputState extends State<DatePickerInput> {
       widget.onDateSelected(picked);
     }
   }
+*/
 
   @override
   Widget build(BuildContext context) {
@@ -119,8 +171,10 @@ class _DatePickerInputState extends State<DatePickerInput> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(widget.label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, color: AppColors.primary)),
+              style:  TextStyle(
+                  fontWeight: FontWeight.w600, color: AppColors.primary
+              ,  fontSize: ResponsiveUtils.fontSize(context, 14)
+              )),
           const SizedBox(height: 4),
           Stack(
             children: [
@@ -137,9 +191,12 @@ class _DatePickerInputState extends State<DatePickerInput> {
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Icon(Icons.calendar_month_outlined,color: AppColors.primary,size: 20,),
+                  child: GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Icon(Icons.calendar_month_outlined,color: AppColors.primary,size: 20,),
+                    ),
                   ))
             ],
           ),

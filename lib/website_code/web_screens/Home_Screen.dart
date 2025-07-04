@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/patient_list.dart';
@@ -128,22 +129,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
   void _handleSearch(String query) {
-    setState(() {
-      _showSearchResults = query.isNotEmpty;
-      if (query.isEmpty) {
+    if (query.isEmpty) {
+      setState(() {
+        _showSearchResults = false;
         filteredPatients = List.from(patients);
-      } else {
-        filteredPatients = patients.where((patient) {
-          final name = patient['name']?.toString().toLowerCase() ?? '';
-          final phid = patient['phid']?.toString().toLowerCase() ?? '';
-          final phone = patient['phone']?.toString().toLowerCase() ?? '';
-          return name.contains(query.toLowerCase()) ||
-              phid.contains(query.toLowerCase()) ||
-              phone.contains(query.toLowerCase());
-        }).toList();
-      }
-    });
+      });
+    } else {
+      final results = patients.where((patient) {
+        final name = patient['name']?.toString().toLowerCase() ?? '';
+        final phid = patient['phid']?.toString().toLowerCase() ?? '';
+        final phone = patient['phone']?.toString().toLowerCase() ?? '';
+        return name.contains(query.toLowerCase()) ||
+            phid.contains(query.toLowerCase()) ||
+            phone.contains(query.toLowerCase());
+      }).toList();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _showSearchResults = true;
+          filteredPatients = results;
+        });
+      });
+    }
   }
+
+
 
   Future<void> _logout() async {
     try {
@@ -275,13 +285,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+
+
+
+    double fieldposition;
+
+    if (ResponsiveUtils.isMobile(context)) {
+      fieldposition = MediaQuery.of(context).size.width / 2 - ResponsiveUtils.scaleWidth(context, 290);
+    } else if (ResponsiveUtils.isTablet(context)) {
+      fieldposition = MediaQuery.of(context).size.width / 2 - ResponsiveUtils.scaleWidth(context, 400);
+    } else {
+      fieldposition = MediaQuery.of(context).size.width / 2 - ResponsiveUtils.scaleWidth(context, 450);
+    }
+
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            width: isSidebarCollapsed ? 80 : 220,
+            width: isSidebarCollapsed
+                ? ResponsiveUtils.scaleWidth(context, 85)
+                : ResponsiveUtils.scaleWidth(context, 200),
+
             color:Colors.white,
             child: Padding(
               padding: const EdgeInsets.only(right: 20,left: 20,bottom: 20,top: 10),
@@ -292,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     isSidebarCollapsed
                         ? 'assets/logo1.png'
                         : 'assets/companyNameLogo.png',
-                    height: 44,
+                    height: ResponsiveUtils.scaleHeight(context, 44)
                   ),
                   SizedBox(height: 20,),
                   _buildSidebarItem(
@@ -326,11 +354,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     index: 5,
                   ),*/
                   const Spacer(),
-                  _buildSidebarItem(
+                 /* _buildSidebarItem(
                     assetPath: 'assets/settingicon.png',
                     label: 'Settings',
                     index: 3,
-                  ),
+                  ),*/
                   _buildSidebarItem(
                     assetPath: 'assets/logouticon.png',
                     label: 'Logout',
@@ -368,9 +396,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Column(
                   children: [
                     Container(
-                      height: 60,
+                      height: ResponsiveUtils.scaleHeight(context, 60),
                       color: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: ResponsiveUtils.fieldPadding(context),
                       child: Row(
                         children: [
                           IconButton(
@@ -384,6 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Container(
+
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF8F9FB),
@@ -391,23 +420,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                 border: Border.all(color: const Color(0xFFE4EAF1)),
                               ),
                               child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+
                                 children: [
-                                  const Icon(Icons.search, size: 16, color: Colors.grey),
+                                   Icon(Icons.search, size:  ResponsiveUtils.fontSize(context, 16), color: Colors.grey),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: TextField(
+
                                       controller: _searchController,
                                       onChanged: _handleSearch,
-                                      decoration: const InputDecoration(
+                                      decoration:  InputDecoration(
                                         hintText: 'Search Patient Name',
-                                        hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
+                                        hintStyle: TextStyle(fontSize:ResponsiveUtils.fontSize(context, 14), color: Colors.grey),
                                         border: InputBorder.none,
                                       ),
                                     ),
                                   ),
                                   if (_searchController.text.isNotEmpty)
                                     IconButton(
-                                      icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                                      icon:  Icon(Icons.close, size: ResponsiveUtils.fontSize(context, 18), color: Colors.grey),
                                       onPressed: () {
                                         _searchController.clear();
                                         _handleSearch('');
@@ -418,12 +451,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const Spacer(),
-                          Text(
+                            Text(
                             _currentTime,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF7186A3),
-                              fontWeight: FontWeight.w500,
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.fontSize(context, 12),
                             ),
                           ),
                         ],
@@ -434,18 +465,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: _pageController,
                         physics: const NeverScrollableScrollPhysics(),
                         children: pages,
+                        scrollDirection: Axis.vertical,
                       ),
                     ),
 
                   ],
                 ),
                 if (_showSearchResults)
-                // Inside your Stack
+
                   Positioned(
                     top: 60,
-                    left: MediaQuery.of(context).size.width / 2 - 892, // center 600px container
+                    left: fieldposition,
+                   // left: MediaQuery.of(context).size.width / 2 - 892, // center 600px container
                     child: SizedBox(
-                      width: 740,
+                      width: ResponsiveUtils.getPopupWidth(context),
+
+
                       child: Material(
                         elevation: 4,
                         borderRadius: BorderRadius.circular(8),
@@ -474,9 +509,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             itemBuilder: (context, index) {
                               final patient = filteredPatients[index];
                               return ListTile(
-                                title: Text(patient['name'] ?? ''),
-                                subtitle: Text('PHID: ${patient['phid']}'),
-                                trailing: Text(patient['phone'] ?? ''),
+                                title: Text(patient['name'] ?? '',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),)),
+                                subtitle: Text('PHID: ${patient['phid']}',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),)),
+                                trailing: Text(patient['phone'] ?? '',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),),),
                                 onTap: () {
                                   GlobalPatientData.firstName = patient['name'].split(' ')[0];
                                   GlobalPatientData.lastName =
@@ -541,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Image.asset(
                 assetPath,
-                height: 20,
+                height: ResponsiveUtils.scaleHeight(context, 20),
                 color: isSelected ? AppColors.primary : AppColors.secondary,
               ),
               if (!isSidebarCollapsed) ...[
@@ -549,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
                  Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize:  ResponsiveUtils.fontSize(context, 12),
                     color: isSelected ? AppColors.primary : AppColors.secondary,
                   ),
                 ),

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/patient_info_screen.dart';
@@ -1132,11 +1133,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
                     const SizedBox(height: 16),
                     // Message
-                    const Text(
+                     Text(
                       'Patient record saved successfully.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize:  ResponsiveUtils.fontSize(context, 20),
 
                       ),
                     ),
@@ -1154,12 +1155,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child:  Text(
                           'OK',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
-                            fontSize: 16,
+                            fontSize:  ResponsiveUtils.fontSize(context, 16),
                           ),
                         ),
                       ),
@@ -1367,21 +1368,22 @@ class _OnboardingFormState extends State<OnboardingForm> {
   }
 
   Widget _buildStepNavigation() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+
     return Container(
       width: 550,
-
-
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildClickableStep(1, 'Personal Information', 0),
+          _buildClickableStep(1, isMobile ? 'Personal\nInformation' : 'Personal Information', 0),
           _buildStepConnector(_currentStep >= 0),
-          _buildClickableStep(2, 'Medical Information', 1),
+          _buildClickableStep(2, isMobile ? 'Medical\nInformation' : 'Medical Information', 1),
           _buildStepConnector(_currentStep >= 1),
-          _buildClickableStep(3, 'Reports & Documents', 2),
+          _buildClickableStep(3, isMobile ? 'Reports &\nDocuments' : 'Reports & Documents', 2),
         ],
       ),
     );
+
   }
 
   Widget _buildClickableStep(int number, String label, int step) {
@@ -1411,8 +1413,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return Column(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: ResponsiveUtils.scaleWidth(context, 32),
+          height: ResponsiveUtils.scaleHeight(context, 32),
           decoration: BoxDecoration(
             color: isActive ? AppColors.secondary : AppColors.numberbackground,
             shape: BoxShape.circle,
@@ -1427,7 +1429,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
               style: TextStyle(
                 color: isActive ? Colors.white : AppColors.textSecondary,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.fontSize(context, 14),
               ),
             ),
           ),
@@ -1435,9 +1437,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
         const SizedBox(height: 4),
         Text(
           label,
+      softWrap: true,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: isActive ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 12,
+            fontSize:  ResponsiveUtils.fontSize(context, 12),
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -1474,9 +1478,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+               Text(
                 '1. Basic Details',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 20), fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               Wrap(
@@ -1508,9 +1512,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   ],),
                   DropdownInput<String>(
                     label: 'Gender',
-                    items: const [
-                      DropdownMenuItem(value: 'Male', child: Text('Male')),
-                      DropdownMenuItem(value: 'Female', child: Text('Female')),
+                    items:  [
+                      DropdownMenuItem(value: 'Male', child: Text('Male',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
+                      DropdownMenuItem(value: 'Female', child: Text('Female',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
 
                     ],
                     onChanged: (value) {
@@ -1539,7 +1543,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     items: _locations.map((loc) {
                       return DropdownMenuItem<String>(
                         value: loc['id'].toString(),
-                        child: Text(loc['location'].toString()),
+                        child: Text(loc['location'].toString(), style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -1602,6 +1606,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
   }
 
   Widget _buildMedicalInfoForm() {
+    final isMobile = ResponsiveUtils.isMobile(context);
     return Form(
       key: _medicalInfoFormKey,
       child: Container(
@@ -1630,8 +1635,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("1. Chief Complaints",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                     Text("1. Chief Complaints",
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
 
                     const SizedBox(height: 8),
                     Container(
@@ -1657,8 +1662,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("2. History",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                     Text("2. History",
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 16,
@@ -1762,8 +1767,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-                    const Text("3. General Examination",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                     Text("3. General Examination",
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 16,
@@ -1812,17 +1817,19 @@ class _OnboardingFormState extends State<OnboardingForm> {
                          FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5,   inputFormatters: [
                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
       ],),
+
+
                          Container(
-                           width: 308,
+                           width:  isMobile ? ResponsiveUtils.scaleWidth(context, 200):ResponsiveUtils.scaleWidth(context, 308),
                            child: Row(
                              spacing: 8,
                              children: [
                                SizedBox(
-                                   width: 140,
+                                   width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
                                    child: FormInput(label: 'BP (mmHg)',hintlabel: 'Systolic',controller: _bpSystolicController,)),
-                               Text("/",style: TextStyle(fontSize: 26),),
+                               Text("/",style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 26)),),
                                SizedBox(
-                                   width: 140,
+                                   width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
                                    child: FormInput(label: '',hintlabel: 'Diastolic',controller: _bpDiastolicController,)),
                              ],
                            ),
@@ -1830,7 +1837,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                        // const DropdownInput(label: 'Pallor'),
                         // Pallor
                         Container(
-                          width: 275,
+                          width: ResponsiveUtils.scaleWidth(context, 275),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -2001,8 +2008,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("4. Systemic Examination",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                     Text("4. Systemic Examination",
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 16,
@@ -2066,8 +2073,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("5. Diagnosis & Plan",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.primary)),
+                     Text("5. Diagnosis & Plan",
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 16,
@@ -2185,285 +2192,364 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Widget _buildAdditionalInfoForm() {
     return Form(
       key: _reportsFormKey,
-      child: SingleChildScrollView(
-        child: Column(
-          spacing: 10,
-          children: [
-            Container(
+      child: Container(
+        width: double.infinity, padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.Offwhitebackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.Containerbackground),
+        ),
+
+        child: SingleChildScrollView(
+          child: Column(
+            spacing: 10,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     Text(
+                      '1. Reports',
+                      style: TextStyle(fontSize:    ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+                    ),
+                    SizedBox(height: 20,),
+                    Row(children: [
+                      Text(
+                        'Blood Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children:  [
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
+                        FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
+                        FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
+                        FormInput(label: 'ESR',controller: _esrController,),
+                        FormInput(label: 'Platelets',controller: _plateletsController,),
+                        FormInput(label: 'Urine Routine',controller:_urineRoutineController),
+                        FormInput(label: 'Urine Culture',controller:_urineCultureController),
+                        FormInput(label: 'BUN',controller:_bunController),
+                        FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
+                        FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
+                        FormInput(label: 'LFT',controller:_lftController),
+                        FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController),
+                        FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
+                        FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
+                        FormInput(label: 'HBA1C',controller:_hBA1CController),
+                        FormInput(label: 'HBSAG',controller:_hBSAGController),
+                        FormInput(label: 'HIV',controller:_hivController),
+                        FormInput(label: 'HCV',controller:_hcvController),
+                        FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
+                        FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
+                        FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController),
+                        FormInput(label: 'MISC',controller:_miscController),
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
+
+                      ],
+                    ),
+                    SizedBox(height: 20,),
+                    Row(children: [
+                      Text(
+                        'X-Ray Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller:_xRayFindingController)),
+                    SizedBox(height: 10,),
+                    Row(
+
+                      children: [
+                      Text(
+                        'CT Scan Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.backgroundcolor,
+                            thickness: 1,
+                          ),
+                        ),
+                    ],),
+                    SizedBox(height: 10,),
+
+                    DocumentUploadWidget(
+                      docType: 'ct_scan_report', // This should match one of your map keys
+                      label: "CT Scan Report",
+                      onFilesSelected: (files) {
+                        setState(() {
+                          _uploadedFiles['ct_scan_report'] = files;
+                        });
+                      },
+                      initialFiles: _uploadedFiles['ct_scan_report'],
+                    ),
+                 /*   Row(
+                      spacing: 10,
+                      children: [
+
+                        FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
+
+                        Expanded(
+
+                            child: FormInput(label: 'Media History',)),
+                      ],
+                    ),*/
+                    SizedBox(height: 10,),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                       // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+                        DatePickerInput(
+                          label: 'Date',
+                          hintlabel: 'dd-mm-yyyy',
+                          onDateSelected: (date) {
+                            setState(() {
+                              _CTScanDate = date; // Update the selected date
+                            });
+                          },
+                          initialDate: _CTScanDate, // Pass the initial date if needed
+                        ),
+                        SizedBox(
+                            width: double.infinity,
+                            child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
+                      ],
+                    ),
+
+                    SizedBox(height: 10,),
+
+                    Row(children: [
+                      Text(
+                        'MRI Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller: _mriFindingController,)),
+                    SizedBox(height: 10,),
+                    Row(children: [
+                      Text(
+                        'PET Scan Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+                    SizedBox(height: 10,),
+
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
+                    SizedBox(height: 10,),
+                    Row(
+
+                      children: [
+                        Text(
+                          'ECG Report',
+                          style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.backgroundcolor,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],),
+                    SizedBox(height: 10,),
+                    DocumentUploadWidget(
+                      docType: 'ecg_report', // This should match one of your map keys
+                      label: "Upload ECG Reports",
+                      onFilesSelected: (files) {
+                        setState(() {
+                          _uploadedFiles['ecg_report'] = files;
+                        });
+                      },
+                      initialFiles: _uploadedFiles['ecg_report'],
+                    ),
+
+                    SizedBox(height: 10,),
+                    SizedBox(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
+                        child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
+                    SizedBox(height: 10,),
+
+                    Row(
+
+                      children: [
+                        Text(
+                          '2D ECHO Report',
+                          style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.backgroundcolor,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],),
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller:_a2dFindingController)),
+                 /*   SizedBox(height: 10,),
+                    Row(
+
+                      children: [
+                        Text(
+                          'Echocardiogram Report',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            margin: const EdgeInsets.only(left: 8), // Add some spacing
+                            color: AppColors.backgroundcolor,
+                          ),
+                        ),
+                      ],),
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
+                    SizedBox(height: 10,),
+                    Row(
+
+                      children: [
+                        Text(
+                          'PFT Report',
+                          style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.backgroundcolor,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],),
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller: _pftFindingController,)),
+                    SizedBox(height: 10),
+
+                    DocumentUploadWidget(
+                      docType: 'misc_report', // This should match one of your map keys
+                      label: "Upload MISC",
+                      onFilesSelected: (files) {
+                        setState(() {
+                          _uploadedFiles['misc_report'] = files;
+                        });
+                      },
+                      initialFiles: _uploadedFiles['misc_report'],
+                    ),
+
+                    SizedBox(height: 10,),
+                    SizedBox(
+                        width: double.infinity,
+                        child: FormInput(label: 'Findings',controller: _miscFindingController,)),
+                    SizedBox(height: 10,),
+
+                  ],
+                ),
               ),
+              Container( width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '1. Reports',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 20,),
-                  Row(children: [
-                    Text(
-                      'Blood Report',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
-                      ),
-                    ),
-                  ],),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children:  [
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
-                      FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
-                      FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
-                      FormInput(label: 'ESR',controller: _esrController,),
-                      FormInput(label: 'Platelets',controller: _plateletsController,),
-                      FormInput(label: 'Urine Routine',controller:_urineRoutineController),
-                      FormInput(label: 'Urine Culture',controller:_urineCultureController),
-                      FormInput(label: 'BUN',controller:_bunController),
-                      FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
-                      FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
-                      FormInput(label: 'LFT',controller:_lftController),
-                      FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController),
-                      FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
-                      FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
-                      FormInput(label: 'HBA1C',controller:_hBA1CController),
-                      FormInput(label: 'HBSAG',controller:_hBSAGController),
-                      FormInput(label: 'HIV',controller:_hivController),
-                      FormInput(label: 'HCV',controller:_hcvController),
-                      FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
-                      FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
-                      FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController),
-                      FormInput(label: 'MISC',controller:_miscController),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
-        
-                    ],
-                  ),
-                  SizedBox(height: 20,),
-                  Row(children: [
-                    Text(
-                      'X-Ray Report',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
-                      ),
-                    ),
-                  ],),
+                 Text(
+                  '2. Doctor Notes',
+                  style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 20,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
+
+
                   SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller:_xRayFindingController)),
-                  SizedBox(height: 10,),
-                  Row(
-        
-                    children: [
-                    Text(
-                      'CT Scan Report',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
-                      ),
-                    ),
-                  ],),
-                  SizedBox(height: 10,),
-        
-                  DocumentUploadWidget(
-                    docType: 'ct_scan_report', // This should match one of your map keys
-                    label: "CT Scan Report",
-                    onFilesSelected: (files) {
+                  DatePickerInput(
+                    label: 'Flollow up date',
+                    hintlabel: 'dd-mm-yyyy',
+                    onDateSelected: (date) {
                       setState(() {
-                        _uploadedFiles['ct_scan_report'] = files;
+                        _followUpDate = date; // Update the selected date
                       });
                     },
-                    initialFiles: _uploadedFiles['ct_scan_report'],
+                    initialDate: _followUpDate, // Pass the initial date if needed
                   ),
-               /*   Row(
-                    spacing: 10,
-                    children: [
-        
-                      FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
-        
-                      Expanded(
-        
-                          child: FormInput(label: 'Media History',)),
-                    ],
-                  ),*/
+                //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
+              ],),
+              ),
+              Container( width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
+                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                 Text(
+                  '3. Misc',
+                  style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 20,),
+                SizedBox(
+                    width: double.infinity,
+                    child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
+
                   SizedBox(height: 10,),
-                  Row(
-                    spacing: 16,
-                    children: [
-                     // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
-                      DatePickerInput(
-                        label: 'Date',
-                        hintlabel: 'dd-mm-yyyy',
-                        onDateSelected: (date) {
-                          setState(() {
-                            _CTScanDate = date; // Update the selected date
-                          });
-                        },
-                        initialDate: _CTScanDate, // Pass the initial date if needed
-                      ),
-                      Expanded(
-        
-                          child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
-                    ],
-                  ),     SizedBox(height: 10,),
-        
-                  Row(children: [
-                    Text(
-                      'MRI Report',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
-                      ),
-                    ),
-                  ],),
-                  SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _mriFindingController,)),
-                  SizedBox(height: 10,),
-                  Row(children: [
-                    Text(
-                      'PET Scan Report',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 8), // Add some spacing
-                        color: AppColors.backgroundcolor,
-                      ),
-                    ),
-                  ],),
-                  SizedBox(height: 10,),
-        
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
-                  SizedBox(height: 10,),
-                  Row(
-        
-                    children: [
-                      Text(
-                        'ECG Report',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],),
-                  SizedBox(height: 10,),
-                  DocumentUploadWidget(
-                    docType: 'ecg_report', // This should match one of your map keys
-                    label: "Upload ECG Reports",
-                    onFilesSelected: (files) {
-                      setState(() {
-                        _uploadedFiles['ecg_report'] = files;
-                      });
-                    },
-                    initialFiles: _uploadedFiles['ecg_report'],
-                  ),
-        
-                  SizedBox(height: 10,),
-                  SizedBox(
-            width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
-                  SizedBox(height: 10,),
-        
-                  Row(
-        
-                    children: [
-                      Text(
-                        '2D ECHO Report',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),)
-                    ],),
-                  SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller:_a2dFindingController)),
-               /*   SizedBox(height: 10,),
-                  Row(
-        
-                    children: [
-                      Text(
-                        'Echocardiogram Report',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],),
-                  SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
-                  SizedBox(height: 10,),
-                  Row(
-        
-                    children: [
-                      Text(
-                        'PFT Report',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          margin: const EdgeInsets.only(left: 8), // Add some spacing
-                          color: AppColors.backgroundcolor,
-                        ),
-                      ),
-                    ],),
-                  SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),
-                  SizedBox(height: 10),
-        
                   DocumentUploadWidget(
                     docType: 'misc_report', // This should match one of your map keys
-                    label: "Upload MISC",
+                    label: "MISC Upload",
                     onFilesSelected: (files) {
                       setState(() {
                         _uploadedFiles['misc_report'] = files;
@@ -2471,86 +2557,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     },
                     initialFiles: _uploadedFiles['misc_report'],
                   ),
-        
-                  SizedBox(height: 10,),
-                  SizedBox(
-                      width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _miscFindingController,)),
-                  SizedBox(height: 10,),
-        
-                ],
+
+              ],),
               ),
-            ),
-            Container( width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              const Text(
-                '2. Doctor Notes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              SizedBox(height: 20,),
-              SizedBox(
-                  width: double.infinity,
-                  child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
-        
-        
-                SizedBox(height: 10,),
-                DatePickerInput(
-                  label: 'Flollow up date',
-                  hintlabel: 'dd-mm-yyyy',
-                  onDateSelected: (date) {
-                    setState(() {
-                      _followUpDate = date; // Update the selected date
-                    });
-                  },
-                  initialDate: _followUpDate, // Pass the initial date if needed
-                ),
-              //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
-            ],),
-            ),
-            Container( width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              const Text(
-                '3. Misc',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              SizedBox(height: 20,),
-              SizedBox(
-                  width: double.infinity,
-                  child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
-        
-                SizedBox(height: 10,),
-                DocumentUploadWidget(
-                  docType: 'misc_report', // This should match one of your map keys
-                  label: "MISC Upload",
-                  onFilesSelected: (files) {
-                    setState(() {
-                      _uploadedFiles['misc_report'] = files;
-                    });
-                  },
-                  initialFiles: _uploadedFiles['misc_report'],
-                ),
-        
-            ],),
-            ),
-            const SizedBox(height: 20),
-            _buildFormNavigationButtons(isLastStep: true),
-          ],
+              const SizedBox(height: 20),
+              _buildFormNavigationButtons(isLastStep: true),
+            ],
+          ),
         ),
       ),
     );
@@ -2611,9 +2624,10 @@ class FormInput extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style:  TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.primary,
+              fontSize: ResponsiveUtils.fontSize(context, 14)
             ),
           ),
           const SizedBox(height: 4),

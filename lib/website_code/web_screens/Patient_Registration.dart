@@ -60,6 +60,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _phIdController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _OccupationController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
   final TextEditingController _pincodeController = TextEditingController();
@@ -536,6 +537,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         _patientData?['occupation']?.toString() ?? '';
     _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
     _addressController.text = _patientData?['address']?.toString() ?? '';
+    _OccupationController.text = _patientData?['occupation']?.toString() ?? '';
     _cityController.text = _patientData?['city']?.toString() ?? '';
     _stateController.text = _patientData?['state']?.toString() ?? '';
     _pincodeController.text = _patientData?['pincode']?.toString() ?? '';
@@ -810,6 +812,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _phoneController.dispose();
     _phIdController.dispose();
     _addressController.dispose();
+    _OccupationController.dispose();
     _cityController.dispose();
     _SincewhenController.dispose();
     _countryController.dispose();
@@ -943,6 +946,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'mobile_no': _ensureString(_phoneController.text),
         'alternative_no': _ensureString(_altPhoneController.text),
         'address': _ensureString(_addressController.text),
+        'occupation': _ensureString(_OccupationController.text),
         'city': _ensureString(_cityController.text),
         'state': _ensureString(_stateController.text),
         'pincode': _ensureNumber(_pincodeController.text),
@@ -1496,6 +1500,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   ],),
                   FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,    fillColor: Colors.grey.shade100,
                     readOnly: true,),
+
+                  FormInput(label: 'Occupation',hintlabel: "Enter Occupation",  controller: _OccupationController,),
                   FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
                   FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
                   FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),

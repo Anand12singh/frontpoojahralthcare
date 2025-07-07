@@ -387,6 +387,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   ],
                 )
                     : Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     buildInfoBlock(
                       "Location",
@@ -580,7 +582,9 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     color: AppColors.secondary,
                   ),
                 ),
-                ListTile(
+              !isMobile ?
+              ListTile(
+
                   leading: Image.asset(
                     "assets/whatsapp.png",
                     height: ResponsiveUtils.scaleHeight(context, 20),
@@ -600,7 +604,45 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       );
                     }
                   },
+
+                ): InkWell(
+                onTap: () async {
+                  final phone = patient['mobile_no'];
+                  final whatsappUrl = Uri.parse("https://wa.me/$phone");
+
+                  if (await canLaunchUrl(whatsappUrl)) {
+                    await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+                  } else {
+                    showTopRightToast(
+                      context,
+                      "Could not open WhatsApp",
+                      backgroundColor: Colors.red,
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        "assets/whatsapp.png",
+                        height: ResponsiveUtils.scaleHeight(context, 24),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Connect on Whatsapp',
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.fontSize(context, 14),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+!isMobile?
                 ListTile(
                   leading: Image.asset(
                     "assets/call.png",
@@ -621,7 +663,44 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       );
                     }
                   },
-                ),
+                ):InkWell(
+  onTap: () async {
+    final phone = patient['mobile_no'];
+    final callUri = Uri(scheme: 'tel', path: phone);
+
+    if (await canLaunchUrl(callUri)) {
+      await launchUrl(callUri);
+    } else {
+      showTopRightToast(
+        context,
+        "Could not launch dialer",
+        backgroundColor: Colors.red,
+      );
+    }
+  },
+  borderRadius: BorderRadius.circular(8),
+  child: Container(
+    padding: const EdgeInsets.all(8),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          "assets/call.png",
+          height: ResponsiveUtils.scaleHeight(context, 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Connect on Call\n${patient['mobile_no']}',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.fontSize(context, 14),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  ),
+),
+
               ],
             ),
           ),

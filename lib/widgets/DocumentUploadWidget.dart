@@ -427,151 +427,147 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
           children: [
             // Upload Document Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.label,
-                    style:  TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                        fontSize: ResponsiveUtils.fontSize(context, 14)
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.label,
+                  style:  TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontSize: ResponsiveUtils.fontSize(context, 14)
                   ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _pickFiles,
-                    child: Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.textSecondary.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.attach_file, color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 18),),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Tap to upload documents",
-                            style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 14),
-
-            // Uploaded Files Display
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Uploaded Files',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                        fontSize: ResponsiveUtils.fontSize(context, 13)
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickFiles,
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
                       border: Border.all(
                         color: AppColors.textSecondary.withOpacity(0.3),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: _selectedFiles.isEmpty
-                        ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        "No files selected",
-                        style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
-                      ),
-                    )
-                        : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _selectedFiles.length,
-                      itemBuilder: (context, index) {
-                        final file = _selectedFiles[index];
-                        return GestureDetector(
-                          onTap: () => _showFilePreview(index),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 4,
-                            ),
-                            margin: const EdgeInsets.only(bottom: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(8),
-                              // border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getFileIcon(file['type']),
-                                  size: 16,
-                                  color: _getFileIconColor(file['type']),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        file['name'],
-                                        style: const TextStyle(
-
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      /*  Text(
-                                        _formatSize(file['size']),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),*/
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                    size: 16,
-                                  ),
-                                  onPressed: () => _removeFile(index),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                    child: Row(
+                      children: [
+                        Icon(Icons.attach_file, color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 18),),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Tap to upload documents",
+                          style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
+
+            const SizedBox(width: 14),
+
+            // Uploaded Files Display
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Uploaded Files',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontSize: ResponsiveUtils.fontSize(context, 13)
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border.all(
+                      color: AppColors.textSecondary.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _selectedFiles.isEmpty
+                      ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      "No files selected",
+                      style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
+                    ),
+                  )
+                      : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _selectedFiles.length,
+                    itemBuilder: (context, index) {
+                      final file = _selectedFiles[index];
+                      return GestureDetector(
+                        onTap: () => _showFilePreview(index),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                            vertical: 4,
+                          ),
+                          margin: const EdgeInsets.only(bottom: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(8),
+                            // border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getFileIcon(file['type']),
+                                size: 16,
+                                color: _getFileIconColor(file['type']),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      file['name'],
+                                      style: const TextStyle(
+
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    /*  Text(
+                                      _formatSize(file['size']),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),*/
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                  size: 16,
+                                ),
+                                onPressed: () => _removeFile(index),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ):

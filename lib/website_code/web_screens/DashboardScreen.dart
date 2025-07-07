@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
+import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../screens/olddpatientfom.dart';
@@ -198,6 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FC),
       body: Padding(
@@ -205,6 +207,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            isMobile ?   Row(
+
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome Back,\nDr. Pooja",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Here's what's happening\nwith your patients today.",
+                      style: TextStyle(fontSize: 16, color: AppColors.greycolor),
+                    ),
+                    SizedBox(height: 20),
+                  ],
+                ),
+
+                Container(
+                  width:ResponsiveUtils.scaleWidth(context, 160),
+
+                  child:Animatedbutton(
+                    title: '+ Add Patient',
+                    isLoading: _isLoading,
+                    onPressed: () {
+                      _showAddPatientModal(context);
+                    },
+                    backgroundColor: AppColors.secondary,
+                    shadowColor: AppColors.primary,
+                  ),
+                ),
+              ],
+            ):
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
@@ -225,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                  ),
 
                  Container(
-                   width: 160,
+                   width:ResponsiveUtils.scaleWidth(context, 160),
 
                    child:Animatedbutton(
                      title: '+ Add Patient',

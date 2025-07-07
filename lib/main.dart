@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
@@ -8,6 +9,7 @@ import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
 
 void main() {
+  //debugPaintSizeEnabled = true;
   runApp(const MyApp());
 }
 

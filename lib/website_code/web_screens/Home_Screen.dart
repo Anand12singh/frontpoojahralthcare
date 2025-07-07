@@ -216,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) {
         return Center(
           child: Container(
-            width: 400, // Fixed width for the dialog
+            width: ResponsiveUtils.scaleWidth(context, 400), // Fixed width for the dialog
             margin: const EdgeInsets.symmetric(horizontal: 20), // Optional margin
             child: Dialog(
               shape: RoundedRectangleBorder(
@@ -227,25 +227,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                     Text(
                       'Confirm Logout',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: ResponsiveUtils.fontSize(context, 20),
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
+                     SizedBox(height: ResponsiveUtils.scaleHeight(context, 20)),
+                     Text(
                       'Are you sure you want to logout?',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16),),
                     ),
-                    const SizedBox(height: 30),
+                     SizedBox(height:  ResponsiveUtils.scaleHeight(context, 30)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         SizedBox(
-                          width: 120, // Fixed width for Cancel button
+                          width: ResponsiveUtils.scaleWidth(context, 120), // Fixed width for Cancel button
                           child: Animatedbutton(
                             title: 'Cancel',
 
@@ -258,9 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderColor: AppColors.secondary,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        // SizedBox(width:  ResponsiveUtils.scaleWidth(context, 16)),
                         SizedBox(
-                          width: 120, // Fixed width for Logout button
+                          width:  ResponsiveUtils.scaleWidth(context, 120), // Fixed width for Logout button
                           child: Animatedbutton(
                             backgroundColor: AppColors.secondary,
                             shadowColor: Colors.white,
@@ -285,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    final isMobile = ResponsiveUtils.isMobile(context);
 
 
 
@@ -302,8 +302,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar:isMobile ? _buildMobileAppBar() :null,
+      drawer: isMobile ? _buildMobileDrawer() : null,
       body: Row(
         children: [
+          if(!isMobile)
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: isSidebarCollapsed
@@ -395,8 +398,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Column(
                   children: [
+                    if(!isMobile)
                     Container(
-                      height: ResponsiveUtils.scaleHeight(context, 60),
+                      height: ResponsiveUtils.scaleHeight(context, 80),
                       color: Colors.white,
                       padding: ResponsiveUtils.fieldPadding(context),
                       child: Row(
@@ -474,8 +478,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_showSearchResults)
 
                   Positioned(
-                    top: 60,
-                    left: fieldposition,
+                    top:isMobile ? 10:80,
+                    //left: fieldposition,
                    // left: MediaQuery.of(context).size.width / 2 - 892, // center 600px container
                     child: SizedBox(
                       width: ResponsiveUtils.getPopupWidth(context),
@@ -546,6 +550,120 @@ class _HomeScreenState extends State<HomeScreen> {
 
         ],
       ),
+    );
+  }
+
+  PreferredSizeWidget _buildMobileAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      automaticallyImplyLeading: false,
+      titleSpacing: 0,
+      title: Padding(
+        padding: ResponsiveUtils.fieldPadding(context),
+        child: Builder(
+          builder: (context) {
+            return Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.menu, color: Colors.black),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FB),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE4EAF1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, size: ResponsiveUtils.fontSize(context, 16), color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: _handleSearch,
+                            decoration: InputDecoration(
+                              hintText: 'Search Patient Name',
+                              hintStyle: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14), color: Colors.grey),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        if (_searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: Icon(Icons.close, size: ResponsiveUtils.fontSize(context, 18), color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              _handleSearch('');
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  _currentTime,
+                  style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 12), color: Colors.black),
+                ),
+              ],
+            );
+          }
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: AppColors.primary),
+            child: Image.asset('assets/companyNameLogo.png'),
+          ),
+          _buildDrawerItem('Dashboard', 0, 'assets/Dashboard.png'),
+          _buildDrawerItem('Patient list', 1, 'assets/PatientList.png'),
+
+
+
+
+          Divider(color: AppColors.secondary,),
+          _buildDrawerItem('Logout', 4, 'assets/logouticon.png', onTap: _showLogoutConfirmation),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(String label, int index, String assetPath, {VoidCallback? onTap}) {
+    return ListTile(
+      leading: Image.asset(
+        assetPath,
+        height: ResponsiveUtils.scaleHeight(context, 20),
+        color: AppColors.secondary,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: ResponsiveUtils.fontSize(context, 14),
+          color: AppColors.secondary,
+        ),
+      ),
+      onTap: onTap ??
+              () {
+            setState(() {
+              selectedPageIndex = index;
+              _pageController.jumpToPage(index);
+            });
+            Navigator.pop(context);
+          },
     );
   }
 

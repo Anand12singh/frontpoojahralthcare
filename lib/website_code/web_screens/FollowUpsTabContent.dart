@@ -387,22 +387,18 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                           },
                         ),
 
-                        Expanded(
-                          child: FormInput(
-                            controller: entry.value.notesController,
-                            label: 'Notes',
-                            hintlabel: 'Enter notes',
-                            maxlength: 4,
-                          ),
+                        FormInput(
+                          controller: entry.value.notesController,
+                          label: 'Notes',
+                          hintlabel: 'Enter notes',
+                          maxlength: 4,
                         ),
 
-                        Expanded(
-                          child: FormInput(
-                            controller: entry.value.treatmentController,
-                            label: 'Treatment',
-                            hintlabel: 'Enter treatment',
-                            maxlength: 4,
-                          ),
+                        FormInput(
+                          controller: entry.value.treatmentController,
+                          label: 'Treatment',
+                          hintlabel: 'Enter treatment',
+                          maxlength: 4,
                         ),
                         DatePickerInput(
                           label: 'Next follow up date',

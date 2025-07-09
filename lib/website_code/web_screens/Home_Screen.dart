@@ -458,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                             _currentTime,
                             style: TextStyle(
-                              fontSize: ResponsiveUtils.fontSize(context, 12),
+                              fontSize: ResponsiveUtils.fontSize(context, 20),
                             ),
                           ),
                         ],

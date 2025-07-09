@@ -124,7 +124,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         ? '${widget.baseUrl}$filePath'
         : filePath;
 
-    _showPreviewDialog(context, fullPath, fileType, isNetwork: isNetwork);
+    _showPreviewDialog(context, file, isNetwork: isNetwork);
   }
 
   void _showVideoPreviewDialog(BuildContext context, String filePath, {bool isNetwork = false}) {
@@ -197,8 +197,12 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     return VideoPlayerWidget(filePath: filePath);
   }
 
-  void _showPreviewDialog(BuildContext context, String filePath, String fileType,
+  void _showPreviewDialog(BuildContext context, Map<String, dynamic> file,
       {bool isNetwork = false}) {
+    final filePath = file['path'] ?? '';
+    final fileType = (file['type'] ?? '').toLowerCase();
+    final fileBytes = file['bytes'];
+
     final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
     final videoTypes = {'mp4', 'mov', 'avi'};
     final fileExtension = fileType.toLowerCase();
@@ -220,7 +224,8 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Center(
-                      child: Text('Failed to load image\n${error.toString()}'),
+                      child: Text(
+                          'Failed to load image\n${error.toString()}'),
                     );
                   },
                   loadingBuilder: (context, child, loadingProgress) {
@@ -237,7 +242,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                 )
                     : (kIsWeb
                     ? Image.memory(
-                  base64Decode(filePath.split(',').last),
+                  fileBytes,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Center(
@@ -265,7 +270,8 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                       backgroundColor: Colors.blue,
                       child: IconButton(
                         icon: const Icon(Icons.download, color: Colors.white),
-                        onPressed: () => _downloadFile(filePath, fileExtension, isNetwork),
+                        onPressed: () => _downloadFile(
+                            isNetwork ? filePath : filePath, fileExtension, isNetwork),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -283,11 +289,11 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
           ),
         ),
       );
-    }
-    else if (videoTypes.contains(fileExtension)) {
+    } else if (videoTypes.contains(fileExtension)) {
       _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
     }
-    }
+  }
+
 
 
   Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
@@ -477,7 +483,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
-                      fontSize: ResponsiveUtils.fontSize(context, 13)
+                      fontSize: ResponsiveUtils.fontSize(context, 14)
                   ),
                 ),
                 const SizedBox(height: 8),

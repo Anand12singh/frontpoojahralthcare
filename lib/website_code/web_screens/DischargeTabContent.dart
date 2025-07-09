@@ -357,7 +357,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
     return SingleChildScrollView(
+
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
@@ -510,6 +512,7 @@ maxlength: 4,
                 children: [
                    Text('2. Past History', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
+                  isMobile ?
                   Wrap(
                     spacing: 16,
                     runSpacing: 14,
@@ -578,7 +581,107 @@ maxlength: 4,
                       ),
 
                     ],
-                  ),
+                  ) :Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'H/O DM',
+                              initialValue: _hasDM,
+                              onChanged: (value) => setState(() => _hasDM = value),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasDM)
+                              FormInput(
+                                label: 'Since when',
+                                maxlength: 1,
+                                controller: _SincewhenController,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'Hypertension',
+                              initialValue: _hasHypertension,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hasHypertension = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasHypertension)
+                              FormInput(
+                                label: 'Since when',
+                                maxlength: 1,
+                                controller: _hypertensionSinceController,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'IHD',
+                              initialValue: _hasIHD,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hasIHD = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasIHD)
+                              FormInput(
+                                label: 'IHD Description',
+                                maxlength: 1,
+                                controller: _ihdDescriptionController,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'COPD',
+                              initialValue: _hasCOPD,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hasCOPD = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasCOPD)
+                              FormInput(
+                                label: 'COPD Description',
+                                maxlength: 1,
+                                controller: _copdDescriptionController,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+              ,
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 16,

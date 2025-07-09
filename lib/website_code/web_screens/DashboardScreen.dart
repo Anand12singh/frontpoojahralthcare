@@ -553,7 +553,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required TextEditingController phoneController,
     required bool isLoading,  // Added this parameter
     required VoidCallback onPressed,  // Added this parameter
-  }) {
+  })
+  {
     return Container(
       width: 400,
       padding: const EdgeInsets.all(24),
@@ -588,13 +589,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
             _buildField('First Name', 'Enter first name',   [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')), // Only letters allowed
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
             ],firstNameController,    validator: (value) => value?.isEmpty ?? true
                 ? 'Please enter patient name'
                 : null,),
             const SizedBox(height: 16),
             _buildField('Last Name', 'Enter last name', [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')), // Only letters allowed
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
             ], lastNameController,validator: (value) => value?.isEmpty ?? true
                 ? 'Please enter patient name'
                 : null,),

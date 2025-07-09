@@ -1123,14 +1123,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 borderSide: BorderSide(color: AppColors.primary),
               ),
               child: Container(
-                width: 400,
+                width:  ResponsiveUtils.scaleWidth(context, 400),
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // GIF Animation
                     SizedBox(
-                      height: 100, // Adjust height as needed
+                      height: ResponsiveUtils.scaleHeight(context, 100), // Adjust height as needed
                       child: Image.asset('assets/list.gif'),
                     ),
 
@@ -1152,12 +1152,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       child: TextButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => HomeScreen(initialPage: 1),
-                            ),
-                          );
+
                         },
                         child:  Text(
                           'OK',
@@ -1671,77 +1666,177 @@ class _OnboardingFormState extends State<OnboardingForm> {
                      Text("2. History",
                         style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 14,
-                     // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     // crossAxisAlignment: WrapCrossAlignment.center,
-                      alignment: WrapAlignment.spaceBetween,
+                 isMobile ?Wrap(
+                   spacing: 16,
+                   runSpacing: 14,
+                   // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   // crossAxisAlignment: WrapCrossAlignment.center,
+                   alignment: WrapAlignment.spaceBetween,
 
-                      children: [
+                   children: [
 
-                        Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         CustomCheckbox(
+                           label: 'H/O DM',
+                           initialValue: _hasDM,
+                           onChanged: (value) => setState(() => _hasDM = value),
+                         ),
+                         const SizedBox(height: 8),
+                         if(_hasDM)
+                           FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
+                       ],
+                     ),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         CustomCheckbox(label: 'Hypertension'
+                           ,initialValue: _hasHypertension
+                           ,onChanged: (value) {
+                             setState(() {
+                               _hasHypertension=value;
+                             });
+                           },
+                         ),
+                         const SizedBox(height: 8),
+                         if(_hasHypertension)
+                           FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
+                       ],
+                     ),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                           setState(() {
+                             _hasIHD=value;
+                           });
+                         },),
+                         const SizedBox(height: 8),
+                         if(_hasIHD)
+                           FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
+                       ],
+                     ),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                           setState(() {
+                             print("_hasCOPD");
+                             print(_hasCOPD);
+                             _hasCOPD=value;
+                           });
+                         },),
+                         const SizedBox(height: 8),
+                         if(_hasCOPD)
+                           FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
+                       ],
+                     ),
+
+                   ],
+                 ): Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CustomCheckbox(
-                            label: 'H/O DM',
-                            initialValue: _hasDM,
-                            onChanged: (value) => setState(() => _hasDM = value),
-                                                  ),
+                              label: 'H/O DM',
+                              initialValue: _hasDM,
+                              onChanged: (value) => setState(() => _hasDM = value),
+                            ),
                             const SizedBox(height: 8),
-                            if(_hasDM)
-                            FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
+                            if (_hasDM)
+                              FormInput(
+                                label: 'Since when',
+                                maxlength: 1,
+                                controller: _SincewhenController,
+                              ),
                           ],
                         ),
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(label: 'Hypertension'
-                                ,initialValue: _hasHypertension
-                              ,onChanged: (value) {
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'Hypertension',
+                              initialValue: _hasHypertension,
+                              onChanged: (value) {
                                 setState(() {
-                                  _hasHypertension=value;
+                                  _hasHypertension = value;
                                 });
                               },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasHypertension)
+                              FormInput(
+                                label: 'Since when',
+                                maxlength: 1,
+                                controller: _hypertensionSinceController,
                               ),
-                              const SizedBox(height: 8),
-                              if(_hasHypertension)
-                                FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'IHD',
+                              initialValue: _hasIHD,
+                              onChanged: (value) {
                                 setState(() {
-                                  _hasIHD=value;
+                                  _hasIHD = value;
                                 });
-                              },),
-                              const SizedBox(height: 8),
-                              if(_hasIHD)
-                                FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
-                            ],
-                          ),
-                         Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                               setState(() {
-                                 print("_hasCOPD");
-                                 print(_hasCOPD);
-                                 _hasCOPD=value;
-                               });
-                             },),
-                             const SizedBox(height: 8),
-                             if(_hasCOPD)
-                               FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
-                           ],
-                         ),
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasIHD)
+                              FormInput(
+                                label: 'IHD Description',
+                                maxlength: 1,
+                                controller: _ihdDescriptionController,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomCheckbox(
+                              label: 'COPD',
+                              initialValue: _hasCOPD,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hasCOPD = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (_hasCOPD)
+                              FormInput(
+                                label: 'COPD Description',
+                                maxlength: 1,
+                                controller: _copdDescriptionController,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
 
-                      ],
-                    ),
 
-                    const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
                     Wrap(
                       spacing: 16,
@@ -1848,8 +1943,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Pallor",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                  style:  TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
                               SizedBox(height: 8),
                               Row(
                                 children: [
@@ -1884,8 +1979,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Icterus",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                  style:   TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
                               SizedBox(height: 8),
                               Row(
                                 children: [
@@ -1920,8 +2015,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Lymphadenopathy",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                  style:   TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
 
                               SizedBox(height: 8,),
 
@@ -1957,8 +2052,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Oedema",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                  style:  TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
 
                               SizedBox(height: 8,),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 import 'custom_text_field.dart';
 
@@ -120,8 +121,8 @@ class _TimePickerInputState extends State<TimePickerInput> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(widget.label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, color: AppColors.primary)),
+              style:  TextStyle(
+                  fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
           const SizedBox(height: 4),
           Stack(
             children: [

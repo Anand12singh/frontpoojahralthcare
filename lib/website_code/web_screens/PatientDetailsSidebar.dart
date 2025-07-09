@@ -572,7 +572,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         Expanded(
           child: _sidebarCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   "Contact Patient",
@@ -605,7 +605,9 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     }
                   },
 
-                ): InkWell(
+                ):
+
+              InkWell(
                 onTap: () async {
                   final phone = patient['mobile_no'];
                   final whatsappUrl = Uri.parse("https://wa.me/$phone");
@@ -683,7 +685,9 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     padding: const EdgeInsets.all(8),
     child: Column(
       mainAxisSize: MainAxisSize.min,
+
       children: [
+
         Image.asset(
           "assets/call.png",
           height: ResponsiveUtils.scaleHeight(context, 24),
@@ -709,278 +713,280 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       ],
     ):
 
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sidebarCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:  [
-                Text("${patient['first_name']} ${patient['last_name']} -${_getGenderText(patient['gender'])}", style: TextStyle(fontWeight: FontWeight.w600,fontSize:  ResponsiveUtils.fontSize(context, 20),color: AppColors.primary)),
-                // Text("PH ID-${patient['phid']}", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
-                SizedBox(height: 8),
-                buildInfoBlock("PH ID", "${patient['phid']}"),
-                buildInfoBlock("History", _getHistoryText()),
-                !isMobile
-                    ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: buildInfoBlock(
+      SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sidebarCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children:  [
+                  Text("${patient['first_name']} ${patient['last_name']} -${_getGenderText(patient['gender'])}", style: TextStyle(fontWeight: FontWeight.w600,fontSize:  ResponsiveUtils.fontSize(context, 20),color: AppColors.primary)),
+                  // Text("PH ID-${patient['phid']}", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 20,color: AppColors.primary)),
+                  SizedBox(height: 8),
+                  buildInfoBlock("PH ID", "${patient['phid']}"),
+                  buildInfoBlock("History", _getHistoryText()),
+                  !isMobile
+                      ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Location",
+                          patient['location'] != 'Others'
+                              ? patient['location'] ??'Not specified'
+                              : patient['other_location']??'Not specified',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Occupation",
+                          patient['occupation'] ?? 'Not specified',
+                        ),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    children: [
+                      buildInfoBlock(
                         "Location",
                         patient['location'] != 'Others'
-                            ? patient['location'] ??'Not specified'
-                            : patient['other_location']??'Not specified',
+                            ? patient['location']
+                            : patient['other_location'],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: buildInfoBlock(
+                      buildInfoBlock(
                         "Occupation",
                         patient['occupation'] ?? 'Not specified',
                       ),
-                    ),
-                  ],
-                )
-                    : Column(
-                  children: [
-                    buildInfoBlock(
-                      "Location",
-                      patient['location'] != 'Others'
-                          ? patient['location']
-                          : patient['other_location'],
-                    ),
-                    buildInfoBlock(
-                      "Occupation",
-                      patient['occupation'] ?? 'Not specified',
-                    ),
-                  ],
-                ),
-
-                // Row 2
-                !isMobile
-                    ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: buildInfoBlock(
+                    ],
+                  ),
+        
+                  // Row 2
+                  !isMobile
+                      ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Diagnosis",
+                          dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Surgery Type",
+                          dischargeInfo?['operation_type'] ?? 'Not specified',
+                        ),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    children: [
+                      buildInfoBlock(
                         "Diagnosis",
                         dischargeInfo?['diagnosis'] ?? 'Not specified',
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: buildInfoBlock(
+                      buildInfoBlock(
                         "Surgery Type",
                         dischargeInfo?['operation_type'] ?? 'Not specified',
                       ),
-                    ),
-                  ],
-                )
-                    : Column(
-                  children: [
-                    buildInfoBlock(
-                      "Diagnosis",
-                      dischargeInfo?['diagnosis'] ?? 'Not specified',
-                    ),
-                    buildInfoBlock(
-                      "Surgery Type",
-                      dischargeInfo?['operation_type'] ?? 'Not specified',
-                    ),
-                  ],
-                ),
-
-                // Row 3
-                !isMobile
-                    ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: buildInfoBlock(
-                        "Chief Complaints",
-                        patient['chief_complaints'] ?? 'Not specified',
+                    ],
+                  ),
+        
+                  // Row 3
+                  !isMobile
+                      ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Chief Complaints",
+                          patient['chief_complaints'] ?? 'Not specified',
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: buildInfoBlock(
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: buildInfoBlock(
+                          "Clinical Diagnosis",
+                          dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        ),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    children: [
+                      buildInfoBlock(
+                        "Chief Complaints",
+                        patient['doctor_note'] ?? 'Not specified',
+                      ),
+                      buildInfoBlock(
                         "Clinical Diagnosis",
                         dischargeInfo?['diagnosis'] ?? 'Not specified',
                       ),
-                    ),
-                  ],
-                )
-                    : Column(
-                  children: [
-                    buildInfoBlock(
-                      "Chief Complaints",
-                      patient['doctor_note'] ?? 'Not specified',
-                    ),
-                    buildInfoBlock(
-                      "Clinical Diagnosis",
-                      dischargeInfo?['diagnosis'] ?? 'Not specified',
-                    ),
-                  ],
-                ),
-
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: buildInfoBlock(
-                          "Summary",
-
-                          (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
-                              ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? 'Not specified') :''
-                              : 'Not specified'
+                    ],
+                  ),
+        
+        
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildInfoBlock(
+                            "Summary",
+        
+                            (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
+                                ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? 'Not specified') :''
+                                : 'Not specified'
+                        ),
                       ),
-                    ),
-                    /*        if (!isEditingSummary &&
-                      patientData!['summary'] != null &&
-                      patientData!['summary'].isNotEmpty)*/
-                    if (!isEditingSummary)
-                      IconButton(
-                        icon: Icon(Icons.edit_outlined, color: AppColors.primary),
-                        onPressed: () {
-                          setState(() {
-                            isEditingSummary = true;
-                            summaryController.text = (patientData!['summary'] != null &&
-                                patientData!['summary'].isNotEmpty)
-                                ? patientData!['summary'][0]['summary'] ?? ''
-                                : '';
-                          });
-                        },
-                      ),
-
-                    if (isEditingSummary)
+                      /*        if (!isEditingSummary &&
+                        patientData!['summary'] != null &&
+                        patientData!['summary'].isNotEmpty)*/
+                      if (!isEditingSummary)
+                        IconButton(
+                          icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+                          onPressed: () {
+                            setState(() {
+                              isEditingSummary = true;
+                              summaryController.text = (patientData!['summary'] != null &&
+                                  patientData!['summary'].isNotEmpty)
+                                  ? patientData!['summary'][0]['summary'] ?? ''
+                                  : '';
+                            });
+                          },
+                        ),
+        
+                      if (isEditingSummary)
+                        Row(
+                          children: [
+        
+                            IconButton(
+                              onPressed: isAddingSummary ? null : addSummary,
+                              icon:   Icon(Icons.check_rounded,  color: AppColors.primary,),
+        
+        
+        
+                            ),
+        
+        
+        
+                            IconButton(
+                              icon: Icon(Icons.close_rounded, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  isEditingSummary = false;
+        
+                                });
+                              },
+                            ),
+                          ],
+                        )
+                    ],
+                  ),
+                  if (isEditingSummary)
+                    Column(
+                      children: [
+                        //SizedBox(height: 12),
+                        CustomTextField(
+                          controller: summaryController,
+                          hintText: 'Summary',
+                          maxLines: 2,
+                        ),
+                        /*     SizedBox(height: 8),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-
-                          IconButton(
-                            onPressed: isAddingSummary ? null : addSummary,
-                            icon:   Icon(Icons.check_rounded,  color: AppColors.primary,),
-
-
-
-                          ),
-
-
-
-                          IconButton(
-                            icon: Icon(Icons.close_rounded, color: Colors.red),
+                          Animatedbutton(
                             onPressed: () {
                               setState(() {
                                 isEditingSummary = false;
-
                               });
                             },
+                            shadowColor: Colors.white,
+                            titlecolor: AppColors.primary,
+                            backgroundColor: Colors.white,
+                            borderColor: AppColors.secondary,
+                            isLoading: isCancleLoading,
+                            title: 'Cancel',
+                          ),
+        
+                          SizedBox(width: 8),
+                          Animatedbutton(
+                            onPressed: isAddingSummary ? null : addSummary,
+                            isLoading: isAddingSummary,
+                            title: 'Update Summary',
+                            backgroundColor: AppColors.secondary,
+                            shadowColor: Colors.white,
                           ),
                         ],
-                      )
-                  ],
-                ),
-                if (isEditingSummary)
-                  Column(
-                    children: [
-                      //SizedBox(height: 12),
-                      CustomTextField(
-                        controller: summaryController,
-                        hintText: 'Summary',
-                        maxLines: 2,
-                      ),
-                      /*     SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Animatedbutton(
-                          onPressed: () {
-                            setState(() {
-                              isEditingSummary = false;
-                            });
-                          },
-                          shadowColor: Colors.white,
-                          titlecolor: AppColors.primary,
-                          backgroundColor: Colors.white,
-                          borderColor: AppColors.secondary,
-                          isLoading: isCancleLoading,
-                          title: 'Cancel',
-                        ),
-
-                        SizedBox(width: 8),
-                        Animatedbutton(
-                          onPressed: isAddingSummary ? null : addSummary,
-                          isLoading: isAddingSummary,
-                          title: 'Update Summary',
-                          backgroundColor: AppColors.secondary,
-                          shadowColor: Colors.white,
-                        ),
+                      ),*/
                       ],
-                    ),*/
-                    ],
-                  ),
-              ],
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          _sidebarCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Contact Patient",
-                  style: TextStyle(
-                    fontSize:  ResponsiveUtils.fontSize(context, 14),
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.secondary,
+            const SizedBox(height: 20),
+            _sidebarCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Contact Patient",
+                    style: TextStyle(
+                      fontSize:  ResponsiveUtils.fontSize(context, 14),
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.secondary,
+                    ),
                   ),
-                ),
-                ListTile(
-                  leading: Image.asset(
-                    "assets/whatsapp.png",
-                    height: ResponsiveUtils.scaleHeight(context, 20)
+                  ListTile(
+                    leading: Image.asset(
+                      "assets/whatsapp.png",
+                      height: ResponsiveUtils.scaleHeight(context, 20)
+                    ),
+                    title: const Text('Connect on Whatsapp'),
+                    onTap: () async {
+                      final phone = patient['mobile_no'];
+                      final whatsappUrl = Uri.parse("https://wa.me/$phone");
+        
+                      if (await canLaunchUrl(whatsappUrl)) {
+                        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+                      } else {
+                        showTopRightToast(
+                          context,
+                          "Could not open WhatsApp",
+                          backgroundColor: Colors.red,
+                        );
+                      }
+                    },
                   ),
-                  title: const Text('Connect on Whatsapp'),
-                  onTap: () async {
-                    final phone = patient['mobile_no'];
-                    final whatsappUrl = Uri.parse("https://wa.me/$phone");
-
-                    if (await canLaunchUrl(whatsappUrl)) {
-                      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
-                    } else {
-                      showTopRightToast(
-                        context,
-                        "Could not open WhatsApp",
-                        backgroundColor: Colors.red,
-                      );
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: Image.asset(
-                    "assets/call.png",
-                    height:  ResponsiveUtils.scaleHeight(context, 20)
+                  ListTile(
+                    leading: Image.asset(
+                      "assets/call.png",
+                      height:  ResponsiveUtils.scaleHeight(context, 20)
+                    ),
+                    title: Text('Connect on Call - ${patient['mobile_no']}'),
+                    onTap: () async {
+                      final phone = patient['mobile_no'];
+                      final callUri = Uri(scheme: 'tel', path: phone);
+        
+                      if (await canLaunchUrl(callUri)) {
+                        await launchUrl(callUri);
+                      } else {
+                        showTopRightToast(
+                          context,
+                          "Could not launch dialer",
+                          backgroundColor: Colors.red,
+                        );
+                      }
+                    },
                   ),
-                  title: Text('Connect on Call - ${patient['mobile_no']}'),
-                  onTap: () async {
-                    final phone = patient['mobile_no'];
-                    final callUri = Uri(scheme: 'tel', path: phone);
-
-                    if (await canLaunchUrl(callUri)) {
-                      await launchUrl(callUri);
-                    } else {
-                      showTopRightToast(
-                        context,
-                        "Could not launch dialer",
-                        backgroundColor: Colors.red,
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-          )
-
-        ],
+                ],
+              ),
+            )
+        
+          ],
+        ),
       );
   }
 

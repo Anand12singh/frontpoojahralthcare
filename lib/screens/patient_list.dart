@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
@@ -9,6 +10,7 @@ import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../website_code/web_screens/Home_Screen.dart';
+import '../widgets/AnimatedButton.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/showTopSnackBar.dart';
 
@@ -23,11 +25,17 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   List<Map<String, dynamic>> patients = [];
   List<Map<String, dynamic>> filteredPatients = [];
   TextEditingController searchController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _lastnameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   String searchQuery = "";
   bool sortByName = true;
+  bool _isSubmitting = false;
+
+  final _formKey = GlobalKey<FormState>();
   bool isLoading = true;
   String errorMessage = '';
-
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
@@ -78,7 +86,103 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       });
     }
   }
+  void _showErrorSnackbar(String message) {
+    showTopRightToast(context,message,backgroundColor: Colors.red);
 
+  }
+  void _handleSuccessResponse(Map<String, dynamic> responseData) {
+    final data = responseData['data'][0];
+    int patientExist = data['patientExist'] ?? 0;
+    String? phid = data['patient_id']?.toString() ?? 'NA';
+    String? phid1 = data['phid']?.toString() ?? 'NA';
+
+    Global.status = patientExist.toString();
+    Global.patient_id = phid;
+    Global.phid = phid;
+    Global.phid1 = phid1;
+    GlobalPatientData.firstName =_nameController.text.trim();
+    GlobalPatientData.lastName =_lastnameController.text.trim();
+    GlobalPatientData.phone =_phoneController.text.trim();
+    GlobalPatientData.patientExist =patientExist;
+    GlobalPatientData.phid =phid1;
+    GlobalPatientData.patientId =phid ;
+
+    log('Patient Exist: $patientExist, PHID: $phid');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+          initialPage: 2,
+        ),
+      ),
+    );
+  }
+  void _AddPatientsubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+      _isSubmitting = true;
+    });
+    FocusScope.of(context).unfocus();
+
+    try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
+        return;
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Cookie':
+        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+      };
+
+      final response = await http.post(
+        Uri.parse('$localurl/add_patient'),
+        headers: headers,
+        body: json.encode({
+          "first_name": _nameController.text.trim(),
+          "last_name": _lastnameController.text.trim(),
+          "mobile_no": _phoneController.text.trim(),
+        }),
+      );
+
+      log('API Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          _isLoading = false;
+          Navigator.of(context).pop();
+          _handleSuccessResponse(responseData);
+        } else {
+          _isLoading = false;
+          _showErrorSnackbar(responseData['message'] ?? 'Submission failed');
+        }
+      } else {
+        _isLoading = false;
+        _showErrorSnackbar('API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isSubmitting = false;
+      });
+      _showErrorSnackbar('Error: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
   List<Map<String, dynamic>> _transformApiData(List<dynamic> apiData) {
     return apiData.map((patient) {
       return {
@@ -102,6 +206,143 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       return 'Invalid date';
     }
   }
+  Widget _buildField(
+      String label,
+      String hint,
+      final List<TextInputFormatter>? inputFormatters,
+      TextEditingController controller, {
+        String? Function(String?)? validator,
+      }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomTextField(
+          controller: controller,
+          hintText: hint,
+          inputFormatters:inputFormatters,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          validator: validator,
+
+        ),
+      ],
+    );
+  }
+  Widget _addPatient({
+    required TextEditingController firstNameController,
+    required TextEditingController lastNameController,
+    required TextEditingController phoneController,
+    required bool isLoading,  // Added this parameter
+    required VoidCallback onPressed,  // Added this parameter
+  })
+  {
+    return Container(
+      width: 400,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Patient Registration',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1C3B70),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Quickly onboard a patient into the system.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.secondary),
+            ),
+            const SizedBox(height: 24),
+            _buildField('First Name', 'Enter first name',   [
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
+            ],firstNameController,    validator: (value) => value?.isEmpty ?? true
+                ? 'Please enter patient name'
+                : null,),
+            const SizedBox(height: 16),
+            _buildField('Last Name', 'Enter last name', [
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
+            ], lastNameController,validator: (value) => value?.isEmpty ?? true
+                ? 'Please enter patient name'
+                : null,),
+            const SizedBox(height: 16),
+            _buildField('Phone Number', 'Enter Phone Number', [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+            ], phoneController,    validator: (value) {
+              if (value?.isEmpty ?? true)
+                return 'Please enter phone number';
+              if (!RegExp(r'^[0-9]{10}$').hasMatch(value!))
+                return 'Enter a valid 10-digit number';
+              return null;
+            },
+            ),
+            const SizedBox(height: 24),
+            Row(
+              spacing: 10,
+              children: [
+                Expanded(
+
+                  child: Animatedbutton(
+
+                    title: 'Discard',
+                    isLoading: isLoading,
+                    onPressed: () {
+                      _nameController.clear();
+                      _lastnameController.clear();
+                      _phoneController.clear();
+                      Navigator.pop(context);
+                    },
+                    titlecolor:AppColors.secondary,
+                    backgroundColor: Colors.white,
+                    borderColor: AppColors.secondary,
+
+                    shadowColor: AppColors.primary,
+                  ),
+                ),
+
+
+                Expanded(
+                  child: Animatedbutton(
+                    title: 'Add Patient',
+                    isLoading: isLoading,
+                    onPressed: _isSubmitting ? null : () => _AddPatientsubmit(),
+
+
+
+                    backgroundColor: AppColors.secondary,
+                    shadowColor: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void filterPatients(String query) {
     setState(() {
@@ -121,7 +362,36 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       filteredPatients = List.from(patients);
     });
   }
+  void _showAddPatientModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Center(
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            child: _addPatient(
+              firstNameController: _nameController,
+              lastNameController: _lastnameController,
+              phoneController: _phoneController,
+              isLoading: _isLoading,
 
+              onPressed: () {
+                /*    Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PatientDataTabsScreen(),
+                  ),
+                );*/
+                Navigator.pop(context); // Close the modal
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Future<void> _deletePatient(String patientId) async {
     try {
       setState(() => isLoading = true);
@@ -189,18 +459,38 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
           : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding:  EdgeInsets.all(16),
-            child: SizedBox(
-              width:  ResponsiveUtils.scaleWidth(context, 350),
-              child: CustomTextField(
-                controller: searchController,
-                onChanged: filterPatients,
-           hintText: "Search patients...",
-prefixIcon: Icons.search_rounded,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
 
+              Container(
+                margin:  EdgeInsets.only(left: 16),
+                width:ResponsiveUtils.scaleWidth(context, 160),
+
+                child:Animatedbutton(
+                  title: '+ Add Patient',
+                  isLoading: _isLoading,
+                  onPressed: () {
+                    _showAddPatientModal(context);
+                  },
+                  backgroundColor: AppColors.secondary,
+                  shadowColor: AppColors.primary,
+                ),
               ),
-            ),
+              Padding(
+                padding:  EdgeInsets.all(16),
+                child: SizedBox(
+                  width:  ResponsiveUtils.scaleWidth(context, 350),
+                  child: CustomTextField(
+                    controller: searchController,
+                    onChanged: filterPatients,
+                    hintText: "Search patients...",
+                    prefixIcon: Icons.search_rounded,
+
+                  ),
+                ),
+              ),
+            ],
           ),
           Expanded(
             child: Container(

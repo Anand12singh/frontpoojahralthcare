@@ -59,6 +59,7 @@ dependencies:
   universal_html: ^2.2.1
   responsive_framework: ^1.5.1
   flutter_svg: ^2.0.10
+  dropdown_button2: ^2.3.9
 
   # flutter_launcher_icons: ^0.14.3
 

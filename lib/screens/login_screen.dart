@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import '../constants/ResponsiveUtils.dart';
 import '../constants/base_url.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
@@ -144,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: 600,
+                    maxWidth: ResponsiveUtils.scaleWidth(context, 600),
                     minHeight: constraints.maxHeight,
                     // minHeight: 500
                   ),
@@ -188,13 +189,13 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Image.asset(
           'assets/logo.png',
-          height: 70,
+          height:  ResponsiveUtils.scaleHeight(context, 70),
         ),
         const SizedBox(height: 24),
         Text(
           'Login',
           style: TextStyle(
-            fontSize: 28,
+            fontSize: ResponsiveUtils.fontSize(context, 28),
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
             letterSpacing: 0.5,
@@ -203,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Enter your credentials to continue',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
             color: AppColors.textSecondary,
           ),
         ),
@@ -253,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Username',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
             letterSpacing: 0.5,
@@ -277,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Password',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
             letterSpacing: 0.5,
@@ -312,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen>
           onFieldSubmitted: (_) => _login(),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
 
     /*    Row(

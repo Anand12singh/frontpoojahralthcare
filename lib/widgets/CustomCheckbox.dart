@@ -103,20 +103,13 @@ class CustomRadioButton<T> extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width:  ResponsiveUtils.scaleWidth(context, 24),
-            height:  ResponsiveUtils.scaleHeight(context, 24),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? AppColors.secondary : Colors.grey,
-                width: 2,
-              ),
-            ),
-            child: isSelected
-                ?Center(child: Icon(Icons.check_circle_rounded,color: AppColors.secondary,size:  ResponsiveUtils.fontSize(context, 20),)) //Image.asset("assets/checkbox.png")
-                : null,
-          ),
+          isSelected
+              ?Center(child: Icon(
+
+            Icons.check_circle_rounded,color: AppColors.secondary,size:  ResponsiveUtils.fontSize(context, 24),)) //Image.asset("assets/checkbox.png")
+              : Icon(
+
+            Icons.circle_outlined,color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 24),),
           const SizedBox(width: 12),
           Text(
             label,

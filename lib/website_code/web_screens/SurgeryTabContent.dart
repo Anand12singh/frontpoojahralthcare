@@ -40,6 +40,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   final TextEditingController _assistantController = TextEditingController();
   final TextEditingController _anaesthetistController = TextEditingController();
   final TextEditingController _anaesthesiaController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
   final TextEditingController _findingsController = TextEditingController();
   final TextEditingController _procedureController = TextEditingController();
   final TextEditingController _implantsController = TextEditingController();
@@ -272,6 +273,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             _assistantController.text = operationData['assistant'] ?? '';
             _anaesthetistController.text = operationData['anaesthetists'] ?? '';
             _anaesthesiaController.text = operationData['anaesthesia'] ?? '';
+            _locationController.text = operationData['operation_location'] ?? '';
             _findingsController.text = operationData['findings'] ?? '';
             _procedureController.text = operationData['procedure'] ?? '';
             _implantsController.text = operationData['implants_used'] ?? '';
@@ -343,6 +345,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
         'anaesthetists': _anaesthetistController.text,
         'anaesthesia': _anaesthesiaController.text,
         'findings': _findingsController.text,
+        'operation_location': _locationController.text,
         'procedure': _procedureController.text,
         'implants_used': _implantsController.text,
         'treatment_advised': _treatmentController.text,
@@ -356,7 +359,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
       }
 
       request.fields.addAll(fields);
-
+print("request.fields");
+print(request.fields);
       // Handle file uploads
       List<String> existingFileIds = [];
       for (var file in _uploadedFiles['implants_image'] ?? []) {
@@ -420,6 +424,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
     _assistantController.dispose();
     _anaesthetistController.dispose();
     _anaesthesiaController.dispose();
+    _locationController.dispose();
     _findingsController.dispose();
     _procedureController.dispose();
     _implantsController.dispose();
@@ -464,11 +469,12 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                   Expanded(
                     child: DatePickerInput(
                       label: 'Date',
+
                       initialDate: _selectedDate,
                       onDateSelected: (date) {
                         setState(() => _selectedDate = date);
                       },
-                      hintlabel: '',
+                      hintlabel: 'Date',
                     ),
                   ),
                   SizedBox(width: fieldSpacing),
@@ -478,10 +484,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             ] else ...[
               Column(
                 children: [
-                  Container(
-                    width: formFieldWidth,
-                    child: _buildFormInput('Surgery', _surgeryController),
-                  ),
+                  _buildFormInput('Surgery', _surgeryController),
                   SizedBox(height: fieldSpacing),
                   DatePickerInput(
                     label: 'Date',
@@ -528,7 +531,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                              Text('Time taken:',
-                                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary,      fontSize: ResponsiveUtils.fontSize(context, 14))),
+                                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary, fontSize: ResponsiveUtils.fontSize(context, 14))),
                             const SizedBox(height: 4),
                             Row(
                               children: [
@@ -584,7 +587,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                       Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary, fontSize: ResponsiveUtils.fontSize(context, 14))),
                       Row(
                         children: [
                           SizedBox(
@@ -632,7 +635,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
                 children: [
                   Container(
                     width:  screenWidth * 0.313,
-                    child: _buildFormInput('Location', _findingsController, maxLines: 1),
+                    child: _buildFormInput('Location', _locationController, maxLines: 1),
                   ),
                   SizedBox(width: fieldSpacing),
                   Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
@@ -643,10 +646,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             ] else ...[
               Column(
                 children: [
-                  Container(
-                    width: formFieldWidth,
-                    child: _buildFormInput('Location', _findingsController, maxLines: 1),
-                  ),
+                  _buildFormInput('Location', _locationController, maxLines: 1),
                   SizedBox(height: fieldSpacing),
                   _buildFormInput('Findings', _findingsController, maxLines: 3),
                   SizedBox(height: fieldSpacing),

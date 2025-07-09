@@ -65,7 +65,7 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
               SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.7,
+                  height: MediaQuery.of(context).size.height ,//* 0.7,
                   child: _buildTabsAndViews()),
               const SizedBox(height: 20),
               PatientDetailsSidebar(

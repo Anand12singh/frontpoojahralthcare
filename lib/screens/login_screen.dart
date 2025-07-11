@@ -35,37 +35,35 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 700),
     );
 
-    _fadeInAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
+    _fadeInAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
+        curve: Curves.easeOut,
       ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1).animate(
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1,
+    ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeOutBack),
+        curve: Curves.easeOutBack,
       ),
     );
 
     _animationController.forward();
   }
+
 
   @override
   void dispose() {
@@ -164,13 +162,14 @@ class _LoginScreenState extends State<LoginScreen>
                         children: [
 
 
-                          ScaleTransition(
-                            scale: _scaleAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
+                          FadeTransition(
+                            opacity: _fadeInAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
                               child: _buildLoginCard(),
                             ),
                           ),
+
                         ],
                       ),
                     ),
@@ -186,12 +185,14 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildLogo() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'assets/logo.png',
-          height:  ResponsiveUtils.scaleHeight(context, 70),
+         // 'assets/logo.png',
+          'assets/company_logo.png',
+          height:  ResponsiveUtils.scaleHeight(context, 80),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 10),
         Text(
           'Login',
           style: TextStyle(
@@ -305,9 +306,7 @@ class _LoginScreenState extends State<LoginScreen>
             if (value == null || value.isEmpty) {
               return 'Please enter your password';
             }
-            if (value.length < 6) {
-              return 'Password must be at least 6 characters';
-            }
+
             return null;
           },
           onFieldSubmitted: (_) => _login(),
@@ -316,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SizedBox(height: 16),
 
 
-    /*    Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
@@ -332,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
                 Text(
                   'Keep me logged in',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ResponsiveUtils.fontSize(context, 14),
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -342,28 +341,30 @@ class _LoginScreenState extends State<LoginScreen>
             GestureDetector(
 
               onTap: () {
-                Navigator.pushReplacementNamed(context, '/addPatient');
+                //Navigator.pushReplacementNamed(context, '/addPatient');
               },
               child: Text(
                 'Forget password?',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.bluePrimary,
-                  decoration: TextDecoration.underline,
+                  fontSize: ResponsiveUtils.fontSize(context, 14),
+                  color: AppColors.primary,
+                  //decoration: TextDecoration.underline,
                 ),
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: 14),*/
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
           child: Animatedbutton(
+title: 'LOGIN',
             isLoading: _isLoading,
             onPressed: _login,
             backgroundColor: AppColors.secondary,
             shadowColor: AppColors.primary,
+
           ),
         ),
 

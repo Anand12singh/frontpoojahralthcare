@@ -308,8 +308,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
               Animatedbutton(
                 onPressed: _isAddingFollowUp ? null : _addFollowUp,
                 shadowColor: Colors.white,
-                titlecolor: AppColors.primary,
-                backgroundColor: Colors.white,
+                titlecolor: Colors.white,
+                backgroundColor: AppColors.secondary,
                 borderColor: AppColors.secondary,
                 isLoading: false,
                 title: '+ Follow up',
@@ -321,11 +321,12 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                 (entry) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.Offwhitebackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.Containerbackground),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -464,7 +464,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                       Expanded(
                         child: FormInput(
                             controller: _drugAllergyController,
-                            label: 'Any drug allergy reported/noted',
+                            label: 'Any drug allergy reported/Noted',
                             hintlabel: 'Enter drug allergy details'
                         ),
                       ),

@@ -164,13 +164,23 @@ class _DatePickerInputState extends State<DatePickerInput> {
       // Large screens - fixed comfortable width
       fieldWidth = 275;
     }
+    String _toCamelCase(String text) {
+      if (text.isEmpty) return text;
 
+      return text
+          .split(' ')
+          .map((word) =>
+      word.isNotEmpty
+          ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+          : '')
+          .join(' ');
+    }
     return SizedBox(
       width: fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.label,
+          Text(_toCamelCase(widget.label),
               style:  TextStyle(
                   fontWeight: FontWeight.w600, color: AppColors.primary
               ,  fontSize: ResponsiveUtils.fontSize(context, 14)

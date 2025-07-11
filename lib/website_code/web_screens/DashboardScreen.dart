@@ -28,6 +28,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lastnameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  bool isHovered = false;
+
   final List<Map<String, String>> bookmarksData = const [
     {
       'patientName': 'Gretchen O\'Kon, M/31',
@@ -249,7 +251,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome Back, Dr. Pooja",
+                      "Welcome Back, Dr. Ramesh Punjani",
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4),
@@ -459,7 +461,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   child: ListView(
                                     scrollDirection: Axis.horizontal,
                                     children: [
-                                      _buildFollowUpItem(
+                                      FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
                                         date: "07 May 2025, 9am",
                                         condition: "Hernia",
@@ -467,7 +469,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
-                                      _buildFollowUpItem(
+                                      FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
                                         date: "07 May 2025, 9am",
                                         condition: "Hernia",
@@ -475,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
-                                      _buildFollowUpItem(
+                                      FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
                                         date: "07 May 2025, 9am",
                                         condition: "Hernia",
@@ -483,7 +485,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
-                                      _buildFollowUpItem(
+                                      FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
                                         date: "07 May 2025, 9am",
                                         condition: "Hernia",
@@ -491,7 +493,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
-                                      _buildFollowUpItem(
+                                      FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
                                         date: "07 May 2025, 9am",
                                         condition: "Hernia",
@@ -556,7 +558,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   })
   {
     return Container(
-      width: 400,
+      width: ResponsiveUtils.scaleWidth(context, 500),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -626,9 +628,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _phoneController.clear();
                       Navigator.pop(context);
                     },
-                    titlecolor:AppColors.secondary,
+                    titlecolor:AppColors.red,
                     backgroundColor: Colors.white,
-                    borderColor: AppColors.secondary,
+                    borderColor: AppColors.red,
 
                     shadowColor: AppColors.primary,
                   ),
@@ -688,62 +690,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
 
-  Widget _buildFollowUpItem({
-    required String name,
-    required String date,
-    required String condition,
-    required String phone,
-    required bool isToday,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-      ),
 
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: AppColors.primary
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(date,
-            style: const TextStyle(
-            fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            fontSize: 12,
-          ),
-          ),
-          const SizedBox(height: 4),
-          Text(condition, style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-              color: AppColors.primary
-          ),),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-
-              Text(phone, style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                  color: AppColors.primary
-              ),),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildStatCard(String title, String count, String assetPath) {
     return Container(
@@ -805,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text(summary),
           ),
           Expanded(
-            flex: 1,
+            flex: 2,
             child: IconButton(
               icon: const Icon(Icons.more_vert),
               onPressed: () {
@@ -822,7 +770,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return const Divider(
       height: 1,
       thickness: 1,
-      color: Colors.grey,
+      color: AppColors.backgroundColor
+    );
+  }
+}
+
+class FollowUpItem extends StatefulWidget {
+  final String name;
+  final String date;
+  final String condition;
+  final String phone;
+  final bool isToday;
+
+  const FollowUpItem({
+    super.key,
+    required this.name,
+    required this.date,
+    required this.condition,
+    required this.phone,
+    required this.isToday,
+  });
+
+  @override
+  State<FollowUpItem> createState() => _FollowUpItemState();
+}
+
+class _FollowUpItemState extends State<FollowUpItem> {
+  bool isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isHovered
+                ? AppColors.primary
+                : AppColors.hinttext.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveUtils.fontSize(context, 14),
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.date,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isHovered
+                    ? AppColors.primary
+                    : AppColors.secondary,
+                fontSize: ResponsiveUtils.fontSize(context, 12),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.condition,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveUtils.fontSize(context, 12),
+                color: isHovered
+                    ? AppColors.primary
+                    : AppColors.secondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.call,
+                  color: AppColors.primary,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  widget.phone,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: ResponsiveUtils.fontSize(context, 12),
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

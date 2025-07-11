@@ -1927,7 +1927,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                              children: [
                                SizedBox(
                                    width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
-                                   child: FormInput(label: 'BP (mmHg)',hintlabel: 'Systolic',controller: _bpSystolicController,)),
+                                   child: FormInput(label: 'BP (mm/Hg)',hintlabel: 'Systolic',controller: _bpSystolicController,)),
                                Text("/",style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 26)),),
                                SizedBox(
                                    width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
@@ -2223,43 +2223,50 @@ class _OnboardingFormState extends State<OnboardingForm> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (!isFirstStep)
-            Animatedbutton(
-              onPressed: () {
-                setState(() => _currentStep--);
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              shadowColor: Colors.white,
-              titlecolor: AppColors.primary,
-              backgroundColor: Colors.white,
-              borderColor: AppColors.secondary,
-              isLoading: _isLoading,
-              title: 'BACK',
+            SizedBox(
+              width: ResponsiveUtils.scaleWidth(context, 150),
+              child: Animatedbutton(
+                onPressed: () {
+                  setState(() => _currentStep--);
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                shadowColor: Colors.white,
+                titlecolor: AppColors.primary,
+                backgroundColor: Colors.white,
+                borderColor: AppColors.secondary,
+                isLoading: _isLoading,
+                title: 'BACK',
+              ),
             )
           else
             const SizedBox(width: 120),
 
           const SizedBox(width: 10),
-          Animatedbutton(
-            onPressed: () {
-              if (!isLastStep) {
-                setState(() => _currentStep++);
-                _scrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              } else {
-                _submitForm();
-              }
-            },
-            shadowColor: Colors.white,
-            backgroundColor: AppColors.secondary,
-            isLoading: _isLoading,
-            title: isLastStep ? 'SUBMIT' : 'NEXT',
+          SizedBox(
+            width: ResponsiveUtils.scaleWidth(context, 150),
+            child: Animatedbutton(
+
+              onPressed: () {
+                if (!isLastStep) {
+                  setState(() => _currentStep++);
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                } else {
+                  _submitForm();
+                }
+              },
+              shadowColor: Colors.white,
+              backgroundColor: AppColors.secondary,
+              isLoading: _isLoading,
+              title: isLastStep ? 'SUBMIT' : 'NEXT',
+            ),
           ),
         ],
       ),
@@ -2690,13 +2697,25 @@ class FormInput extends StatelessWidget {
     this.maxcount = 200,
     this.isDate = false,
     this.hintlabel = "",
-    this.fillColor = Colors.transparent,
+    this.fillColor = Colors.white,
     this.controller,
     this.inputFormatters,
     this.readOnly = false,
     this.onChanged,
   });
 
+
+  String _toCamelCase(String text) {
+    if (text.isEmpty) return text;
+
+    return text
+        .split(' ')
+        .map((word) =>
+    word.isNotEmpty
+        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+        : '')
+        .join(' ');
+  }
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -2724,13 +2743,14 @@ class FormInput extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style:  TextStyle(
+            _toCamelCase(label),
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.primary,
-              fontSize: ResponsiveUtils.fontSize(context, 14)
+              fontSize: ResponsiveUtils.fontSize(context, 14),
             ),
           ),
+
           const SizedBox(height: 4),
           CustomTextField(
             fillColor: fillColor,

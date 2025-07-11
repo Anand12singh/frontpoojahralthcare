@@ -161,6 +161,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   late TextEditingController _controller;
   late bool _obscureText;
   Timer? _obscureTextToggleTimer;
+  late bool _isHovered;
 
   @override
   void initState() {
@@ -168,6 +169,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     _controller =
         widget.controller ?? TextEditingController(text: widget.initialValue);
     _obscureText = widget.obscureText;
+    _isHovered = false;
 
     if (widget.obscureTextAutoToggle && widget.obscureTextToggleDelay != null) {
       _startObscureTextToggleTimer();
@@ -183,6 +185,21 @@ class _CustomTextFieldState extends State<CustomTextField> {
       }
     });
   }
+
+  InputBorder _buildBorder(InputBorder baseBorder) {
+    if (_isHovered) {
+      if (baseBorder is OutlineInputBorder) {
+        return baseBorder.copyWith(
+          borderSide: BorderSide(
+            color: AppColors.primary,
+            width: baseBorder.borderSide.width,
+          ),
+        );
+      }
+    }
+    return baseBorder;
+  }
+
 
   @override
   void didUpdateWidget(CustomTextField oldWidget) {
@@ -294,94 +311,116 @@ class _CustomTextFieldState extends State<CustomTextField> {
             },
           )
         : widget.suffixIcon;
+    String? _toCamelCase(String text) {
+      if (text.isEmpty) return text;
 
-    return TextFormField(
-      controller: _controller,
-      focusNode: widget.focusNode,
-      obscureText: _obscureText,
-      readOnly: widget.readOnly,
-      enabled: widget.enabled,
-      keyboardType: widget.keyboardType,
-      inputFormatters: widget.inputFormatters,
-      textInputAction: widget.textInputAction,
-      textCapitalization: widget.textCapitalization,
-      style: effectiveStyle,
-      textAlign: widget.textAlign,
-      textAlignVertical: widget.textAlignVertical ?? TextAlignVertical.center,
-      autofocus: widget.autofocus,
-      maxLines: widget.maxLines,
-      minLines: widget.minLines,
-      maxLength: widget.maxLength,
-      expands: widget.expands,
-      showCursor: widget.showCursor,
-      autocorrect: widget.autocorrect,
-      enableSuggestions: widget.enableSuggestions,
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hintText,
-        helperText: widget.helperText,
-        errorText: widget.errorText,
-        labelStyle: effectiveLabelStyle,
-        hintStyle: effectiveHintStyle,
-        helperStyle: widget.helperStyle,
-        errorStyle: widget.errorStyle,
-        prefixIcon: widget.prefixIcon != null
-            ? Icon(
-          widget.prefixIcon,
-          color: AppColors.primary.withOpacity(0.8),
-          size:ResponsiveUtils.fontSize(context, 20)
-        )
-            : null,
-
-        prefixIconConstraints: widget.prefixIconConstraints,
-        suffixIcon: effectiveSuffixIcon,
-        suffixIconConstraints: widget.suffixIconConstraints,
-        suffix: widget.suffix,
-        icon: widget.icon,
-        isDense: widget.isDense,
-        isCollapsed: widget.isCollapsed,
-        border: effectiveBorder,
-        enabledBorder: effectiveEnabledBorder,
-        focusedBorder: effectiveFocusedBorder,
-        errorBorder: effectiveErrorBorder,
-        focusedErrorBorder: effectiveFocusedErrorBorder,
-        contentPadding: effectiveContentPadding,
-        filled: effectiveFilled,
-
-        fillColor: effectiveFillColor,
-        counterText: '',
-        counterStyle: widget.errorStyle,
-        alignLabelWithHint: true,
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        floatingLabelAlignment: FloatingLabelAlignment.start,
-        floatingLabelStyle: effectiveLabelStyle.copyWith(
-          color: AppColors.primary,
+      return text
+          .split(' ')
+          .map((word) =>
+      word.isNotEmpty
+          ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+          : '')
+          .join(' ');
+    }
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() {
+          _isHovered = true;
+        });
+      },
+      onExit: (_) {
+        setState(() {
+          _isHovered = false;
+        });
+      },
+      child: TextFormField(
+        controller: _controller,
+        focusNode: widget.focusNode,
+        obscureText: _obscureText,
+        readOnly: widget.readOnly,
+        enabled: widget.enabled,
+        keyboardType: widget.keyboardType,
+        inputFormatters: widget.inputFormatters,
+        textInputAction: widget.textInputAction,
+        textCapitalization: widget.textCapitalization,
+        style: effectiveStyle,
+        textAlign: widget.textAlign,
+        textAlignVertical: widget.textAlignVertical ?? TextAlignVertical.center,
+        autofocus: widget.autofocus,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        maxLength: widget.maxLength,
+        expands: widget.expands,
+        showCursor: widget.showCursor,
+        autocorrect: widget.autocorrect,
+        enableSuggestions: widget.enableSuggestions,
+        decoration: InputDecoration(
+          labelText: widget.label,
+          hintText: _toCamelCase(widget.hintText!),
+          helperText: widget.helperText,
+          errorText: widget.errorText,
+          labelStyle: effectiveLabelStyle,
+          hintStyle: effectiveHintStyle,
+          helperStyle: widget.helperStyle,
+          errorStyle: widget.errorStyle,
+          prefixIcon: widget.prefixIcon != null
+              ? Icon(
+            widget.prefixIcon,
+            color: AppColors.primary.withOpacity(0.8),
+            size: ResponsiveUtils.fontSize(context, 20),
+          )
+              : null,
+          prefixIconConstraints: widget.prefixIconConstraints,
+          suffixIcon: effectiveSuffixIcon,
+          suffixIconConstraints: widget.suffixIconConstraints,
+          suffix: widget.suffix,
+          icon: widget.icon,
+          isDense: widget.isDense,
+          isCollapsed: widget.isCollapsed,
+          border: _buildBorder(effectiveBorder),
+        hoverColor: Colors.white,
+          enabledBorder: _buildBorder(effectiveEnabledBorder),
+          focusedBorder: effectiveFocusedBorder,
+          errorBorder: effectiveErrorBorder,
+          focusedErrorBorder: effectiveFocusedErrorBorder,
+          contentPadding: effectiveContentPadding,
+          filled: effectiveFilled,
+          fillColor: effectiveFillColor,
+          counterText: '',
+          counterStyle: widget.errorStyle,
+          alignLabelWithHint: true,
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          floatingLabelAlignment: FloatingLabelAlignment.start,
+          floatingLabelStyle: effectiveLabelStyle.copyWith(
+            color: AppColors.primary,
+          ),
+          errorMaxLines: 2,
+          helperMaxLines: 2,
+          hintMaxLines: 1,
         ),
-        errorMaxLines: 2,
-        helperMaxLines: 2,
-        hintMaxLines: 1,
+        validator: widget.validator,
+        onChanged: widget.onChanged,
+        onTap: widget.onTap,
+        onFieldSubmitted: widget.onFieldSubmitted,
+        onEditingComplete: widget.onEditingComplete,
+        keyboardAppearance: widget.keyboardAppearance,
+        buildCounter: widget.buildCounter,
+        scrollPhysics: widget.scrollPhysics,
+        autofillHints: widget.autofillHints,
+        mouseCursor: widget.mouseCursor,
+        scrollController: widget.scrollController,
+        restorationId: widget.restorationId,
+        enableInteractiveSelection: widget.enableInteractiveSelection,
+        selectionControls: widget.selectionControls,
+        cursorWidth: widget.cursorWidth,
+        cursorHeight: widget.cursorHeight,
+        cursorRadius: widget.cursorRadius,
+        cursorColor: widget.cursorColor ?? AppColors.primary,
+        selectionHeightStyle: widget.selectionHeightStyle,
+        selectionWidthStyle: widget.selectionWidthStyle,
+        strutStyle: widget.strutStyle,
       ),
-      validator: widget.validator,
-      onChanged: widget.onChanged,
-      onTap: widget.onTap,
-      onFieldSubmitted: widget.onFieldSubmitted,
-      onEditingComplete: widget.onEditingComplete,
-      keyboardAppearance: widget.keyboardAppearance,
-      buildCounter: widget.buildCounter,
-      scrollPhysics: widget.scrollPhysics,
-      autofillHints: widget.autofillHints,
-      mouseCursor: widget.mouseCursor,
-      scrollController: widget.scrollController,
-      restorationId: widget.restorationId,
-      enableInteractiveSelection: widget.enableInteractiveSelection,
-      selectionControls: widget.selectionControls,
-      cursorWidth: widget.cursorWidth,
-      cursorHeight: widget.cursorHeight,
-      cursorRadius: widget.cursorRadius,
-      cursorColor: widget.cursorColor ?? AppColors.primary,
-      selectionHeightStyle: widget.selectionHeightStyle,
-      selectionWidthStyle: widget.selectionWidthStyle,
-      strutStyle: widget.strutStyle,
     );
+
   }
 }

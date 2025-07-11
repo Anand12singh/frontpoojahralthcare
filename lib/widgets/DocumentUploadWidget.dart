@@ -601,6 +601,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                       height: 50,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
+                        color: Colors.white,
                         border: Border.all(
                           color: AppColors.textSecondary.withOpacity(0.3),
                           width: 1.5,
@@ -612,7 +613,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                           Icon(Icons.attach_file, color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 18),),
                           const SizedBox(width: 8),
                           Text(
-                            "Tap to upload documents",
+                            "Tap To Upload Documents",
                             style: TextStyle(color: Colors.grey[700]),
                           ),
                         ],
@@ -635,7 +636,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                     style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
-                        fontSize: ResponsiveUtils.fontSize(context, 13)
+                        fontSize: ResponsiveUtils.fontSize(context, 14)
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -657,7 +658,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                         ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Text(
-                        "No files selected",
+                        "No Files Selected",
                         style: TextStyle(color: Colors.grey[700]),
                       ),
                     )

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 
-class DropdownInput<T> extends StatelessWidget {
+class DropdownInput<T> extends StatefulWidget {
   final String label;
   final String? hintText;
   final List<DropdownMenuItem<T>> items;
@@ -57,6 +57,13 @@ class DropdownInput<T> extends StatelessWidget {
   });
 
   @override
+  State<DropdownInput<T>> createState() => _DropdownInputState<T>();
+}
+
+class _DropdownInputState<T> extends State<DropdownInput<T>> {
+  bool isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -71,109 +78,117 @@ class DropdownInput<T> extends StatelessWidget {
       fieldWidth = 275;
     }
 
-    return SizedBox(
-      width: fieldWidth,
+    Color borderColor = isHovered
+        ? AppColors.primary
+        : AppColors.textSecondary.withOpacity(0.3);
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: labelStyle ??
-                TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                  fontSize: ResponsiveUtils.fontSize(context, 14),
-                ),
-          ),
-          const SizedBox(height: 4),
-          DropdownButtonFormField2<T>(
-            value: value,
-            items: items,
-            onChanged: onChanged,
-            validator: validator,
-            isExpanded: isExpanded,
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 12),
-              filled: filled,
-              fillColor: fillColor ?? Colors.white,
-              border: border ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.textSecondary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-              enabledBorder: enabledBorder ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.textSecondary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-              focusedBorder: focusedBorder ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                  ),
-              errorBorder: errorBorder ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.error,
-                      width: 1.5,
-                    ),
-                  ),
-              focusedErrorBorder: errorBorder ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.error,
-                      width: 1.5,
-                    ),
-                  ),
-            ),
-            dropdownStyleData: DropdownStyleData(
-              maxHeight: ResponsiveUtils.scaleHeight(context, 250),
-              elevation: elevation?.toInt() ?? 8,
-              decoration: BoxDecoration(
-                color: dropdownColor ?? Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-
-            ),
-            buttonStyleData: ButtonStyleData(
-              padding: EdgeInsets.zero,
-              height:  ResponsiveUtils.scaleHeight(context, 50),
-              overlayColor: MaterialStateProperty.all(Colors.transparent),
-            ),
-            iconStyleData: IconStyleData(
-              icon: icon ?? Icon(Icons.arrow_drop_down),
-              iconSize: iconSize ?? 24,
-              iconEnabledColor: iconEnabledColor ?? AppColors.primary,
-            ),
-            hint: hintText != null
-                ? Text(
-              hintText!,
-              style: hintStyle ??
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: SizedBox(
+        width: fieldWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.label,
+              style: widget.labelStyle ??
                   TextStyle(
-                    color: AppColors.textSecondary.withOpacity(0.6),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                    fontSize: ResponsiveUtils.fontSize(context, 14),
                   ),
-            )
-                : null,
-            style: textStyle ??
-                TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
+            ),
+            const SizedBox(height: 4),
+            DropdownButtonFormField2<T>(
+              value: widget.value,
+              items: widget.items,
+              onChanged: widget.onChanged,
+              validator: widget.validator,
+              isExpanded: widget.isExpanded,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding:
+                widget.contentPadding ?? const EdgeInsets.symmetric(horizontal: 12),
+                filled: widget.filled,
+                fillColor: widget.fillColor ?? Colors.white,
+                border: widget.border ??
+                    OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                        width: 1.5,
+                      ),
+                    ),
+                enabledBorder: widget.enabledBorder ??
+                    OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                        width: 1.5,
+                      ),
+                    ),
+                focusedBorder: widget.focusedBorder ??
+                    OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                errorBorder: widget.errorBorder ??
+                    OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 1.5,
+                      ),
+                    ),
+                focusedErrorBorder: widget.errorBorder ??
+                    OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 1.5,
+                      ),
+                    ),
+              ),
+              dropdownStyleData: DropdownStyleData(
+                maxHeight: ResponsiveUtils.scaleHeight(context, 250),
+                elevation: widget.elevation?.toInt() ?? 8,
+                decoration: BoxDecoration(
+                  color: widget.dropdownColor ?? Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-          ),
-        ],
+              ),
+              buttonStyleData: ButtonStyleData(
+                padding: EdgeInsets.zero,
+                height: ResponsiveUtils.scaleHeight(context, 50),
+                overlayColor: MaterialStateProperty.all(Colors.transparent),
+              ),
+              iconStyleData: IconStyleData(
+                icon: widget.icon ?? const Icon(Icons.arrow_drop_down),
+                iconSize: widget.iconSize ?? 24,
+                iconEnabledColor:
+                widget.iconEnabledColor ?? AppColors.primary,
+              ),
+              hint: widget.hintText != null
+                  ? Text(
+                widget.hintText!,
+                style: widget.hintStyle ??
+                    TextStyle(
+                      color: AppColors.textSecondary.withOpacity(0.6),
+                    ),
+              )
+                  : null,
+              style: widget.textStyle ??
+                  TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

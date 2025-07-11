@@ -13,6 +13,7 @@ import '../../screens/patient_list.dart';
 import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/KeepAlivePage.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
 import 'DashboardScreen.dart';
 import 'PatientDataTabsScreen.dart';
@@ -41,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String errorMessage = '';
   final TextEditingController _searchController = TextEditingController();
   bool _showSearchResults = false;
+  int? _hoveredSidebarIndex;
+
   @override
   void initState() {
     super.initState();
@@ -310,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: isSidebarCollapsed
-                ? ResponsiveUtils.scaleWidth(context, 85)
+                ? ResponsiveUtils.scaleWidth(context, 80)
                 : ResponsiveUtils.scaleWidth(context, 200),
 
             color:Colors.white,
@@ -322,8 +325,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Image.asset(
                     isSidebarCollapsed
                         ? 'assets/logo1.png'
-                        : 'assets/companyNameLogo.png',
-                    height: ResponsiveUtils.scaleHeight(context, 44)
+                        : 'assets/company_logo.png',
+                    fit: isSidebarCollapsed ? null: BoxFit.fill,
+                    height:isSidebarCollapsed? ResponsiveUtils.scaleHeight(context, 42):ResponsiveUtils.scaleHeight(context, 50),
+                    width: double.infinity,
                   ),
                   SizedBox(height: 20,),
                   _buildSidebarItem(
@@ -367,24 +372,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Logout',
                     index: 4,
                     onTap: _showLogoutConfirmation, // Add this parameter
+                    isLogout: true
                   ),
                   Divider(color: AppColors.secondary,),
                   isSidebarCollapsed
-                      ?SvgPicture.asset(
-                    'assets/applelogosvg.svg',
-                    height: 20,
-                    // height: null,   // Remove or specify a height if needed
-                  )
+                      ?Container(
+                    padding: EdgeInsets.symmetric(vertical: 8,horizontal: 11),
+                    decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
+                        child: SvgPicture.asset(
+
+                                            'assets/applelogosvg.svg',
+                                            height: 20,
+                                            // height: null,   // Remove or specify a height if needed
+                                          ),
+                      )
                       : Image.asset(
                     'assets/appstore.png',
 
                   ),
-                  Image.asset(
+                  isSidebarCollapsed
+                      ?
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
+                    child: Image.asset(
 
-                    isSidebarCollapsed
-                        ?  'assets/playstorelogo.png'
-                        : 'assets/googleplay.png',
-                    height: isSidebarCollapsed ?20 :null,
+                      'assets/playstorelogo.png',
+                      height: 20,
+                      // height: null,   // Remove or specify a height if needed
+                    ),
+                  )
+                      :
+                  Image.asset(
+                   'assets/googleplay.png',
+
 
                   ),
                 ],
@@ -397,13 +418,17 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Stack(
               children: [
                 Column(
+
                   children: [
                     if(!isMobile)
                     Container(
+
                       height: ResponsiveUtils.scaleHeight(context, 80),
                       color: Colors.white,
-                      padding: ResponsiveUtils.fieldPadding(context),
+                      padding: EdgeInsets.only(right: 10),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
                             icon: Icon(
@@ -415,43 +440,31 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Container(
+                            flex: 4,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
 
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8F9FB),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFE4EAF1)),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
 
-                                children: [
-                                   Icon(Icons.search, size:  ResponsiveUtils.fontSize(context, 16), color: Colors.grey),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextField(
+                                Expanded(
+                                  child: CustomTextField(
 
-                                      controller: _searchController,
-                                      onChanged: _handleSearch,
-                                      decoration:  InputDecoration(
-                                        hintText: 'Search Patient Name',
-                                        hintStyle: TextStyle(fontSize:ResponsiveUtils.fontSize(context, 14), color: Colors.grey),
-                                        border: InputBorder.none,
-                                      ),
-                                    ),
+                                    controller: _searchController,
+                                    onChanged: _handleSearch,
+                                    hintText:'Search',
+                                    prefixIcon: Icons.search_rounded,
                                   ),
-                                  if (_searchController.text.isNotEmpty)
-                                    IconButton(
-                                      icon:  Icon(Icons.close, size: ResponsiveUtils.fontSize(context, 18), color: Colors.grey),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        _handleSearch('');
-                                      },
-                                    ),
-                                ],
-                              ),
+                                ),
+                                if (_searchController.text.isNotEmpty)
+                                  IconButton(
+                                    icon:  Icon(Icons.close, size: ResponsiveUtils.fontSize(context, 18), color: Colors.grey),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _handleSearch('');
+                                    },
+                                  ),
+                              ],
                             ),
                           ),
                           const Spacer(),
@@ -478,6 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_showSearchResults)
 
                   Positioned(
+
                     top:isMobile ? 10:80,
                     //left: fieldposition,
                    // left: MediaQuery.of(context).size.width / 2 - 892, // center 600px container
@@ -666,52 +680,106 @@ class _HomeScreenState extends State<HomeScreen> {
           },
     );
   }
-
   Widget _buildSidebarItem({
     required String assetPath,
     required String label,
     required int index,
-    VoidCallback? onTap, // Add this parameter
+    VoidCallback? onTap,
+    bool isLogout = false,
   }) {
     final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
     final bool isSelected = selectedPageIndex == index && isHighlightable;
+    final bool isHovered = _hoveredSidebarIndex == index;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFEDF1F6) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-        child: InkWell(
-          onTap: onTap ?? () { // Use the provided onTap or default behavior
-            if (isHighlightable) {
-              setState(() => selectedPageIndex = index);
-              _pageController.jumpToPage(index);
-            }
-          },
-          child: Row(
-            children: [
-              Image.asset(
-                assetPath,
-                height: ResponsiveUtils.scaleHeight(context, 20),
-                color: isSelected ? AppColors.primary : AppColors.secondary,
-              ),
-              if (!isSidebarCollapsed) ...[
-                const SizedBox(width: 12),
-                 Text(
-                  label,
-                  style: TextStyle(
-                    fontSize:  ResponsiveUtils.fontSize(context, 12),
-                    color: isSelected ? AppColors.primary : AppColors.secondary,
-                  ),
-                ),
-              ],
-            ],
+    final Color backgroundColor = isLogout
+        ? AppColors.lightred
+        : isSelected
+        ? const Color(0xFFEDF1F6)
+        : Colors.transparent;
+
+    final Color iconColor = isLogout
+        ? AppColors.red
+        : isSelected
+        ? AppColors.primary
+        : AppColors.secondary;
+
+    final Color textColor = iconColor;
+
+    // Border color logic:
+    final Color? borderColor;
+    if (isHovered) {
+      borderColor = isLogout ? AppColors.red : AppColors.primary;
+    } else {
+      borderColor = Colors.transparent;
+    }
+
+    // Tooltip should only show if collapsed
+    Widget content = Row(
+      children: [
+        Image.asset(
+          assetPath,
+          height: ResponsiveUtils.scaleHeight(context, 20),
+          color: iconColor,
+        ),
+        if (!isSidebarCollapsed) ...[
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: ResponsiveUtils.fontSize(context, 14),
+              color: textColor,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (isSidebarCollapsed) {
+      // Wrap content in Tooltip
+      content = Tooltip(
+        message: label,
+        waitDuration: const Duration(milliseconds: 300),
+        child: content,
+      );
+    }
+
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() {
+          _hoveredSidebarIndex = index;
+        });
+      },
+      onExit: (_) {
+        setState(() {
+          _hoveredSidebarIndex = null;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: borderColor,
+            width: isHovered ? 1 : 0,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+          child: InkWell(
+            onTap: onTap ??
+                    () {
+                  if (isHighlightable) {
+                    setState(() => selectedPageIndex = index);
+                    _pageController.jumpToPage(index);
+                  }
+                },
+            child: content,
           ),
         ),
       ),
     );
   }
+
+
 
 }

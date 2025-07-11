@@ -72,7 +72,7 @@ class Animatedbutton extends StatelessWidget {
             : Text(
           title,
           style: TextStyle(
-            fontSize: ResponsiveUtils.fontSize(context, 16),
+            fontSize: ResponsiveUtils.fontSize(context, 18),
             color: titlecolor,
             fontWeight: FontWeight.w500,
           ),

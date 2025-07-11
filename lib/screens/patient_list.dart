@@ -315,9 +315,9 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                       _phoneController.clear();
                       Navigator.pop(context);
                     },
-                    titlecolor:AppColors.secondary,
+                    titlecolor:AppColors.red,
                     backgroundColor: Colors.white,
-                    borderColor: AppColors.secondary,
+                    borderColor: AppColors.red,
 
                     shadowColor: AppColors.primary,
                   ),
@@ -480,11 +480,12 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
               Padding(
                 padding:  EdgeInsets.all(16),
                 child: SizedBox(
+
                   width:  ResponsiveUtils.scaleWidth(context, 350),
                   child: CustomTextField(
                     controller: searchController,
                     onChanged: filterPatients,
-                    hintText: "Search patients...",
+                    hintText: "Search patient",
                     prefixIcon: Icons.search_rounded,
 
                   ),
@@ -527,7 +528,9 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
                   Expanded(
                     child: ListView.separated(
                       itemCount: filteredPatients.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1),
+                      separatorBuilder: (context, index) => const Divider( height: 1,
+                          thickness: 1,
+                          color: AppColors.backgroundColor),
                       itemBuilder: (context, index) {
                         final patient = filteredPatients[index];
                         return Padding(

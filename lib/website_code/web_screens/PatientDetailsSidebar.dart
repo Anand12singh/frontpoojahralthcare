@@ -830,15 +830,14 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         
         
                   Row(
+
                     children: [
-                      Expanded(
-                        child: buildInfoBlock(
-                            "Summary",
-        
-                            (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
-                                ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? 'Not specified') :''
-                                : 'Not specified'
-                        ),
+                      buildInfoBlock(
+                          "Summary",
+
+                          (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
+                              ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? 'Not specified') :''
+                              : 'Not specified'
                       ),
                       /*        if (!isEditingSummary &&
                         patientData!['summary'] != null &&
@@ -942,9 +941,9 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   ListTile(
                     leading: Image.asset(
                       "assets/whatsapp.png",
-                      height: ResponsiveUtils.scaleHeight(context, 20)
+                      height: ResponsiveUtils.scaleHeight(context, 22)
                     ),
-                    title: const Text('Connect on Whatsapp'),
+                    title:  Text('+91-${patient['mobile_no']}'),
                     onTap: () async {
                       final phone = patient['mobile_no'];
                       final whatsappUrl = Uri.parse("https://wa.me/$phone");
@@ -963,9 +962,9 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   ListTile(
                     leading: Image.asset(
                       "assets/call.png",
-                      height:  ResponsiveUtils.scaleHeight(context, 20)
+                      height:  ResponsiveUtils.scaleHeight(context, 22)
                     ),
-                    title: Text('Connect on Call - ${patient['mobile_no']}'),
+                    title: Text('+91-${patient['mobile_no']}'),
                     onTap: () async {
                       final phone = patient['mobile_no'];
                       final callUri = Uri(scheme: 'tel', path: phone);
@@ -999,7 +998,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
           children: [
             TextSpan(
               text: '$title\n',
-              style: const TextStyle(
+              style:  TextStyle(
+                fontSize:  ResponsiveUtils.fontSize(context, 14),
                 fontWeight: FontWeight.w400,
                 color: Color(0xFF5B5B5B),
               ),
@@ -1008,7 +1008,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
               text: content,
               style:  TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize:  ResponsiveUtils.fontSize(context, 15),
+                fontSize:  ResponsiveUtils.fontSize(context, 16),
                 color: Color(0xFF132A3E),
               ),
             ),

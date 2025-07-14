@@ -50,7 +50,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   final TextEditingController _timetakenMinController = TextEditingController();
   final TextEditingController _complicationsController = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now();
+  DateTime? _selectedDate;
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
     "implants_image": []
   };
@@ -130,7 +130,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
+                Text(DateFormat('dd/MM/yyyy').format(_selectedDate!)),
                 const Icon(Icons.calendar_month_rounded, size: 20),
               ],
             ),
@@ -264,11 +264,13 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
         if (data['data'] != null) {
           setState(() {
             final operationData = data['data'];
+            print("operationData");
+            print(operationData);
             postOperationId = operationData['id'];
             _surgeryController.text = operationData['surgery'] ?? '';
             _selectedDate = operationData['date'] != null
-                ? DateFormat('yyyy-MM-dd').parse(operationData['date'])
-                : DateTime.now();
+                ? DateFormat('dd-mm-yyyy').parse(operationData['date'])
+                : null;
             _surgeonController.text = operationData['surgeon'] ?? '';
             _assistantController.text = operationData['assistant'] ?? '';
             _anaesthetistController.text = operationData['anaesthetists'] ?? '';
@@ -316,6 +318,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+
     setState(() => _isLoading = true);
     try {
       String? token = await AuthService.getToken();
@@ -339,7 +342,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
       Map<String, String> fields = {
         'patient_id': widget.patientId,
         'surgery': _surgeryController.text,
-        'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
+
         'surgeon': _surgeonController.text,
         'assistant': _assistantController.text,
         'anaesthetists': _anaesthetistController.text,
@@ -353,6 +356,10 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
         'complications': _complicationsController.text,
         'time_take': '${_timetakenHrController.text} Hr ${_timetakenMinController.text} Min',
       };
+      if (_selectedDate != null) {
+        fields["date"] =
+            DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      }
 
       if (postOperationId != null) {
         fields['id'] = postOperationId.toString();
@@ -685,22 +692,28 @@ print(request.fields);
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Animatedbutton(
-                    onPressed: () => Navigator.pop(context),
-                    shadowColor: Colors.white,
-                    titlecolor: AppColors.primary,
-                    backgroundColor: Colors.white,
-                    borderColor: AppColors.secondary,
-                    isLoading: false,
-                    title: 'Cancel',
+                  SizedBox(
+                    width: ResponsiveUtils.scaleWidth(context, 150),
+                    child: Animatedbutton(
+                      onPressed: () => Navigator.pop(context),
+                      shadowColor: Colors.white,
+                      titlecolor: AppColors.primary,
+                      backgroundColor: Colors.white,
+                      borderColor: AppColors.secondary,
+                      isLoading: false,
+                      title: 'Cancel',
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Animatedbutton(
-                    onPressed: _submitForm,
-                    shadowColor: Colors.white,
-                    backgroundColor: AppColors.secondary,
-                    isLoading: _isLoading,
-                    title: 'Save',
+                  SizedBox(
+                    width: ResponsiveUtils.scaleWidth(context, 150),
+                    child: Animatedbutton(
+                      onPressed: _submitForm,
+                      shadowColor: Colors.white,
+                      backgroundColor: AppColors.secondary,
+                      isLoading: _isLoading,
+                      title: 'Save',
+                    ),
                   ),
                 ],
               ),

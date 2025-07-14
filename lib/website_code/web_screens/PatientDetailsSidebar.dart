@@ -994,22 +994,22 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: RichText(
         text: TextSpan(
-          style:  TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14), color: Colors.black),
+          style:  TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14), color: Colors.black,fontWeight: FontWeight.w300),
           children: [
             TextSpan(
               text: '$title\n',
               style:  TextStyle(
                 fontSize:  ResponsiveUtils.fontSize(context, 14),
                 fontWeight: FontWeight.w400,
-                color: Color(0xFF5B5B5B),
+                color: Color(0xFF666666),
               ),
             ),
             TextSpan(
               text: content,
               style:  TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize:  ResponsiveUtils.fontSize(context, 16),
-                color: Color(0xFF132A3E),
+                fontWeight: FontWeight.w300,
+                fontSize:  ResponsiveUtils.fontSize(context, 18),
+                color: Color(0xFF232323),
               ),
             ),
           ],

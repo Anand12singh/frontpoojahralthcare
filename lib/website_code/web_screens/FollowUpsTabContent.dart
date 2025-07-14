@@ -305,14 +305,17 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Animatedbutton(
-                onPressed: _isAddingFollowUp ? null : _addFollowUp,
-                shadowColor: Colors.white,
-                titlecolor: Colors.white,
-                backgroundColor: AppColors.secondary,
-                borderColor: AppColors.secondary,
-                isLoading: false,
-                title: '+ Follow up',
+              SizedBox(
+                width: ResponsiveUtils.scaleWidth(context, 150),
+                child: Animatedbutton(
+                  onPressed: _isAddingFollowUp ? null : _addFollowUp,
+                  shadowColor: Colors.white,
+                  titlecolor: Colors.white,
+                  backgroundColor: AppColors.secondary,
+                  borderColor: AppColors.secondary,
+                  isLoading: false,
+                  title: '+ Follow up',
+                ),
               ),
             ],
           ),

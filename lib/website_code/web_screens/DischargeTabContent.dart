@@ -58,10 +58,10 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   final TextEditingController _copdDescriptionController = TextEditingController();
   final TextEditingController _ihdDescriptionController = TextEditingController();
   // Date/Time fields
-  DateTime _admissionDate = DateTime.now();
-  DateTime _dischargeDate = DateTime.now();
-  DateTime _investigationsDate = DateTime.now();
-  DateTime _followUpDate = DateTime.now();
+  DateTime? _admissionDate;
+  DateTime? _dischargeDate ;
+  DateTime? _investigationsDate;
+  DateTime? _followUpDate;
 
   // Past History Controllers
   bool _hasDM = false;
@@ -256,7 +256,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       });
 
       // Add form fields
-      request.fields.addAll({
+      final fields = <String, String>{
         "id": _existingDischargeId?.toString() ?? '',
         "patient_id": widget.patientId.toString(),
         "post_operation_id": widget.postOperationId?.toString() ?? "0",
@@ -264,8 +264,6 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "contact": _contactController.text,
         "qualifications": _qualificationsController.text,
         "indoor_reg_no": _indoorRegNoController.text,
-        "admission_date": DateFormat('yyyy-MM-dd').format(_admissionDate),
-        "discharge_date": DateFormat('yyyy-MM-dd').format(_dischargeDate),
         "operation_type": _operationTypeController.text,
         "drug_allergy": _drugAllergyController.text,
         "diagnosis": _diagnosisController.text,
@@ -282,19 +280,40 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "history_of_dm_status": _hasDM ? '1' : '0',
         "hypertension_status": _ensureStatus(_hasHypertension),
         "IHD_status": _ensureStatus(_hasIHD),
-        "COPD_status":_ensureStatus(_hasCOPD) ,
+        "COPD_status": _ensureStatus(_hasCOPD),
         'history_of_dm_description': _ensureString(_SincewhenController.text),
-        'hypertension_description':
-        _ensureString(_hypertensionSinceController.text),
+        'hypertension_description': _ensureString(_hypertensionSinceController.text),
         'IHD_description': _ensureString(_ihdDescriptionController.text),
         'COPD_description': _ensureString(_copdDescriptionController.text),
-        "follow_up": DateFormat('yyyy-MM-dd').format(_followUpDate),
-        "investigations": json.encode(_investigations.map((inv) => {
-          "investigation_date": inv.date.toIso8601String(),
+      };
+
+      if (_admissionDate != null) {
+        fields["admission_date"] =
+            DateFormat('yyyy-MM-dd').format(_admissionDate!);
+      }
+
+      if (_dischargeDate != null) {
+        fields["discharge_date"] =
+            DateFormat('yyyy-MM-dd').format(_dischargeDate!);
+      }
+
+      if (_followUpDate != null) {
+        fields["follow_up"] =
+            DateFormat('yyyy-MM-dd').format(_followUpDate!);
+      }
+
+      fields["investigations"] = json.encode(
+        _investigations.map((inv) => {
+          "investigation_date": inv.date != null
+              ? inv.date!.toIso8601String()
+              : null,
           "test": inv.testController.text,
           "positive_finding": inv.positiveFindingController.text,
-        }).toList()),
-      });
+        }).toList(),
+      );
+
+      request.fields.addAll(fields);
+
 
       // Add file uploads
       List<String> existingFileIds = [];
@@ -411,19 +430,22 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                       TimePickerInput(
                         label: 'Admission Time',
                         hintlabel: 'Admission Time',
-                        initialTime: TimeOfDay.fromDateTime(_admissionDate),
+                        initialTime: _admissionDate != null
+                            ? TimeOfDay.fromDateTime(_admissionDate!)
+                            : null,
                         onTimeSelected: (time) {
                           setState(() {
                             _admissionDate = DateTime(
-                              _admissionDate.year,
-                              _admissionDate.month,
-                              _admissionDate.day,
+                              (_admissionDate ?? DateTime.now()).year,
+                              (_admissionDate ?? DateTime.now()).month,
+                              (_admissionDate ?? DateTime.now()).day,
                               time.hour,
                               time.minute,
                             );
                           });
                         },
                       ),
+
                       DatePickerInput(
                         label: 'Discharge Date',
                         hintlabel: 'Discharge Date',
@@ -435,17 +457,21 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                       TimePickerInput(
                         hintlabel:'Discharge Time' ,
                         label: 'Discharge Time',
-                        initialTime: TimeOfDay.fromDateTime(_dischargeDate),
+                        initialTime: _dischargeDate != null
+                            ? TimeOfDay.fromDateTime(_dischargeDate!)
+                            : null,
+
                         onTimeSelected: (time) {
                           setState(() {
                             _dischargeDate = DateTime(
-                              _dischargeDate.year,
-                              _dischargeDate.month,
-                              _dischargeDate.day,
+                              (_dischargeDate ?? DateTime.now()).year,
+                              (_dischargeDate ?? DateTime.now()).month,
+                              (_dischargeDate ?? DateTime.now()).day,
                               time.hour,
                               time.minute,
                             );
                           });
+
                         },
                       ),
                     ],
@@ -772,10 +798,11 @@ maxlength: 4,
                   // Follow Up Date
                   DatePickerInput(
                     label: 'Follow Up Date',
+                    hintlabel: 'Follow Up Date',
                     initialDate: _followUpDate,
                     onDateSelected: (date) {
                       setState(() => _followUpDate = date);
-                    }, hintlabel: '',
+                    },
                   ),
 
 
@@ -869,24 +896,30 @@ maxlength: 4,
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Animatedbutton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  shadowColor: Colors.white,
-                  titlecolor: AppColors.primary,
-                  backgroundColor: Colors.white,
-                  borderColor: AppColors.secondary,
-                  isLoading: false,
-                  title: 'Cancel',
+                SizedBox(
+                  width: ResponsiveUtils.scaleWidth(context, 150),
+                  child: Animatedbutton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    shadowColor: Colors.white,
+                    titlecolor: AppColors.primary,
+                    backgroundColor: Colors.white,
+                    borderColor: AppColors.secondary,
+                    isLoading: false,
+                    title: 'Cancel',
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Animatedbutton(
-                  onPressed: _submitForm,
-                  shadowColor: Colors.white,
-                  backgroundColor: AppColors.secondary,
-                  isLoading: _isLoading,
-                  title: _isEditing ? 'Update' : 'Save',
+                SizedBox(
+                  width: ResponsiveUtils.scaleWidth(context, 150),
+                  child: Animatedbutton(
+                    onPressed: _submitForm,
+                    shadowColor: Colors.white,
+                    backgroundColor: AppColors.secondary,
+                    isLoading: _isLoading,
+                    title: _isEditing ? 'Update' : 'Save',
+                  ),
                 ),
               ],
             ),

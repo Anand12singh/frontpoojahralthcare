@@ -216,9 +216,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
-  DateTime _followUpDate = DateTime.now(); // Initialize with default value
+  DateTime? _followUpDate ; // Initialize with default value
   DateTime _ConsulationDate = DateTime.now(); // Initialize with default value
-  DateTime _CTScanDate = DateTime.now(); // Initialize with default value
+  DateTime? _CTScanDate; // Initialize with default value
 
 
   // Other state variables
@@ -694,8 +694,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
           _visitData?['blood_sugar_post_prandial']?.toString() ?? '';
       _hBA1CController.text = _visitData?['hba1c']?.toString() ?? '';
       _hBSAGController.text = _visitData?['hbsag']?.toString() ?? '';
-    _followUpDate = DateTime.parse(_visitData?['follow_up_date']?.toString() ?? DateTime.now().toString());
-    _CTScanDate = DateTime.parse(_visitData?['date_of_ct_scan']?.toString() ?? DateTime.now().toString());
+    _followUpDate = DateTime.parse(_visitData?['follow_up_date']?.toString() ?? '');
+    _CTScanDate = DateTime.parse(_visitData?['date_of_ct_scan']?.toString() ?? '');
       _hivController.text = _visitData?['hiv']?.toString() ?? '';
       _hcvController.text = _visitData?['hcv']?.toString() ?? '';
     _thyroidFunctionT3TestController.text = _visitData?['t3']?.toString() ?? '';
@@ -1003,8 +1003,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'description': _ensureString(_descriptionController.text),
         'other_location': _ensureString(_otherLocationController.text),
         //add
-        'follow_up_date': _formatDate(_followUpDate),
-        'date_of_ct_scan': _formatDate(_CTScanDate),
+        'follow_up_date': _formatDate(_followUpDate!),
+        'date_of_ct_scan': _formatDate(_CTScanDate!),
 
         'heamoglobin': _ensureString(_hemoglobinController.text),
         'total_leucocyte_count':
@@ -2439,7 +2439,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                        // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
                         DatePickerInput(
                           label: 'Date',
-                          hintlabel: 'dd-mm-yyyy',
+                          hintlabel: 'Date',
                           onDateSelected: (date) {
                             setState(() {
                               _CTScanDate = date; // Update the selected date
@@ -2624,7 +2624,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   SizedBox(height: 10,),
                   DatePickerInput(
                     label: 'Flollow up date',
-                    hintlabel: 'dd-mm-yyyy',
+                    hintlabel: 'Flollow up date',
                     onDateSelected: (date) {
                       setState(() {
                         _followUpDate = date; // Update the selected date

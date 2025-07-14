@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showSearchResults = false;
   int? _hoveredSidebarIndex;
+  bool isUserMgmtExpanded = false;
 
   @override
   void initState() {
@@ -80,8 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
     KeepAlivePage(child: DashboardScreen()),
     KeepAlivePage(child: RecentPatientsListScreen()),
     KeepAlivePage(child: PatientDataTabsScreen()),
-    // Add other pages similarly
+    KeepAlivePage(child: Container(child: Center(child: Text("User Management Page")))),
+    KeepAlivePage(child: Container(child: Center(child: Text("Role Management Page")))),
+    KeepAlivePage(child: Container(child: Center(child: Text("Permission Management Page")))),
   ];
+
   void _toggleSidebar() {
     setState(() {
       isSidebarCollapsed = !isSidebarCollapsed;
@@ -341,7 +345,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Patient list',
                     index: 1,
                   ),
-                 /* _buildSidebarItem(
+                  _buildUserManagementExpansionTile(),
+
+                  /* _buildSidebarItem(
                     assetPath: 'assets/DrSchedule.png',
                     label: 'Dr. Schedule',
                     index: 2,
@@ -370,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildSidebarItem(
                     assetPath: 'assets/logouticon.png',
                     label: 'Logout',
-                    index: 4,
+                    index: 6,
                     onTap: _showLogoutConfirmation, // Add this parameter
                     isLogout: true
                   ),
@@ -566,6 +572,94 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  Widget _buildUserManagementExpansionTile() {
+    final isHovered = _hoveredSidebarIndex == 100;
+
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() {
+          _hoveredSidebarIndex = 100;
+        });
+      },
+      onExit: (_) {
+        setState(() {
+          _hoveredSidebarIndex = null;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isHovered ? AppColors.primary : Colors.transparent,
+            width: isHovered ? 1 : 0,
+          ),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            dividerColor: Colors.transparent,
+          ),
+          child: ExpansionTile(
+
+            tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+            title: Row(
+              children: [
+                Image.asset(
+                  'assets/UserManagement.png',
+                  height: ResponsiveUtils.scaleHeight(context, 20),
+                  color: AppColors.secondary,
+                ),
+                if (!isSidebarCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    'User Management',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            initiallyExpanded: isUserMgmtExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() {
+                isUserMgmtExpanded = expanded;
+              });
+            },
+            children: [
+              if (!isSidebarCollapsed)
+                Padding(
+                  padding: const EdgeInsets.only(left: 18),
+                  child: Column(
+                    spacing: 10,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSidebarItem(
+                        assetPath: '',
+                        label: 'User',
+                        index: 3,
+                      ),
+                      _buildSidebarItem(
+                        assetPath: '',
+                        label: 'Role',
+                        index: 4,
+                      ),
+                      _buildSidebarItem(
+                        assetPath: '',
+                        label: 'Permission',
+                        index: 5,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   PreferredSizeWidget _buildMobileAppBar() {
     return AppBar(
@@ -637,6 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMobileDrawer() {
     return Drawer(
       child: ListView(
+
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
@@ -716,6 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Tooltip should only show if collapsed
     Widget content = Row(
       children: [
+        if(assetPath.isNotEmpty)
         Image.asset(
           assetPath,
           height: ResponsiveUtils.scaleHeight(context, 20),

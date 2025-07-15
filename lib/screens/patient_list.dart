@@ -34,6 +34,12 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   bool _isSubmitting = false;
   int _currentPage = 1;
   int _rowsPerPage = 10;
+  int _totalRecords = 0;
+
+  String _search = '';
+  String? _sortBy;
+
+  String _sortOrder = 'asc';
 
   List<int> _rowsPerPageOptions = [5, 10, 20, 50];
 
@@ -56,41 +62,50 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
             context, 'Authentication token not found. Please login again.');
         return;
       }
+
       final headers = {
         'Accept': 'application/json',
-        'Cookie': 'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
+        'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       };
 
-      final response = await http.get(
-        Uri.parse('$localurl/get_patient'),
-        headers: headers,
-      );
+      final body = json.encode({
+        "page": _currentPage,
+        "limit": _rowsPerPage,
+        "search": _search,
+        "sortBy": _sortBy ?? "",
+        "sortOrder": _sortOrder,
+      });
 
+      final response = await http.post(
+        Uri.parse('https://uatpoojahealthcare.ortdemo.com/api/get_allpatients'), // your endpoint
+        headers: headers,
+        body: body,
+      );
+print("response.body");
+print(response.body);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         setState(() {
           patients = _transformApiData(responseData['data'] ?? []);
-          print("patients");
-          print(patients);
           filteredPatients = List.from(patients);
+          _totalRecords = responseData['totalRecords'] ?? 0;
           isLoading = false;
         });
       } else {
         setState(() {
-          log('${response.reasonPhrase}');
           errorMessage = 'Failed to load patients.';
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        log('${e.toString()}');
-        errorMessage = 'No results found.';
+        errorMessage = 'Error occurred: ${e.toString()}';
         isLoading = false;
       });
     }
   }
+
   void _showErrorSnackbar(String message) {
     showTopRightToast(context,message,backgroundColor: Colors.red);
 
@@ -351,13 +366,11 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
 
   void filterPatients(String query) {
     setState(() {
-      searchQuery = query.toLowerCase();
-      filteredPatients = patients.where((patient) {
-        return patient['name'].toLowerCase().contains(searchQuery) ||
-            patient['phone'].contains(searchQuery) ||
-            patient['phid'].toLowerCase().contains(searchQuery);
-      }).toList();
+      _search = query.trim();
+      _currentPage = 1;
+
     });
+    _fetchPatients();
   }
 
   void clearSearch() {
@@ -438,8 +451,21 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
     }
   }
 
+  String _toCamelCase(String text) {
+    if (text.isEmpty) return text;
+
+    return text
+        .split(' ')
+        .map((word) =>
+    word.isNotEmpty
+        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+        : '')
+        .join(' ');
+  }
   @override
   Widget build(BuildContext context) {
+    int fromRecord = ((_currentPage - 1) * _rowsPerPage) + 1;
+    int toRecord = ((_currentPage - 1) * _rowsPerPage) + filteredPatients.length;
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
 
@@ -506,23 +532,68 @@ toolbarHeight: 70,
               flex: 3,
                 child: Row(
                   children: [
-                    const Text('Show '),
-                    const SizedBox(width: 8),
-                    DropdownButton2<int>(
-                      value: _rowsPerPage,
-                      items: _rowsPerPageOptions.map((int value) {
-                        return DropdownMenuItem<int>(
-                          value: value,
-                          child: Text(value.toString()),
-                        );
-                      }).toList(),
+                    Row(
+
+                      children: [
+                        const Text('Show '),
+                        const SizedBox(width: 8),
+                        DropdownButton2<int>(
+                          dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
+                          value: _rowsPerPage,
+                          items: _rowsPerPageOptions.map((int value) {
+                            return DropdownMenuItem<int>(
+                              value: value,
+                              child: Text(value.toString()),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _rowsPerPage = value!;
+                              _currentPage = 1;
+                              _fetchPatients();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: 10,),
+                    const Text('Sort By'),
+                    DropdownButton2<String>(
+                      dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
+                      hint: Text('Sort By'),
+                      value: _sortBy,
+                      items: [
+                        DropdownMenuItem(value: 'first_name', child: Text('First Name')),
+                        DropdownMenuItem(value: 'last_name', child: Text('Last Name')),
+                        DropdownMenuItem(value: 'age', child: Text('Age')),
+                      ],
                       onChanged: (value) {
                         setState(() {
-                          _rowsPerPage = value!;
-                          _currentPage = 1;
+                          _sortBy = value;
+                          _fetchPatients();
                         });
                       },
                     ),
+                    SizedBox(width: 10),
+                    const Text('Order By'),
+                    DropdownButton2<String>(
+                      dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
+                      hint: Text('Order By'),
+                      value: _sortOrder,
+                      items: [
+                        DropdownMenuItem(value: 'asc', child: Text('Ascending')),
+                        DropdownMenuItem(value: 'desc', child: Text('Descending')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _sortOrder = value!;
+                          _fetchPatients();
+                        });
+                      },
+                    ),
+
+
+
                   ],
                 ),
               ),
@@ -562,8 +633,75 @@ toolbarHeight: 70,
                               padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
                               child: Row(
                                 children: [
-                                  Expanded(flex: 2, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-                                  Expanded(flex: 2, child: Text("Patient Name", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                  Expanded(flex: 1, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                  Expanded(flex: 3, child: Row(
+                                    children: [
+                                      Text(
+                                        "Patient Name",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                          fontSize: ResponsiveUtils.fontSize(context, 16),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (_sortBy == 'age') {
+                                              // toggle order
+                                              _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
+                                            } else {
+                                              // if changing sort field, start with ascending
+                                              _sortBy = 'age';
+                                              _sortOrder = 'asc';
+                                            }
+                                            _fetchPatients();
+                                          });
+                                        },
+                                        icon: Icon(
+                                          _sortBy == 'age'
+                                              ? (_sortOrder == 'asc'
+                                              ? Icons.arrow_upward
+                                              : Icons.arrow_downward)
+                                              : Icons.unfold_more_rounded,
+                                          size: ResponsiveUtils.fontSize(context, 20),
+                                          color: AppColors.primary,
+                                        ),
+                                      )
+                                    ],
+
+                                  )),
+                                  Expanded(flex: 2, child: Row(
+                                    children: [
+                                      Text("Patient Age", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16))),
+
+                                      IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (_sortBy == 'first_name') {
+                                              // toggle order
+                                              _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
+                                            } else {
+                                              // if changing sort field, start with ascending
+                                              _sortBy = 'first_name';
+                                              _sortOrder = 'asc';
+                                            }
+                                            _fetchPatients();
+                                          });
+                                        },
+                                        icon: Icon(
+                                          _sortBy == 'first_name'
+                                              ? (_sortOrder == 'asc'
+                                              ? Icons.arrow_upward
+                                              : Icons.arrow_downward)
+                                              : Icons.unfold_more_rounded,
+                                          size: ResponsiveUtils.fontSize(context, 20),
+                                          color: AppColors.primary,
+                                        ),
+                                      )
+                                    ],
+                                  )),
+                                  Expanded(flex: 2, child: Text("Patient Gender", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                   Expanded(flex: 2, child: Text("Phone Number", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                   Expanded(flex: 2, child: Text("Last Visit", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                   Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
@@ -579,14 +717,17 @@ toolbarHeight: 70,
                                   color: AppColors.backgroundColor),
                               itemBuilder: (context, index) {
                                 final patient = filteredPatients[index];
+                                final _gender = patient?['gender'] == 1 ? 'Male' : 'Female';
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
                                   child: Row(
                                     children: [
-                                      Expanded(flex: 2, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                      Expanded(flex: 2, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                      Expanded(flex: 1, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                      Expanded(flex: 3, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                      Expanded(flex: 2, child: Text(patient['age'].toString() ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                      Expanded(flex: 2, child: Text(_gender ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                       Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                      Expanded(flex: 2, child: Text(patient['lastVisit'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                      Expanded(flex: 2, child: Text(_toCamelCase(patient['lastVisit']) ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                       Expanded(
                                         flex: 1,
                                         child: Wrap(
@@ -647,32 +788,96 @@ toolbarHeight: 70,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                       Text('Showing ${((_currentPage - 1) * _rowsPerPage) + 1} to ${((_currentPage - 1) * _rowsPerPage) + 10} of ${100} records'),
-                        Row(
+                        Text('Showing $fromRecord to $toRecord of $_totalRecords records'),   Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: _currentPage > 1
-                                  ? () {
-                                setState(() {
-                                  _currentPage--;
-                                });
-                              }
-                                  : null,
-                            ),
-                            Text('$_currentPage'),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                             onPressed: () {
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // FIRST PAGE
+                                IconButton(
+                                  icon: const Icon(Icons.first_page),
+                                  onPressed: _currentPage > 1
+                                      ? () {
+                                    setState(() {
+                                      _currentPage = 1;
+                                    });
+                                    _fetchPatients();
+                                  }
+                                      : null,
+                                ),
+                                // PREVIOUS
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_left),
+                                  onPressed: _currentPage > 1
+                                      ? () {
+                                    setState(() {
+                                      _currentPage--;
+                                    });
+                                    _fetchPatients();
+                                  }
+                                      : null,
+                                ),
 
-                             },
-                             /* onPressed: ((_currentPage) * _rowsPerPage) < _allPatients.length
-                                  ? () {
-                                setState(() {
-                                  _currentPage++;
-                                });
-                              }
-                                  : null,*/
+                                // PAGE NUMBERS
+                                ..._buildPageButtons(),
+
+                                // NEXT
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_right),
+                                  onPressed: _currentPage < totalPages
+                                      ? () {
+                                    setState(() {
+                                      _currentPage++;
+                                    });
+                                    _fetchPatients();
+                                  }
+                                      : null,
+                                ),
+
+                                // LAST PAGE
+                                IconButton(
+                                  icon: const Icon(Icons.last_page),
+                                  onPressed: _currentPage < totalPages
+                                      ? () {
+                                    setState(() {
+                                      _currentPage = totalPages;
+                                    });
+                                    _fetchPatients();
+                                  }
+                                      : null,
+                                ),
+
+                                const SizedBox(width: 16),
+
+                                // Jump-to-page box
+                                SizedBox(
+                                  width: 50,
+                                  height: 30,
+                                  child: TextFormField(
+                                    initialValue: _currentPage.toString(),
+                                    textAlign: TextAlign.center,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onFieldSubmitted: (value) {
+                                      int? page = int.tryParse(value);
+                                      if (page != null && page >= 1 && page <= totalPages) {
+                                        setState(() {
+                                          _currentPage = page;
+                                        });
+                                        _fetchPatients();
+                                      }
+                                    },
+                                  ),
+                                ),
+
+                                SizedBox(width: 8),
+
+                                Text("of $totalPages pages"),
+                              ],
                             ),
                           ],
                         ),
@@ -690,34 +895,121 @@ toolbarHeight: 70,
     );
   }
 
+  int get totalPages {
+    if (_totalRecords == 0) return 1;
+    return (_totalRecords / _rowsPerPage).ceil();
+  }
+
+  List<Widget> _buildPageButtons() {
+    int maxButtons = 5;
+    int startPage = (_currentPage - (maxButtons ~/ 2)).clamp(1, totalPages);
+    int endPage = (startPage + maxButtons - 1).clamp(1, totalPages);
+
+    if (endPage - startPage < maxButtons - 1) {
+      startPage = (endPage - maxButtons + 1).clamp(1, totalPages);
+    }
+
+    List<Widget> buttons = [];
+    for (int i = startPage; i <= endPage; i++) {
+      buttons.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+              i == _currentPage ? AppColors.secondary : Colors.white,
+              foregroundColor:
+              i == _currentPage ? Colors.white : AppColors.secondary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size(0, 36),
+            ),
+            onPressed: () {
+              setState(() {
+                _currentPage = i;
+              });
+              _fetchPatients();
+            },
+            child: Text(i.toString()),
+          ),
+        ),
+      );
+    }
+    return buttons;
+  }
+
   void _showDeleteDialog(BuildContext context, String patientId) {
-    showDialog(
+    showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary)),
-
-          title: const Text('Confirm Delete'),
-          content: Text('Are you sure you want to delete patient $patientId?'),
-          actions: [
-            TextButton(
-              child: const Text('Cancel',style: TextStyle(color: AppColors.primary),),
-              onPressed: () => Navigator.of(context).pop(),
+        return Center(
+          child: Container(
+            width: ResponsiveUtils.scaleWidth(context, 450),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Confirm Delete',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.fontSize(context, 20),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveUtils.scaleHeight(context, 20)),
+                    Text(
+                      'Are you sure you want to delete patient $patientId?',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.fontSize(context, 16),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: ResponsiveUtils.scaleHeight(context, 30)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SizedBox(
+                          width: ResponsiveUtils.scaleWidth(context, 120),
+                          child: Animatedbutton(
+                            title: 'Cancel',
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            titlecolor: AppColors.red,
+                            backgroundColor: Colors.white,
+                            shadowColor: Colors.white,
+                            borderColor: AppColors.red,
+                          ),
+                        ),
+                        SizedBox(
+                          width: ResponsiveUtils.scaleWidth(context, 120),
+                          child: Animatedbutton(
+                            backgroundColor: AppColors.secondary,
+                            shadowColor: Colors.white,
+                            title: 'Delete',
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+                              await _deletePatient(patientId);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            TextButton(
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () async {
-                // Implement delete functionality
-                Navigator.of(context).pop();
-                await _deletePatient(patientId);
-
-
-
-              },
-            ),
-          ],
+          ),
         );
       },
     );
   }
+
 }

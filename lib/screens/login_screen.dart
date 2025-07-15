@@ -31,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -75,7 +76,17 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
+if(_nameController.text.trim().isEmpty)
+  {
+    _setErrorMessage('Please enter your user name.');
+return;
+  }
 
+if(_passwordController.text.trim().isEmpty)
+  {
+    _setErrorMessage('Please enter your password.');
+    return;
+  }
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
       if (!mounted) return;
@@ -112,14 +123,17 @@ class _LoginScreenState extends State<LoginScreen>
             Navigator.pushReplacementNamed(context, '/HomeScreen');
           } else {
             print('error messgae ');
-            showTopRightToast(context,responseData['message'] ?? 'Login failed',backgroundColor: Colors.red);
+            _setErrorMessage(responseData['message'] ?? 'Login failed');
+
 
           }
         }
       } catch (e) {
         print('error $e');
         if (mounted) {
-          showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+         // showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
+          _setErrorMessage('Error: ${e.toString()}');
+
 
         }
       } finally {
@@ -129,6 +143,20 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
   }
+
+  void _setErrorMessage(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen>
           height:  ResponsiveUtils.scaleHeight(context, 80),
         ),
         const SizedBox(height: 10),
-        Text(
+      /*  Text(
           'Login',
           style: TextStyle(
             fontSize: ResponsiveUtils.fontSize(context, 28),
@@ -201,12 +229,14 @@ class _LoginScreenState extends State<LoginScreen>
             color: AppColors.primary,
             letterSpacing: 0.5,
           ),
-        ),
+        ),*/
         Text(
-          'Enter your credentials to continue',
+          'Enter your credentials to login',
           style: TextStyle(
-            fontSize: ResponsiveUtils.fontSize(context, 16),
-            color: AppColors.textSecondary,
+            fontSize: ResponsiveUtils.fontSize(context, 28),
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -214,37 +244,73 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+    return Column(
+      children: [
+        Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 36,vertical: 36),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
 
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          FadeTransition(
-            opacity: _fadeInAnimation,
-            child: _buildLogo(),
-          ),
-          Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  FadeTransition(
+                    opacity: _fadeInAnimation,
+                    child: _buildLogo(),
+                  ),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
 
-                const SizedBox(height: 24),
-                _buildLoginForm(),
-              ],
+                        const SizedBox(height: 24),
+                        _buildLoginForm(),
+                      ],
+                    ),
+                  ),
+              SizedBox(height: 12,)
+                ],
+              ),
             ),
+            if (_errorMessage != null)
+              Positioned(
+                bottom: 22,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: AppColors.red,
+                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Text(
+          '© 2025 Pooja Healthcare. All rights reserved.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: ResponsiveUtils.fontSize(context, 12),
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w400,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -252,14 +318,26 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Username',
-          style: TextStyle(
-            fontSize: ResponsiveUtils.fontSize(context, 16),
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-            letterSpacing: 0.5,
-          ),
+        Row(
+          children: [
+            Text(
+              'Username',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.fontSize(context, 16),
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),  Text(
+              '   *',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.fontSize(context, 16),
+                fontWeight: FontWeight.bold,
+                color: AppColors.red,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         CustomTextField(
@@ -269,21 +347,34 @@ class _LoginScreenState extends State<LoginScreen>
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           validator: (value) {
-            if (value == null || value.isEmpty) {
+          /*  if (value == null || value.isEmpty) {
               return 'Please enter your user name';
             }
-            return null;
+            return null;*/
           },
         ),
         const SizedBox(height: 16),
-        Text(
-          'Password',
-          style: TextStyle(
-            fontSize: ResponsiveUtils.fontSize(context, 16),
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-            letterSpacing: 0.5,
-          ),
+        Row(
+          children: [
+            Text(
+              'Password',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.fontSize(context, 16),
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              ' *',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.fontSize(context, 16),
+                fontWeight: FontWeight.bold,
+                color: AppColors.red,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         CustomTextField(
@@ -303,11 +394,11 @@ class _LoginScreenState extends State<LoginScreen>
                 setState(() => _obscurePassword = !_obscurePassword),
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) {
+          /*  if (value == null || value.isEmpty) {
               return 'Please enter your password';
             }
 
-            return null;
+            return null;*/
           },
           onFieldSubmitted: (_) => _login(),
         ),
@@ -344,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen>
                 //Navigator.pushReplacementNamed(context, '/addPatient');
               },
               child: Text(
-                'Forget password?',
+                'Forgot password?',
                 style: TextStyle(
                   fontSize: ResponsiveUtils.fontSize(context, 14),
                   color: AppColors.primary,
@@ -359,7 +450,7 @@ class _LoginScreenState extends State<LoginScreen>
         SizedBox(
           width: double.infinity,
           child: Animatedbutton(
-title: 'LOGIN',
+            title: 'LOGIN',
             isLoading: _isLoading,
             onPressed: _login,
             backgroundColor: AppColors.secondary,
@@ -367,6 +458,7 @@ title: 'LOGIN',
 
           ),
         ),
+
 
 
       ],

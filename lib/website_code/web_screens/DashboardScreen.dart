@@ -429,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         // Follow Ups Section
                         SizedBox(
-                          height: 200, // Fixed height for follow-ups
+                          height: 216, // Fixed height for follow-ups
                           child: Container(
                             padding: const EdgeInsets.all(16.0),
                             decoration: BoxDecoration(
@@ -463,41 +463,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     children: [
                                       FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
-                                        date: "07 May 2025, 9am",
+                                        date: "07 May 2025,\n9am",
                                         condition: "Hernia",
                                         phone: "+91-7788544987",
+                                        index: '1',
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
                                       FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
-                                        date: "07 May 2025, 9am",
+                                        date: "07 May 2025,\n9am",
                                         condition: "Hernia",
                                         phone: "+91-7788544987",
+                                        index: '2',
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
                                       FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
-                                        date: "07 May 2025, 9am",
+                                        date: "07 May 2025,\n9am",
                                         condition: "Hernia",
                                         phone: "+91-7788544987",
+                                        index: '3',
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
                                       FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
-                                        date: "07 May 2025, 9am",
+                                        date: "07 May 2025,\n9am",
                                         condition: "Hernia",
                                         phone: "+91-7788544987",
+                                        index: '4',
                                         isToday: false,
                                       ),
                                       const SizedBox(width: 16),
                                       FollowUpItem(
                                         name: "Gretchen O'Kon, M/31",
-                                        date: "07 May 2025, 9am",
+                                        date: "07 May 2025,\n9am",
                                         condition: "Hernia",
                                         phone: "+91-7788544987",
+                                        index: '5',
                                         isToday: false,
                                       ),
                                     ],
@@ -734,7 +739,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTableRow(String patientName, String diagnosis, String summary) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0,horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6.0,horizontal: 12),
       child: Row(
         children: [
           Expanded(
@@ -780,6 +785,7 @@ class FollowUpItem extends StatefulWidget {
   final String date;
   final String condition;
   final String phone;
+  final String index;
   final bool isToday;
 
   const FollowUpItem({
@@ -788,6 +794,7 @@ class FollowUpItem extends StatefulWidget {
     required this.date,
     required this.condition,
     required this.phone,
+    required this.index,
     required this.isToday,
   });
 
@@ -818,6 +825,34 @@ class _FollowUpItemState extends State<FollowUpItem> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              spacing: 20,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'FollowUp ${widget.index}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: ResponsiveUtils.fontSize(context, 16),
+                    color: AppColors.primary,
+                  ),
+                ),
+                Text(
+                  textAlign: TextAlign.center,
+                  widget.date,
+                  style: TextStyle(
+
+                    fontWeight: FontWeight.bold,
+                    color: isHovered
+                        ? AppColors.primary
+                        : AppColors.secondary,
+                    fontSize: ResponsiveUtils.fontSize(context, 12),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 4,),
             Text(
               widget.name,
               style: TextStyle(
@@ -826,17 +861,7 @@ class _FollowUpItemState extends State<FollowUpItem> {
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              widget.date,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isHovered
-                    ? AppColors.primary
-                    : AppColors.secondary,
-                fontSize: ResponsiveUtils.fontSize(context, 12),
-              ),
-            ),
+
             const SizedBox(height: 4),
             Text(
               widget.condition,

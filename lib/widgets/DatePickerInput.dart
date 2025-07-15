@@ -63,37 +63,62 @@ class _DatePickerInputState extends State<DatePickerInput> {
 
     DateTime? pickedDate;
 
-    await showDialog(
+    await await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.zero,
-          content: SizedBox(
-            width: 600,
-            height: 350,
-            child: SfDateRangePicker(
-              selectionColor: AppColors.secondary,
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 700,
+              height: 450,
+              child: SfDateRangePicker(
+                headerStyle: DateRangePickerHeaderStyle(
+                  textAlign: TextAlign.center,
+                  textStyle: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: ResponsiveUtils.fontSize(context, 20),
+                    color: AppColors.primary,
+                  ),
+                ),
+                selectionColor: AppColors.secondary,
+                selectionMode: DateRangePickerSelectionMode.single,
+                initialSelectedDate: _selectedDate ?? DateTime.now(),
+                showActionButtons: true,
+                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
+                  pickedDate = args.value as DateTime?;
+                },
+                selectionTextStyle: TextStyle(color: Colors.white),
+                todayHighlightColor: AppColors.primary,
 
-              selectionMode: DateRangePickerSelectionMode.single,
-              initialSelectedDate: _selectedDate ?? DateTime.now(),
-              showActionButtons: true,
-              onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
-                pickedDate = args.value as DateTime?;
-              },
-              selectionTextStyle: TextStyle(color: Colors.white),
-              todayHighlightColor: AppColors.primary,
-              onSubmit: (Object? val) {
-                Navigator.of(context).pop();
-              },
-              onCancel: () {
-                pickedDate = null;
-                Navigator.of(context).pop();
-              },
+                // ✅ Customize week title color and style
+                monthViewSettings: DateRangePickerMonthViewSettings(
+                  viewHeaderStyle: DateRangePickerViewHeaderStyle(
+                    textStyle: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                    ),
+                  ),
+                ),
+
+                onSubmit: (Object? val) {
+                  Navigator.of(context).pop();
+                },
+                onCancel: () {
+                  pickedDate = null;
+                  Navigator.of(context).pop();
+                },
+              ),
             ),
           ),
         );
       },
     );
+
 
     if (pickedDate != null && pickedDate != _selectedDate) {
       setState(() {

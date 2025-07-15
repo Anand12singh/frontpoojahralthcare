@@ -894,7 +894,7 @@ maxlength: 4,
             const SizedBox(height: 32),
             // Buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
                   width: ResponsiveUtils.scaleWidth(context, 150),

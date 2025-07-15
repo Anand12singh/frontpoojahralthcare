@@ -690,7 +690,7 @@ print(request.fields);
 
               // Buttons
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
                     width: ResponsiveUtils.scaleWidth(context, 150),

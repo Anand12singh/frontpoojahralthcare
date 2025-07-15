@@ -60,6 +60,9 @@ dependencies:
   responsive_framework: ^1.5.1
   flutter_svg: ^2.0.10
   dropdown_button2: ^2.3.9
+  dependencies:
+
+
 
   # flutter_launcher_icons: ^0.14.3
 

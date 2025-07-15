@@ -223,14 +223,14 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) {
         return Center(
           child: Container(
-            width: ResponsiveUtils.scaleWidth(context, 400), // Fixed width for the dialog
+            width: ResponsiveUtils.scaleWidth(context, 450), // Fixed width for the dialog
             margin: const EdgeInsets.symmetric(horizontal: 20), // Optional margin
             child: Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(40.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -259,10 +259,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
-                            titlecolor:AppColors.secondary,
+                            titlecolor:AppColors.red,
                             backgroundColor: Colors.white,
                             shadowColor: Colors.white,
-                            borderColor: AppColors.secondary,
+                            borderColor: AppColors.red,
                           ),
                         ),
                         // SizedBox(width:  ResponsiveUtils.scaleWidth(context, 16)),
@@ -318,11 +318,11 @@ class _HomeScreenState extends State<HomeScreen> {
             duration: const Duration(milliseconds: 300),
             width: isSidebarCollapsed
                 ? ResponsiveUtils.scaleWidth(context, 80)
-                : ResponsiveUtils.scaleWidth(context, 200),
+                : ResponsiveUtils.scaleWidth(context, 220),
 
             color:Colors.white,
             child: Padding(
-              padding: const EdgeInsets.only(right: 20,left: 20,bottom: 20,top: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 10),
               child: Column(
                 spacing: 4,
                 children: [
@@ -330,90 +330,107 @@ class _HomeScreenState extends State<HomeScreen> {
                     isSidebarCollapsed
                         ? 'assets/logo1.png'
                         : 'assets/company_logo.png',
-                    fit: isSidebarCollapsed ? null: BoxFit.fill,
+                    fit: isSidebarCollapsed ? null: BoxFit.contain,
                     height:isSidebarCollapsed? ResponsiveUtils.scaleHeight(context, 42):ResponsiveUtils.scaleHeight(context, 50),
                     width: double.infinity,
                   ),
                   SizedBox(height: 20,),
-                  _buildSidebarItem(
-                    assetPath: 'assets/Dashboard.png',
-                    label: 'Dashboard',
-                    index: 0,
-                  ),
-                  _buildSidebarItem(
-                    assetPath: 'assets/PatientList.png',
-                    label: 'Patient list',
-                    index: 1,
-                  ),
-                  _buildUserManagementExpansionTile(),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8,left: 8,bottom: 20,top: 10),
+                      child: Column(
+                        spacing: 10,
+                        children: [
+                          _buildSidebarItem(
+                            assetPath: 'assets/Dashboard.png',
+                            label: 'Dashboard',
+                            index: 0,
+                          ),
+                          _buildSidebarItem(
+                            assetPath: 'assets/PatientList.png',
+                            label: 'Patient list',
+                            index: 1,
+                          ),
+                          _buildUserManagementExpansionTile(),
 
-                  /* _buildSidebarItem(
-                    assetPath: 'assets/DrSchedule.png',
-                    label: 'Dr. Schedule',
-                    index: 2,
-                  ),
-                  _buildSidebarItem(
-                    assetPath: 'assets/ChangesLog.png',
-                    label: 'Change log',
-                    index: 3,
-                  ),
-                  _buildSidebarItem(
-                    assetPath: 'assets/UserManagement.png',
-                    label: 'User Management',
-                    index: 4,
-                  )
-                  _buildSidebarItem(
-                    assetPath: 'assets/Master.png',
-                    label: 'Masters',
-                    index: 5,
-                  ),*/
-                  const Spacer(),
-                 /* _buildSidebarItem(
-                    assetPath: 'assets/settingicon.png',
-                    label: 'Settings',
-                    index: 3,
-                  ),*/
-                  _buildSidebarItem(
-                    assetPath: 'assets/logouticon.png',
-                    label: 'Logout',
-                    index: 6,
-                    onTap: _showLogoutConfirmation, // Add this parameter
-                    isLogout: true
-                  ),
-                  Divider(color: AppColors.secondary,),
-                  isSidebarCollapsed
-                      ?Container(
-                    padding: EdgeInsets.symmetric(vertical: 8,horizontal: 11),
-                    decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
-                        child: SvgPicture.asset(
-
-                                            'assets/applelogosvg.svg',
-                                            height: 20,
-                                            // height: null,   // Remove or specify a height if needed
-                                          ),
-                      )
-                      : Image.asset(
-                    'assets/appstore.png',
-
-                  ),
-                  isSidebarCollapsed
-                      ?
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
-                    child: Image.asset(
-
-                      'assets/playstorelogo.png',
-                      height: 20,
-                      // height: null,   // Remove or specify a height if needed
+                          /* _buildSidebarItem(
+                      assetPath: 'assets/DrSchedule.png',
+                      label: 'Dr. Schedule',
+                      index: 2,
                     ),
-                  )
-                      :
-                  Image.asset(
-                   'assets/googleplay.png',
+                    _buildSidebarItem(
+                      assetPath: 'assets/ChangesLog.png',
+                      label: 'Change log',
+                      index: 3,
+                    ),
+                    _buildSidebarItem(
+                      assetPath: 'assets/UserManagement.png',
+                      label: 'User Management',
+                      index: 4,
+                    )
+                    _buildSidebarItem(
+                      assetPath: 'assets/Master.png',
+                      label: 'Masters',
+                      index: 5,
+                    ),*/
+                          const Spacer(),
+                          /* _buildSidebarItem(
+                      assetPath: 'assets/settingicon.png',
+                      label: 'Settings',
+                      index: 3,
+                    ),*/
+                          _buildSidebarItem(
+                              assetPath: 'assets/logouticon.png',
+                              label: 'Logout',
+                              index: 6,
+                              onTap: _showLogoutConfirmation, // Add this parameter
+                              isLogout: true
+                          ),
+                          Divider(color: AppColors.secondary,),
+                          isSidebarCollapsed
+                              ?Container(
+                            padding: EdgeInsets.symmetric(vertical: 8,horizontal: 11),
+                            decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
+                            child: SvgPicture.asset(
+
+                              'assets/applelogosvg.svg',
+                              height: 20,
+                              // height: null,   // Remove or specify a height if needed
+                            ),
+                          )
+                              : Image.asset(
+                            'assets/appstore.png',
+
+                          ),
+                          isSidebarCollapsed
+                              ?
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(color:AppColors.backgroundgreycolor ,borderRadius: BorderRadius.all(Radius.circular(8)),border: Border.all(color: AppColors.darkgreycolor)),
+                            child: Image.asset(
+
+                              'assets/playstorelogo.png',
+                              height: 20,
+                              // height: null,   // Remove or specify a height if needed
+                            ),
+                          )
+                              :
+                          Image.asset(
+                            'assets/googleplay.png',
 
 
+                          ),
+                          Row(
+
+                            children: [
+                              Text('Version V1.0.2',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 12), color: Colors.grey[600],   fontWeight: FontWeight.w400,),),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
                   ),
+
                 ],
               ),
             ),
@@ -592,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isHovered ? AppColors.primary : Colors.transparent,
-            width: isHovered ? 1 : 0,
+            width: isHovered ? 1 : 1,
           ),
         ),
         child: Theme(
@@ -856,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: borderColor,
-            width: isHovered ? 1 : 0,
+            width: isHovered ? 1 : 1,
           ),
         ),
         child: Padding(

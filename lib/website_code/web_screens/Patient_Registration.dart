@@ -2220,7 +2220,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         color: Colors.transparent,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (!isFirstStep)
             SizedBox(

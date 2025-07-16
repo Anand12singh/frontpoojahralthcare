@@ -1593,6 +1593,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
             controller: _bmiController,
             fillColor: Colors.grey.shade100,
             readOnly: true, // Add this property
+            useCamelCase: false,
           ),
 
                 ],
@@ -1746,6 +1747,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                               label: 'H/O DM',
                               initialValue: _hasDM,
                               onChanged: (value) => setState(() => _hasDM = value),
+
                             ),
                             const SizedBox(height: 8),
                             if (_hasDM)
@@ -1844,7 +1846,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       children:  [
                         FormInput(label: 'Any Other Illness',maxlength: 5,controller: _otherIllnessController,),
                         FormInput(label: 'Past Surgical History',maxlength: 5,controller: _surgicalHistoryController,),
-                        FormInput(label: 'H/O Drug Allergy',maxlength: 5,controller: _drugAllergyController,),
+                        FormInput(label: 'H/O Drug Allergy',maxlength: 5,controller: _drugAllergyController,useCamelCase: false,),
                       ],
                     ),
 
@@ -1915,7 +1917,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                          FormInput(label: 'Temperature',controller: _tempController,maxcount: 4,   inputFormatters: [
                            FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                          ],),
-                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5,   inputFormatters: [
+                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5, useCamelCase: false,  inputFormatters: [
                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
       ],),
 
@@ -1927,7 +1929,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                              children: [
                                SizedBox(
                                    width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
-                                   child: FormInput(label: 'BP (mm/Hg)',hintlabel: 'Systolic',controller: _bpSystolicController,)),
+                                   child: FormInput(label: 'BP (MM/Hg)',hintlabel: 'Systolic',controller: _bpSystolicController,useCamelCase: false,)),
                                Text("/",style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 26)),),
                                SizedBox(
                                    width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
@@ -2086,7 +2088,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
                          SizedBox(
                             width: double.infinity,
-                            child:  FormInput(label: 'H/O Present Medication',controller: _currentMedicationController,)),
+                            child:  FormInput(label: 'H/O Present Medication',controller: _currentMedicationController,useCamelCase: false,)),
                       ],
                     ),
 
@@ -2116,10 +2118,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       spacing: 16,
                       runSpacing: 16,
                       children:  [
-                        FormInput(label: 'RS (Respiratory System)',controller: _rsController,),
-                        FormInput(label: 'CVS (Cardio Vascular System)',controller: _cvsController,),
-                        FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,),
-                        FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,),
+                        FormInput(label: 'RS (Respiratory System)',controller: _rsController,useCamelCase: false,),
+                        FormInput(label: 'CVS (Cardio Vascular System)',controller: _cvsController,useCamelCase: false,),
+                        FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,useCamelCase: false,),
+                        FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,useCamelCase: false,),
 
                         SizedBox(
                           width: double.infinity,
@@ -2351,25 +2353,25 @@ class _OnboardingFormState extends State<OnboardingForm> {
                             child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
                         FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
                         FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
-                        FormInput(label: 'ESR',controller: _esrController,),
+                        FormInput(label: 'ESR',controller: _esrController,useCamelCase: false),
                         FormInput(label: 'Platelets',controller: _plateletsController,),
                         FormInput(label: 'Urine Routine',controller:_urineRoutineController),
                         FormInput(label: 'Urine Culture',controller:_urineCultureController),
-                        FormInput(label: 'BUN',controller:_bunController),
+                        FormInput(label: 'BUN',controller:_bunController,useCamelCase: false,),
                         FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
                         FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
-                        FormInput(label: 'LFT',controller:_lftController),
-                        FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController),
+                        FormInput(label: 'LFT',controller:_lftController,useCamelCase: false),
+                        FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController,useCamelCase: false),
                         FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
                         FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
-                        FormInput(label: 'HBA1C',controller:_hBA1CController),
-                        FormInput(label: 'HBSAG',controller:_hBSAGController),
-                        FormInput(label: 'HIV',controller:_hivController),
-                        FormInput(label: 'HCV',controller:_hcvController),
+                        FormInput(label: 'HBA1C',controller:_hBA1CController,useCamelCase: false),
+                        FormInput(label: 'HBSAG',controller:_hBSAGController,useCamelCase: false),
+                        FormInput(label: 'HIV',controller:_hivController,useCamelCase: false),
+                        FormInput(label: 'HCV',controller:_hcvController,useCamelCase: false),
                         FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
                         FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
-                        FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController),
-                        FormInput(label: 'MISC',controller:_miscController),
+                        FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController,useCamelCase: false),
+                        FormInput(label: 'MISC',controller:_miscController,useCamelCase: false),
                         SizedBox(
                             width: double.infinity,
                             child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
@@ -2689,6 +2691,7 @@ class FormInput extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final bool readOnly;
   final Function(String)? onChanged;
+  final bool useCamelCase;
 
   const FormInput({
     super.key,
@@ -2702,8 +2705,8 @@ class FormInput extends StatelessWidget {
     this.inputFormatters,
     this.readOnly = false,
     this.onChanged,
+    this.useCamelCase = true,
   });
-
 
   String _toCamelCase(String text) {
     if (text.isEmpty) return text;
@@ -2716,24 +2719,20 @@ class FormInput extends StatelessWidget {
         : '')
         .join(' ');
   }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-
     double fieldWidth;
 
     if (screenWidth < 600) {
-      // Small screens - use full width
       fieldWidth = double.infinity;
-    }  else if (screenWidth < 1200) {
-      // Medium screens - half screen
+    } else if (screenWidth < 1200) {
       fieldWidth = screenWidth * 0.45;
     } else if (screenWidth == 1440) {
-      // Medium screens - half screen
       fieldWidth = 250;
-    }else {
-      // Large screens - fixed comfortable width
+    } else {
       fieldWidth = 275;
     }
 
@@ -2743,14 +2742,13 @@ class FormInput extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _toCamelCase(label),
+            useCamelCase ? _toCamelCase(label) : label,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.primary,
               fontSize: ResponsiveUtils.fontSize(context, 14),
             ),
           ),
-
           const SizedBox(height: 4),
           CustomTextField(
             fillColor: fillColor,
@@ -2765,12 +2763,14 @@ class FormInput extends StatelessWidget {
             validator: (value) => null,
             readOnly: readOnly,
             onChanged: onChanged,
+            useCamelCase: useCamelCase,
           ),
         ],
       ),
     );
   }
 }
+
 
 
 

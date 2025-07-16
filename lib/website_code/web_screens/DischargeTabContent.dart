@@ -491,7 +491,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                         child: FormInput(
                             controller: _drugAllergyController,
                             label: 'Any drug allergy reported/Noted',
-                            hintlabel: 'Enter drug allergy details'
+                            hintlabel: 'Enter drug allergy details',
+                          useCamelCase: false,
                         ),
                       ),
                     ],
@@ -619,6 +620,7 @@ maxlength: 4,
                               label: 'H/O DM',
                               initialValue: _hasDM,
                               onChanged: (value) => setState(() => _hasDM = value),
+
                             ),
                             const SizedBox(height: 8),
                             if (_hasDM)
@@ -675,7 +677,8 @@ maxlength: 4,
                               FormInput(
                                 label: 'IHD Description',
                                 maxlength: 1,
-                                controller: _ihdDescriptionController,
+                                controller: _ihdDescriptionController
+                                  ,useCamelCase: false
                               ),
                           ],
                         ),
@@ -700,7 +703,8 @@ maxlength: 4,
                               FormInput(
                                 label: 'COPD Description',
                                 maxlength: 1,
-                                controller: _copdDescriptionController,
+                                controller: _copdDescriptionController
+                                  ,useCamelCase: false
                               ),
                           ],
                         ),

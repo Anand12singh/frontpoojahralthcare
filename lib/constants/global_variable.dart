@@ -5,7 +5,7 @@ class Global{
   static String? phid1;
 
 }
-
+int selectedPageIndex = 0;
 class GlobalPatientData {
   static String? firstName;
   static String? lastName;

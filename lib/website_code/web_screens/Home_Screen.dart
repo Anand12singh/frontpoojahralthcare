@@ -19,6 +19,7 @@ import 'DashboardScreen.dart';
 import 'PatientDataTabsScreen.dart';
 import 'PatientRegistrationPage.dart';
 import 'Patient_Registration.dart';
+import 'UserManagementScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialPage; // Add this line
@@ -351,7 +352,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: 'Patient list',
                             index: 1,
                           ),
-                          _buildUserManagementExpansionTile(),
+
+                          _buildSidebarItem(
+                            assetPath: 'assets/UserManagement.png',
+                            label: 'User Management',
+                            index: 3,
+                            onTap: () {
+
+                              Navigator.pushNamed(context, '/userManagement');
+
+
+                            },
+                          ),
+
 
                           /* _buildSidebarItem(
                       assetPath: 'assets/DrSchedule.png',
@@ -589,93 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  Widget _buildUserManagementExpansionTile() {
-    final isHovered = _hoveredSidebarIndex == 100;
 
-    return MouseRegion(
-      onEnter: (_) {
-        setState(() {
-          _hoveredSidebarIndex = 100;
-        });
-      },
-      onExit: (_) {
-        setState(() {
-          _hoveredSidebarIndex = null;
-        });
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isHovered ? AppColors.primary : Colors.transparent,
-            width: isHovered ? 1 : 1,
-          ),
-        ),
-        child: Theme(
-          data: Theme.of(context).copyWith(
-            dividerColor: Colors.transparent,
-          ),
-          child: ExpansionTile(
-
-            tilePadding: const EdgeInsets.symmetric(horizontal: 10),
-            title: Row(
-              children: [
-                Image.asset(
-                  'assets/UserManagement.png',
-                  height: ResponsiveUtils.scaleHeight(context, 20),
-                  color: AppColors.secondary,
-                ),
-                if (!isSidebarCollapsed) ...[
-                  const SizedBox(width: 12),
-                  Text(
-                    'User Management',
-                    style: TextStyle(
-                      fontSize: ResponsiveUtils.fontSize(context, 14),
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            initiallyExpanded: isUserMgmtExpanded,
-            onExpansionChanged: (expanded) {
-              setState(() {
-                isUserMgmtExpanded = expanded;
-              });
-            },
-            children: [
-              if (!isSidebarCollapsed)
-                Padding(
-                  padding: const EdgeInsets.only(left: 18),
-                  child: Column(
-                    spacing: 10,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSidebarItem(
-                        assetPath: '',
-                        label: 'User',
-                        index: 3,
-                      ),
-                      _buildSidebarItem(
-                        assetPath: '',
-                        label: 'Role',
-                        index: 4,
-                      ),
-                      _buildSidebarItem(
-                        assetPath: '',
-                        label: 'Permission',
-                        index: 5,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
 
   PreferredSizeWidget _buildMobileAppBar() {
@@ -798,7 +725,8 @@ class _HomeScreenState extends State<HomeScreen> {
     required int index,
     VoidCallback? onTap,
     bool isLogout = false,
-  }) {
+  })
+  {
     final bool isHighlightable = !nonHighlightablePageIndices.contains(index);
     final bool isSelected = selectedPageIndex == index && isHighlightable;
     final bool isHovered = _hoveredSidebarIndex == index;

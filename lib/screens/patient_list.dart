@@ -556,7 +556,7 @@ toolbarHeight: 70,
                         ),
                       ],
                     ),
-                    SizedBox(width: 10,),
+                  /*  SizedBox(width: 10,),
                     const Text('Sort By'),
                     DropdownButton2<String>(
                       dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
@@ -592,7 +592,7 @@ toolbarHeight: 70,
                       },
                     ),
 
-
+*/
 
                   ],
                 ),
@@ -732,6 +732,7 @@ toolbarHeight: 70,
                                         flex: 1,
                                         child: Wrap(
                                           children: [
+
                                             IconButton(
                                               icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
                                               onPressed: () {

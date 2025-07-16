@@ -79,6 +79,7 @@ class CustomTextField extends StatefulWidget {
   final bool obscureTextAutoToggle;
   final Duration? obscureTextToggleDelay;
   final List<TextInputFormatter>? inputFormatters;
+  final bool useCamelCase;
   const CustomTextField({
     Key? key,
     this.controller,
@@ -151,6 +152,7 @@ class CustomTextField extends StatefulWidget {
     this.strutStyle,
     this.obscureTextAutoToggle = false,
     this.obscureTextToggleDelay,
+    this.useCamelCase = true,
   }) : super(key: key);
 
   @override
@@ -356,7 +358,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         enableSuggestions: widget.enableSuggestions,
         decoration: InputDecoration(
           labelText: widget.label,
-          hintText: _toCamelCase(widget.hintText!),
+          hintText:widget.useCamelCase ?  _toCamelCase(widget.hintText!):widget.hintText!,
           helperText: widget.helperText,
           errorText: widget.errorText,
           labelStyle: effectiveLabelStyle,

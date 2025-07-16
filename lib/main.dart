@@ -7,6 +7,9 @@ import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
+import 'package:poojaheakthcare/website_code/web_screens/PermissionManagementScreen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/RoleManagementScreen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/UserManagementScreen.dart';
 
 void main() {
   //debugPaintSizeEnabled = true;
@@ -57,6 +60,9 @@ class MyApp extends StatelessWidget {
        // '/patientInfo': (context) => const PatientInfoScreen(),
         '/HomeScreen': (context) => const HomeScreen(),
         '/addPatient': (context) => const PatientRegistrationPage(),
+        '/userManagement': (context) => const Usermanagementscreen(),
+        '/roleManagement': (context) => const Rolemanagementscreen(),
+        '/permissionManagement': (context) => const Permissionmanagementscreen(),
       },
     );
   }

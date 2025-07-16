@@ -285,6 +285,22 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       });
     }
   }
+  void _cancelEditOrDelete(int index) {
+    final entry = followUpEntries[index];
+    if (entry.id == null) {
+      // Unsaved → delete
+      setState(() {
+        followUpEntries.removeAt(index);
+        isEditingList.removeAt(index);
+        _isAddingFollowUp = false;
+      });
+    } else {
+      // Existing → just exit edit mode
+      setState(() {
+        isEditingList[index] = false;
+      });
+    }
+  }
 
 
 
@@ -344,10 +360,21 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+
                         if (!isEditingList[entry.key])
-                          IconButton(
-                            icon: Icon(Icons.edit_outlined, color: AppColors.primary),
-                            onPressed: () => _toggleEditMode(entry.key),
+                          Row(
+                            spacing:10,
+                            children: [
+                              Container(
+
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8),color: Colors.green.withOpacity(0.7)),
+                                  child: Text('Saved',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w200),)),
+                              IconButton(
+                                icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+                                onPressed: () => _toggleEditMode(entry.key),
+                              ),
+                            ],
                           ),
                         if (isEditingList[entry.key])
                           Row(
@@ -366,8 +393,9 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.close_rounded, color: Colors.red),
-                                onPressed: () => _toggleEditMode(entry.key),
+                                onPressed: () => _cancelEditOrDelete(entry.key),
                               ),
+
                             ],
                           )
                       ],

@@ -1,9 +1,12 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:poojaheakthcare/provider/User_management_provider.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
+import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DropdownInput.dart';
 import '../../widgets/custom_text_field.dart';
 import 'CustomSidebar.dart';
@@ -26,12 +29,17 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
   TextEditingController searchController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
   List<dynamic> _rowsPerPageOptions = [ 10, 20, 50,100,'ALL'];
-
+  String? selectedUser;
+  final List<String> UserOptions = ['Admin', 'Doctor', 'Receptionist'];
   int get totalPages {
     if (_totalRecords == 0) return 1;
     return (_totalRecords / _rowsPerPage).ceil();
   }
- 
+  bool add = false;
+  bool edit = false;
+  bool delete = false;
+  bool view = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,7 +66,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
 
                         Container(
                           padding: EdgeInsets.all(12),
-                        
+
                           margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -92,16 +100,27 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text("Role Name",  style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                      fontSize: ResponsiveUtils.fontSize(context, 14),
-                                    ),),
-                                    const SizedBox(height: 6),
-                                    CustomTextField(
-                                      controller: roleController,
-                                      hintText: 'Enter Role',
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownInput<String>(
+                                        value: selectedUser,
+                                        items: UserOptions.map((role) {
+                                          return DropdownMenuItem(
+                                            value: role,
+                                            child: Text(role),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) {
+                                          setState(() {
+                                            selectedUser = val;
+                                          });
+                                        },
+                                        label: 'User *',
+                                        hintText: '---- Select User ----',
+
+                                      ),
                                     ),
+
                                   ],
                                 ),
                               ),
@@ -179,7 +198,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
         collapsedBackgroundColor: AppColors.primary.withOpacity(0.05),
         backgroundColor: AppColors.primary.withOpacity(0.05),
-        initiallyExpanded: true,
+        initiallyExpanded: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -214,7 +233,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
             child: Row(
               children: [
                 Expanded(
-                  flex: 3,
+                  flex: 4,
                   child: Text(
                     item,
                     style: TextStyle(
@@ -223,45 +242,52 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                   ),
                 ),
                 Expanded(
-                  flex: 2,
+                  flex: 1,
                   child: Row(
                     children: [
-                      Checkbox(
-                        value: false,
-                        onChanged: (val) {
-                          // handle logic here
+                      CustomCheckbox(label: 'Add'
+                        ,initialValue: add
+                        ,onChanged: (value) {
+                          setState(() {
+                            add=value;
+                          });
                         },
-                        activeColor: AppColors.secondary,
                       ),
-                      Text(
-                        "Full Access",
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.fontSize(context, 14),
-                        ),
+
+                      SizedBox(width: 10,),
+                      CustomCheckbox(label: 'Edit'
+                        ,initialValue: edit
+                        ,onChanged: (value) {
+                          setState(() {
+                            edit=value;
+                          });
+                        },
                       ),
+
+                      SizedBox(width: 10,),
+                      CustomCheckbox(label: 'Delete'
+                        ,initialValue: delete
+                        ,onChanged: (value) {
+                          setState(() {
+                            delete=value;
+                          });
+                        },
+                      ),
+
+                      SizedBox(width: 10,),
+                      CustomCheckbox(label: 'View'
+                        ,initialValue: view
+                        ,onChanged: (value) {
+                          setState(() {
+                            view=value;
+                          });
+                        },
+                      )
+
                     ],
                   ),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Row(
-                    children: [
-                      Checkbox(
-                        value: false,
-                        onChanged: (val) {
-                          // handle logic here
-                        },
-                        activeColor: AppColors.secondary,
-                      ),
-                      Text(
-                        "View Access",
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.fontSize(context, 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+
               ],
             ),
           );

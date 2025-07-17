@@ -1,7 +1,14 @@
+import 'dart:convert';
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:poojaheakthcare/provider/User_management_provider.dart';
+import 'package:poojaheakthcare/services/auth_service.dart';
+import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
+import '../../services/api_services.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/DropdownInput.dart';
@@ -16,15 +23,25 @@ class Usermanagementscreen extends StatefulWidget {
 }
 
 class _UsermanagementscreenState extends State<Usermanagementscreen> {
-  bool isLoading = false;
-  String errorMessage = '';
+
   int _currentPage = 1;
-  int _rowsPerPage = 10;
+  int _rowsPerPage = 100;
   int _totalRecords = 0;
   List<Map<String, dynamic>> patients = [];
   List<Map<String, dynamic>> filteredPatients = [];
   TextEditingController searchController = TextEditingController();
-  List<dynamic> _rowsPerPageOptions = [ 10, 20, 50,100,'ALL'];
+  List<dynamic> _rowsPerPageOptions = [ 100,'ALL'];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_){
+    Provider.of<UserManagementProvider>(context,listen: false).fetchUserData(context);
+    });
+
+  }
+
 
   int get totalPages {
     if (_totalRecords == 0) return 1;
@@ -43,300 +60,308 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEAF2FF),
-      body: Row(
-        children: [
+    return ChangeNotifierProvider(
+      create: (context) => UserManagementProvider(),
+      child: Consumer<UserManagementProvider>(
+        builder: (context, Provider, _) {
+return Scaffold(
+  backgroundColor: const Color(0xFFEAF2FF),
+  body: Row(
+    children: [
 
-          Sidebar(),
-          Expanded(
-            child: Stack(
+      Sidebar(),
+      Expanded(
+        child: Stack(
 
-              children: [
-                Padding(
+          children: [
+            Padding(
 
-                  padding: const EdgeInsets.only(top: 80),
-                  child: Container(
-                    child:  isLoading
-                        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                        : errorMessage.isNotEmpty
-                        ? Center(child: Text(errorMessage, style: const TextStyle(color: Colors.red)))
-                        : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+              padding: const EdgeInsets.only(top: 80),
+              child: Container(
+                child:  Provider.isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                    : Provider.errorMessage.isNotEmpty
+                    ? Center(child: Text(Provider.errorMessage, style: const TextStyle(color: Colors.red)))
+                    : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
 
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.all(12),
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.all(12),
 
-                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                            ),
-                            child: Column(
-                              spacing: 10,
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          spacing: 10,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      flex: 3,
-                                      child: Row(
+                                Flexible(
+                                  flex: 3,
+                                  child: Row(
+                                    children: [
+                                      Row(
+
                                         children: [
-                                          Row(
+                                          const Text('Show '),
+                                          const SizedBox(width: 8),
+                                          DropdownButton2<dynamic>(
+                                            dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
+                                            value: _rowsPerPage,
+                                            items: _rowsPerPageOptions.map((dynamic value) {
+                                              return DropdownMenuItem<dynamic>(
+                                                value: value,
+                                                child: Text(value.toString()),
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              setState(() {
 
-                                            children: [
-                                              const Text('Show '),
-                                              const SizedBox(width: 8),
-                                              DropdownButton2<dynamic>(
-                                                dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
-                                                value: _rowsPerPage,
-                                                items: _rowsPerPageOptions.map((dynamic value) {
-                                                  return DropdownMenuItem<dynamic>(
-                                                    value: value,
-                                                    child: Text(value.toString()),
-                                                  );
-                                                }).toList(),
-                                                onChanged: (value) {
-                                                  setState(() {
-
-                                                  });
-                                                },
-                                              ),
-                                            ],
+                                              });
+                                            },
                                           ),
-
-
-
                                         ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Flexible(
-                                      flex: 1,
-                                      child: CustomTextField(
-                                        controller: searchController,
-                                        onChanged: (p0) {
 
-                                        },
-                                        hintText: "Search User",
-                                        prefixIcon: Icons.search_rounded,
+
+
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextField(
+                                    controller: searchController,
+                                    onChanged: (p0) {
+
+                                    },
+                                    hintText: "Search User",
+                                    prefixIcon: Icons.search_rounded,
+                                  ),
+                                ),
+                                Center(
+                                  child: Container(
+                                    margin: EdgeInsets.only(left: 16, right: 16),
+                                    height: 50, // define desired button height
+                                    width: ResponsiveUtils.scaleWidth(context, 160),
+                                    child: Animatedbutton(
+                                      title: '+ Add Role',
+                                      isLoading: Provider.isLoading,
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (context) => const AddUserDialog(),
+                                        );
+                                      },
+
+                                      backgroundColor: AppColors.secondary,
+                                      shadowColor: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(border: Border.all(color: AppColors.primary.withOpacity(0.1),),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                    topLeft: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                    bottomLeft: Radius.circular(12),
+
+                                  ),),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        borderRadius: const BorderRadius.only(
+                                          topRight: Radius.circular(12),
+                                          topLeft: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child:  Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
+                                        child: Row(
+                                          children: [
+                                            Expanded(flex: 2, child: Text("NAME", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                            Expanded(flex: 2, child: Row(
+                                              children: [
+                                                Text(
+                                                  "EMAIL",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.primary,
+                                                    fontSize: ResponsiveUtils.fontSize(context, 16),
+                                                  ),
+                                                ),
+
+                                              ],
+
+                                            )),
+                                            Expanded(flex: 2, child: Row(
+                                              children: [
+                                                Text("ROLE", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16))),
+
+
+                                              ],
+                                            )),
+                                            Expanded(flex: 2, child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                            Expanded(flex: 2, child: Text("CREATED/UPDATED BY", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+
+                                            Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    Center(
-                                      child: Container(
-                                        margin: EdgeInsets.only(left: 16, right: 16),
-                                        height: 50, // define desired button height
-                                        width: ResponsiveUtils.scaleWidth(context, 160),
-                                        child: Animatedbutton(
-                                          title: '+ Add Role',
-                                          isLoading: isLoading,
-                                          onPressed: () {
-                                            showDialog(
-                                              context: context,
-                                              barrierDismissible: false,
-                                              builder: (context) => const AddUserDialog(),
-                                            );
-                                          },
+                                    Expanded(
+                                      child: ListView.separated(
+                                        itemCount:Provider.users.length,
+                                        separatorBuilder: (context, index) => const Divider( height: 1,
+                                            thickness: 1,
+                                            color: AppColors.backgroundColor),
+                                        itemBuilder: (context, index) {
+                                          final user = Provider.users[index];
 
-                                          backgroundColor: AppColors.secondary,
-                                          shadowColor: AppColors.primary,
-                                        ),
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
+                                            child: Row(
+                                              children: [
+                                                Expanded(flex: 2, child: Text(user.name,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                Expanded(flex: 2, child: Text(user.email,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                Expanded(flex: 2, child: Text(user.rolename,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                Expanded(flex: 2, child: Text(user.status.toString(),style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                Expanded(flex: 2, child: Text(user.createdat,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: Wrap(
+                                                    children: [
+
+                                                      IconButton(
+                                                        icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
+                                                        onPressed: () {
+
+
+                                                        },
+                                                      ),
+                                                      IconButton(
+                                                        icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
+                                                        onPressed: () {
+
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ],
                                 ),
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(border: Border.all(color: AppColors.primary.withOpacity(0.1),),
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(12),
-                                        topLeft: Radius.circular(12),
-                                        bottomRight: Radius.circular(12),
-                                        bottomLeft: Radius.circular(12),
+                              ),
+                            ),
 
-                                      ),),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withOpacity(0.1),
-                                            borderRadius: const BorderRadius.only(
-                                              topRight: Radius.circular(12),
-                                              topLeft: Radius.circular(12),
-                                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Showing 1 to 20 of $_totalRecords records'),   Row(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          // FIRST PAGE
+                                          IconButton(
+                                              icon: const Icon(Icons.first_page),
+                                              onPressed: (){}
                                           ),
-                                          child:  Padding(
-                                            padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
-                                            child: Row(
-                                              children: [
-                                                Expanded(flex: 2, child: Text("NAME", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-                                                Expanded(flex: 2, child: Row(
-                                                  children: [
-                                                    Text(
-                                                      "EMAIL",
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
-                                                        color: AppColors.primary,
-                                                        fontSize: ResponsiveUtils.fontSize(context, 16),
-                                                      ),
-                                                    ),
-
-                                                  ],
-
-                                                )),
-                                                Expanded(flex: 2, child: Row(
-                                                  children: [
-                                                    Text("ROLE", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16))),
-
-
-                                                  ],
-                                                )),
-                                                Expanded(flex: 2, child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-                                                Expanded(flex: 2, child: Text("CREATED/UPDATED BY", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-
-                                                Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-                                              ],
-                                            ),
+                                          // PREVIOUS
+                                          IconButton(
+                                              icon: const Icon(Icons.chevron_left),
+                                              onPressed: (){}
                                           ),
-                                        ),
-                                        Expanded(
-                                          child: ListView.separated(
-                                            itemCount: filteredPatients.length,
-                                            separatorBuilder: (context, index) => const Divider( height: 1,
-                                                thickness: 1,
-                                                color: AppColors.backgroundColor),
-                                            itemBuilder: (context, index) {
-                                              final patient = filteredPatients[index];
-                                              final _gender = patient?['gender'] == 1 ? 'Male' : 'Female';
-                                              return Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(flex: 2, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                    Expanded(flex: 2, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                    Expanded(flex: 2, child: Text(patient['age'].toString() ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                    Expanded(flex: 2, child: Text(_gender ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                    Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
 
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Wrap(
-                                                        children: [
+                                          // PAGE NUMBERS
+                                          ..._buildPageButtons(),
 
-                                                          IconButton(
-                                                            icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
-                                                            onPressed: () {
+                                          // NEXT
+                                          IconButton(
+                                              icon: const Icon(Icons.chevron_right),
+                                              onPressed:(){}
+                                          ),
 
+                                          // LAST PAGE
+                                          IconButton(
+                                            icon: const Icon(Icons.last_page),
+                                            onPressed:() {
 
-                                                            },
-                                                          ),
-                                                          IconButton(
-                                                            icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
-                                                            onPressed: () {
-
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
                                             },
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
 
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Showing 1 to 20 of $_totalRecords records'),   Row(
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              // FIRST PAGE
-                                              IconButton(
-                                                icon: const Icon(Icons.first_page),
-                                                onPressed: (){}
+                                          const SizedBox(width: 16),
+
+                                          // Jump-to-page box
+                                          SizedBox(
+                                            width: 50,
+                                            height: 30,
+                                            child: TextFormField(
+                                              initialValue:"1",
+                                              textAlign: TextAlign.center,
+                                              keyboardType: TextInputType.number,
+                                              decoration: InputDecoration(
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                                border: OutlineInputBorder(),
                                               ),
-                                              // PREVIOUS
-                                              IconButton(
-                                                icon: const Icon(Icons.chevron_left),
-                                                onPressed: (){}
-                                              ),
+                                              onFieldSubmitted: (value) {
 
-                                              // PAGE NUMBERS
-                                              ..._buildPageButtons(),
-
-                                              // NEXT
-                                              IconButton(
-                                                icon: const Icon(Icons.chevron_right),
-                                                onPressed:(){}
-                                              ),
-
-                                              // LAST PAGE
-                                              IconButton(
-                                                icon: const Icon(Icons.last_page),
-                                                onPressed:() {
-
-                                                },
-                                              ),
-
-                                              const SizedBox(width: 16),
-
-                                              // Jump-to-page box
-                                              SizedBox(
-                                                width: 50,
-                                                height: 30,
-                                                child: TextFormField(
-                                                  initialValue:"1",
-                                                  textAlign: TextAlign.center,
-                                                  keyboardType: TextInputType.number,
-                                                  decoration: InputDecoration(
-                                                    isDense: true,
-                                                    contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                                                    border: OutlineInputBorder(),
-                                                  ),
-                                                  onFieldSubmitted: (value) {
-
-                                                  },
-                                                ),
-                                              ),
-
-                                              SizedBox(width: 8),
-
-                                              Text("of 10 pages"),
-                                            ],
+                                              },
+                                            ),
                                           ),
+
+                                          SizedBox(width: 8),
+
+                                          Text("of 10 pages"),
                                         ],
                                       ),
                                     ],
                                   ),
-                                ),
-
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
+
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                Searchbar(),
-
-              ],
+              ),
             ),
-          ),
+            Searchbar(),
 
-        ],
+          ],
+        ),
+      ),
+
+    ],
+  ),
+);
+        },
+
       ),
     );
   }

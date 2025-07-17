@@ -34,6 +34,7 @@ class ConfigManager {
 enum API {
   getlocation,
   frontpatientbyid,
+  getallusers,
   addPatient,
   getPatientById,
   summaryadd,
@@ -63,6 +64,8 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/checkpatientinfo';
         case API.getlocation:
         return '${ConfigManager.getBaseURL()}/getlocation';
+        case API.getallusers:
+        return '${ConfigManager.getBaseURL()}/get_allusers';
       default:
         throw Exception('API not defined');
     }
@@ -76,6 +79,7 @@ class APIManager {
       case API.frontpatientbyid:
       case API.checkpatientinfo:
       case API.summaryadd:
+      case API.getallusers:
         return HTTPMethod.POST;
       default:
         return HTTPMethod.GET;

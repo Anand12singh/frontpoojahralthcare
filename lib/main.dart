@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:poojaheakthcare/provider/Permissoin_management_provider.dart';
+
+import 'package:poojaheakthcare/provider/Role_management_provider.dart';
 import 'package:poojaheakthcare/provider/User_management_provider.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
@@ -14,8 +17,17 @@ import 'package:poojaheakthcare/website_code/web_screens/UserManagementScreen.da
 import 'package:provider/provider.dart';
 
 void main() {
-  //debugPaintSizeEnabled = true;
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserManagementProvider()),
+        ChangeNotifierProvider(create: (_) => RoleManagementProvider()),
+        ChangeNotifierProvider(create: (_) => PermissoinManagementProvider()),
+
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,58 +35,49 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<UserManagementProvider>
-          (
-          create: (context) => UserManagementProvider(),
-        )
+    return MaterialApp(
+      title: 'Pooja Healthcare',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'Plus Jakarta Sans',
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+        primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
 
-      ],
-      child: MaterialApp(
-        title: 'Pooja Healthcare',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          fontFamily: 'Plus Jakarta Sans',
-          textTheme: GoogleFonts.plusJakartaSansTextTheme(
-            Theme.of(context).textTheme,
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.grey[100],
+        useMaterial3: false,
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.primary,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-          primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
-      
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.grey[100],
-          useMaterial3: false,
-          appBarTheme: AppBarTheme(
-            backgroundColor: AppColors.primary,
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.button,
-              textStyle: const TextStyle(fontSize: 18),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.button,
+            textStyle: const TextStyle(fontSize: 18),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),
-        initialRoute: '/login',
-        routes: {
-          '/': (context) => const LoginScreen(),
-          '/login': (context) => const LoginScreen(),
-         // '/patientInfo': (context) => const PatientInfoScreen(),
-          '/HomeScreen': (context) => const HomeScreen(),
-          '/addPatient': (context) => const PatientRegistrationPage(),
-          '/userManagement': (context) => const Usermanagementscreen(),
-          '/roleManagement': (context) => const Rolemanagementscreen(),
-          '/permissionManagement': (context) => const Permissionmanagementscreen(),
-        },
       ),
+      initialRoute: '/login',
+      routes: {
+        '/': (context) => const LoginScreen(),
+        '/login': (context) => const LoginScreen(),
+       // '/patientInfo': (context) => const PatientInfoScreen(),
+        '/HomeScreen': (context) => const HomeScreen(),
+        '/addPatient': (context) => const PatientRegistrationPage(),
+        '/userManagement': (context) => const Usermanagementscreen(),
+        '/roleManagement': (context) => const Rolemanagementscreen(),
+        '/permissionManagement': (context) => const Permissionmanagementscreen(),
+      },
     );
   }
 }

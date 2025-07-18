@@ -1,10 +1,13 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
+import '../../provider/Role_management_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/DropdownInput.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/custom_text_field.dart';
 import 'CustomSidebar.dart';
 import 'SearchBar.dart';
@@ -16,24 +19,45 @@ class Rolemanagementscreen extends StatefulWidget {
 }
 
 class _RolemanagementscreenState extends State<Rolemanagementscreen> {
-  bool isLoading = false;
-  String errorMessage = '';
+
   int _currentPage = 1;
   int _rowsPerPage = 10;
   int _totalRecords = 0;
-  List<Map<String, dynamic>> patients = [];
-  List<Map<String, dynamic>> filteredPatients = [];
-  TextEditingController searchController = TextEditingController();
-  final TextEditingController roleController = TextEditingController();
+
+
   List<dynamic> _rowsPerPageOptions = [ 10, 20, 50,100,'ALL'];
 
   int get totalPages {
     if (_totalRecords == 0) return 1;
     return (_totalRecords / _rowsPerPage).ceil();
   }
- 
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<RoleManagementProvider>(context, listen: false);
+      provider.fetchRoleData(context);
+    });
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context, int roleId) async {
+    await ConfirmationDialog.show(
+      context: context,
+      title: 'Delete Role',
+      message: 'Are you sure you want to delete this role? This action cannot be undone.',
+      confirmText: 'Delete',
+      confirmColor: AppColors.secondary,
+      onConfirm: () async {
+        await Provider.of<RoleManagementProvider>(context, listen: false)
+            .deleteRole(context: context, roleId:roleId );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<RoleManagementProvider>(context, listen: false);
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
       body: Row(
@@ -48,10 +72,10 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
 
                   padding: const EdgeInsets.only(top: 80),
                   child: Container(
-                    child:  isLoading
+                    child:  provider.isLoading
                         ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                        : errorMessage.isNotEmpty
-                        ? Center(child: Text(errorMessage, style: const TextStyle(color: Colors.red)))
+                        : provider.errorMessage.isNotEmpty
+                        ? Center(child: Text(provider.errorMessage, style: const TextStyle(color: Colors.red)))
                         : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -80,42 +104,48 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                     ),),
                                     const SizedBox(height: 6),
                                     CustomTextField(
-                                      controller: roleController,
+                                      controller: provider.roleController,
                                       hintText: 'Enter Role',
                                     ),
                                   ],
                                 ),
                               ),
+                              // In your build method, update the button section:
                               Expanded(
-                                flex:1,
+                                flex: 1,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [ Animatedbutton(
-
-                                    onPressed: () {
-                                      // Perform Save Logic
-
-                                    },
-                                    shadowColor: AppColors.primary,
-                                    title: 'Save', backgroundColor: AppColors.secondary,
-
-                                  ),
+                                  children: [
+                                    Consumer<RoleManagementProvider>(
+                                      builder: (context, provider, child) {
+                                        return SizedBox(
+                                          width: 150,
+                                          child: Animatedbutton(
+                                            onPressed: () async {
+                                              final success = await provider.saveRole(context: context);
+                                              if (success) {
+                                                provider.cancelEditing(); // Clear after successful save
+                                              }
+                                            },
+                                            shadowColor: AppColors.primary,
+                                            title: provider.isEditing ? 'Update' : 'Save',
+                                            backgroundColor: AppColors.secondary,
+                                          ),
+                                        );
+                                      },
+                                    ),
                                     const SizedBox(width: 16),
                                     Animatedbutton(
-
                                       onPressed: () {
-                                        // Perform Save Logic
-
+                                        Provider.of<RoleManagementProvider>(context, listen: false)
+                                            .cancelEditing();
                                       },
                                       shadowColor: AppColors.primary,
-                                      titlecolor:AppColors.red,
-                                      title: 'Reset', backgroundColor: Colors.white,
+                                      titlecolor: AppColors.red,
+                                      title: 'Cancel',
+                                      backgroundColor: Colors.white,
                                       borderColor: AppColors.red,
-
                                     ),
-
-
-
                                   ],
                                 ),
                               ),
@@ -174,9 +204,9 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                     Flexible(
                                       flex: 1,
                                       child: CustomTextField(
-                                        controller: searchController,
+                                        controller: provider.searchController,
                                         onChanged: (p0) {
-
+                                          provider.fetchRoleData(context,showLoader: false);
                                         },
                                         hintText: "Search Roles",
                                         prefixIcon: Icons.search_rounded,
@@ -217,48 +247,55 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                             ),
                                           ),
                                         ),
-                                        Expanded(
-                                          child: ListView.separated(
-                                            itemCount: filteredPatients.length,
-                                            separatorBuilder: (context, index) => const Divider( height: 1,
-                                                thickness: 1,
-                                                color: AppColors.backgroundColor),
-                                            itemBuilder: (context, index) {
-                                              final patient = filteredPatients[index];
-                                              final _gender = patient?['gender'] == 1 ? 'Male' : 'Female';
-                                              return Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(flex: 2, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                    Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                        Consumer<RoleManagementProvider>(
+                                            builder: (context, roleProvider, child) {
+                                            return Expanded(
+                                              child: ListView.separated(
+                                                itemCount: provider
+                                                    .roles.length,
+                                                separatorBuilder: (context, index) => const Divider( height: 1,
+                                                    thickness: 1,
+                                                    color: AppColors.backgroundColor),
+                                                itemBuilder: (context, index) {
+                                                  final role =  provider
+                                                      .roles[index];
+                                            
+                                                  return Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
+                                                    child: Row(
+                                                      children: [
+                                                        Expanded(flex: 2, child: Text(role.roleName ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                        Expanded(flex: 2, child: Text(role.createdAt.toString()?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                            
+                                                        Expanded(
+                                                          flex: 1,
+                                                          child: Wrap(
+                                                            children: [
+                                            
+                                                              IconButton(
+                                                                icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
+                                                                onPressed: () {
 
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Wrap(
-                                                        children: [
-
-                                                          IconButton(
-                                                            icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
-                                                            onPressed: () {
-
-
-                                                            },
+                                                                  Provider.of<RoleManagementProvider>(context, listen: false)
+                                                                      .startEditing(role);
+                                                                },
+                                                              ),
+                                                              IconButton(
+                                                                icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
+                                                                onPressed: () {
+                                                                  _showDeleteConfirmation(context,role.id);
+                                                                },
+                                                              ),
+                                                            ],
                                                           ),
-                                                          IconButton(
-                                                            icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
-                                                            onPressed: () {
-
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                          ),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                          }
                                         ),
                                       ],
                                     ),

@@ -60,6 +60,7 @@ dependencies:
   responsive_framework: ^1.5.1
   flutter_svg: ^2.0.10
   dropdown_button2: ^2.3.9
+  f_toggle_button: ^0.0.6
 
 
 

@@ -35,9 +35,19 @@ enum API {
   getlocation,
   frontpatientbyid,
   getallusers,
+  getAllRoles,
   addPatient,
+  updateUserById,
   getPatientById,
+  getUserById,
+  createRole,
+  createUser,
+  deleteRoleById,
+  deleteUserById,
+  updateRoleById,
+  activeUserById,
   summaryadd,
+  permissionslist,
   checkpatientinfo,
 }
 
@@ -66,6 +76,26 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/getlocation';
         case API.getallusers:
         return '${ConfigManager.getBaseURL()}/get_allusers';
+        case API.getAllRoles:
+        return '${ConfigManager.getBaseURL()}/getAllRoles';
+        case API.updateUserById:
+        return '${ConfigManager.getBaseURL()}/updateUserById';
+        case API.createRole:
+        return '${ConfigManager.getBaseURL()}/createRole';
+        case API.deleteRoleById:
+        return '${ConfigManager.getBaseURL()}/deleteRoleById';
+        case API.updateRoleById:
+        return '${ConfigManager.getBaseURL()}/updateRoleById';
+        case API.deleteUserById:
+        return '${ConfigManager.getBaseURL()}/deleteUserById';
+        case API.createUser:
+        return '${ConfigManager.getBaseURL()}/createUser';
+        case API.getUserById:
+        return '${ConfigManager.getBaseURL()}/getUserById';
+        case API.activeUserById:
+        return '${ConfigManager.getBaseURL()}/activeUserById';
+        case API.permissionslist:
+        return '${ConfigManager.getBaseURL()}/permissions_list';
       default:
         throw Exception('API not defined');
     }
@@ -79,7 +109,18 @@ class APIManager {
       case API.frontpatientbyid:
       case API.checkpatientinfo:
       case API.summaryadd:
+      case API.getAllRoles:
       case API.getallusers:
+      case API.deleteUserById:
+      case API.getUserById:
+      case API.permissionslist:
+
+      case API.createRole:
+      case API.createUser:
+      case API.updateUserById:
+      case API.activeUserById:
+      case API.deleteRoleById:
+      case API.updateRoleById:
         return HTTPMethod.POST;
       default:
         return HTTPMethod.GET;
@@ -106,6 +147,7 @@ class APIManager {
       final url = await apiEndPoint(api);
       final method = apiHTTPMethod(api);
       final headers = {
+        "Accept":'application/json',
         'Content-Type': 'application/json',
         if (token != null && token.isNotEmpty)
           'Authorization': 'Bearer $token',
@@ -144,7 +186,7 @@ class APIManager {
       if (e is TimeoutException) {
         onFailure("Request timed out. Please try again later.");
       } else {
-        onFailure("Request failed: $e");
+        onFailure("Request failed:$e");
       }
     }
   }

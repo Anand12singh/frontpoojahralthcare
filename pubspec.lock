@@ -217,6 +217,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.9"
+  f_toggle_button:
+    dependency: "direct main"
+    description:
+      name: f_toggle_button
+      sha256: e70c1b4b698e5741ddfcb915daa559f403b387e85a3ae131baf8c6c95ad42b70
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.6"
   fake_async:
     dependency: transitive
     description:

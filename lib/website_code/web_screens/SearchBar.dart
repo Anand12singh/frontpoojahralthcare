@@ -9,10 +9,12 @@ import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/constants/base_url.dart';
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 
+import '../../constants/global_variable.dart';
 import '../../services/auth_service.dart';
 
 import '../../widgets/custom_text_field.dart';
 import 'Home_Screen.dart';
+import 'PatientDataTabsScreen.dart';
 
 class Searchbar extends StatefulWidget {
   const Searchbar({super.key});
@@ -288,13 +290,23 @@ class _SearchbarState extends State<Searchbar> {
                           ),
                         ),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  HomeScreen(initialPage: 2),
-                            ),
-                          );
+                          GlobalPatientData.firstName = patient['name'].split(' ')[0];
+                          GlobalPatientData.lastName = patient['name'].split(' ').length > 1
+                              ? patient['name'].split(' ')[1]
+                              : '';
+                          GlobalPatientData.phone = patient['phone'];
+                          GlobalPatientData.patientExist =patient['patientExist'];
+
+
+                          Global.status ="2";
+                          Global.phid =patient['id'].toString();
+                          GlobalPatientData.patientId =patient['phid'] ;
+
+                          print("patient['patient_id']");
+                          print(GlobalPatientData.patientId);
+                          print( Global.phid);
+
+                          Navigator.pushReplacementNamed(context, '/patientData');
                           _searchController.clear();
                           _handleSearch('');
                         },

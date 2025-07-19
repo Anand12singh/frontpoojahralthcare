@@ -120,7 +120,7 @@ if(_passwordController.text.trim().isEmpty)
             if (token != null) {
               await AuthService.saveToken(token);
             }
-            Navigator.pushReplacementNamed(context, '/HomeScreen');
+            Navigator.pushReplacementNamed(context, '/dashboard');
           } else {
             print('error messgae ');
             _setErrorMessage(responseData['message'] ?? 'Login failed');

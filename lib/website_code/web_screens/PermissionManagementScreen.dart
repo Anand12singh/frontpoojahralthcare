@@ -4,6 +4,7 @@ import 'package:poojaheakthcare/provider/User_management_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
+import '../../models/UserPermission.dart';
 import '../../provider/Permissoin_management_provider.dart';
 import '../../provider/Role_management_provider.dart';
 import '../../utils/colors.dart';
@@ -11,6 +12,7 @@ import '../../widgets/AnimatedButton.dart';
 import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DropdownInput.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/showTopSnackBar.dart';
 import 'CustomSidebar.dart';
 import 'SearchBar.dart';
 class Permissionmanagementscreen extends StatefulWidget {
@@ -119,8 +121,13 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                             roleProvider.selectedRoleId = roleProvider.roles
                                                 .firstWhere((role) => role.roleName == val)
                                                 .id;
-                                            permissionProvider.selectedRoleID=roleProvider.selectedRoleId;
-                                            print('Selected Role ID: ${roleProvider.selectedRoleId}');
+                                            permissionProvider.selectedRoleID = roleProvider.selectedRoleId;
+                                            permissionProvider.selectedUser = null;
+                                            permissionProvider.selectedUserID = null;
+                                            permissionProvider.getrolebyid(
+                                                context: context,
+                                                roleID: permissionProvider.selectedRoleID!
+                                            );
                                           });
                                         },
                                         label: 'Role *',
@@ -139,26 +146,42 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                       width: double.infinity,
                                       child: DropdownInput<String>(
                                         value: permissionProvider.selectedUser,
-                                        items: userProvider.userNames.map((user) {
+                                        items: permissionProvider.roleUserNames.isNotEmpty
+                                            ? permissionProvider.roleUserNames.map((user) {
                                           return DropdownMenuItem(
                                             value: user,
                                             child: Text(user),
                                           );
-                                        }).toList(),
-                                        onChanged: (val) {
+                                        }).toList()
+                                            : [
+                                          DropdownMenuItem<String>(
+                                            value: null,
+                                            child: Text(
+                                              'No users found',
+                                              style: TextStyle(color: Colors.grey),
+                                            ),
+                                            enabled: false,
+                                          )
+                                        ],
+                                        onChanged: permissionProvider.roleUserNames.isNotEmpty
+                                            ? (val) {
                                           setState(() {
                                             permissionProvider.selectedUser = val;
-                                            final selectedUser = userProvider.users
+                                            final selectedUser = permissionProvider.roleUsers
                                                 .firstWhere((user) => user.name == val);
-                                            userProvider.selectedUserId = selectedUser.id;
                                             permissionProvider.selectedUserID = selectedUser.id;
-
-
-                                            print('Selected User ID: ${selectedUser.id}');
+                                            print('Selected User ID from role: ${selectedUser.id}');
+                                            permissionProvider.getuserpermissons(
+                                                context: context,
+                                                roleID: permissionProvider.selectedRoleID!,
+                                                userID: permissionProvider.selectedUserID!
+                                            );
                                           });
-                                        },
+                                        }
+                                            : null,
                                         label: 'User *',
-                                        hintText: '---- Select User ----',
+                                        hintText: '---- Select User ----'
+
                                       ),
                                     ),
                                   ],
@@ -171,7 +194,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.all(12),
-                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
@@ -195,6 +218,34 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                             ),
                           ),
                         ),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Animatedbutton(
+                                onPressed: () {
+                                  if (permissionProvider.selectedRoleID == null) {
+                                    showTopRightToast(context, 'Please select Role', backgroundColor: Colors.red);
+                                    return;
+                                  }  if (permissionProvider.selectedUserID == null) {
+                                    showTopRightToast(context, 'Please select User', backgroundColor: Colors.red);
+                                    return;
+                                  }
+
+                                  permissionProvider.savepermissions(
+                                      context: context,
+                                      roleID: permissionProvider.selectedRoleID!,
+                                      userID: permissionProvider.selectedUserID!
+                                  );
+                                },
+                                backgroundColor: AppColors.secondary,
+                                shadowColor: AppColors.secondary,
+                                title: 'SUBMIT',
+                              ),
+                            ],
+                          ),
+                        )
                       ],
                     ),
                   ),
@@ -216,12 +267,12 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
         required Map<String, List<Map<String, dynamic>>> modules,
         required PermissoinManagementProvider permissionProvider,
       }) {
-    final totalItems = modules.length; // Count of modules (User, Roles, Permissions)
+    final totalItems = modules.length;
     final selectedCount = modules.entries.fold<int>(0, (sum, entry) {
       final modulePermissions = entry.value;
       return sum + (modulePermissions.any((perm) =>
       permissionProvider.permissionStates[title]?[entry.key]?[perm['access_name']] ?? false) ? 1 : 0);
-      });
+    });
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -230,6 +281,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: ExpansionTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
           collapsedBackgroundColor: AppColors.primary.withOpacity(0.05),
           backgroundColor: AppColors.primary.withOpacity(0.05),
@@ -261,94 +313,96 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
             final moduleName = moduleEntry.key;
             final permissions = moduleEntry.value;
 
-            // Count selected permissions for this module
-            final moduleSelectedCount = permissions.where((perm) =>
-            permissionProvider.permissionStates[title]?[moduleName]?[perm['access_name']] ?? false).length;
+            // Get user permissions for this specific module
+            final userModulePermissions = permissionProvider.userPermissions
+                .firstWhere(
+                  (up) => up.groupName == title && up.moduleName == moduleName,
+              orElse: () => UserPermission(groupName: '', moduleName: '', permissions: []),
+            )
+                .permissions;
 
-            return Column(
-              children: [
-                // Module header row
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFEAEAEA),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 4,
-                        child: Text(
-                          moduleName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: ResponsiveUtils.fontSize(context, 14),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          "$moduleSelectedCount / ${permissions.length}",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: ResponsiveUtils.fontSize(context, 14),
-                          ),
-                        ),
-                      ),
-                    ],
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color(0xFFEAEAEA),
+                    width: 1,
                   ),
                 ),
-                // Permission checkboxes
-                ...permissions.map((permission) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24), // Indented
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Color(0xFFEAEAEA),
-                          width: 1,
-                        ),
+              ),
+              child: Row(
+                children: [
+                  // Module name
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      moduleName,
+                      style: TextStyle(
+
+                        fontWeight: FontWeight.w800,
+                        fontSize: ResponsiveUtils.fontSize(context, 14),
                       ),
                     ),
+                  ),
+
+                  // Permission checkboxes in a row
+                  Expanded(
+                    flex: 1,
                     child: Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Text(
+
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: permissions.map((permission) {
+                        return Row(
+                          spacing: 1,
+                          children: [
+                            CustomCheckbox(
+                              label: '',
+                              initialValue: () {
+                                final hasPerm = permissionProvider.hasPermission(
+                                    title,
+                                    moduleName,
+                                    permission['access_name']
+                                );
+                                print('🔘 Checkbox initialization - $title → $moduleName → ${permission['access_name']}: $hasPerm');
+                                return hasPerm;
+                              }(),
+                              onChanged: (value) {
+                                print('🔄 Checkbox changed - $title → $moduleName → ${permission['access_name']}: $value');
+                                permissionProvider.updatePermissionState(
+                                    title, moduleName, permission['access_name'], value);
+                              },
+                            ),
+                            Text(
                               permission['access_name'] ?? '',
                               style: TextStyle(
+
                                 fontSize: ResponsiveUtils.fontSize(context, 14),
+                                color: AppColors.primary,fontWeight: FontWeight.bold
+
                               ),
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Row(
-                            children: [
-                              CustomCheckbox(
-                                label: '',
-                                initialValue: permissionProvider.permissionStates[title]?[moduleName]?[permission['access_name']] ?? false,
-                                onChanged: (value) {
-                                  permissionProvider.updatePermissionState(
-                                      title, moduleName, permission['access_name'], value);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+
+                          ],
+                        );
+                      }).toList(),
                     ),
-                  );
-                }).toList(),
-              ],
+                  ),
+
+                  // Count display
+              /*    Expanded(
+                    flex: 1,
+                    child: Text(
+                      "$moduleSelectedCount / ${permissions.length}",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: ResponsiveUtils.fontSize(context, 14),
+                      ),
+                    ),
+                  ),*/
+                ],
+              ),
             );
           }).toList(),
         ),

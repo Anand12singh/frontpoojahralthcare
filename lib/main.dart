@@ -7,9 +7,12 @@ import 'package:poojaheakthcare/provider/Role_management_provider.dart';
 import 'package:poojaheakthcare/provider/User_management_provider.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import 'package:poojaheakthcare/screens/patient_list.dart';
 import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
+import 'package:poojaheakthcare/website_code/web_screens/DashboardScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/PatientDataTabsScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PermissionManagementScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/RoleManagementScreen.dart';
@@ -76,6 +79,9 @@ class MyApp extends StatelessWidget {
         '/addPatient': (context) => const PatientRegistrationPage(),
         '/userManagement': (context) => const Usermanagementscreen(),
         '/roleManagement': (context) => const Rolemanagementscreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/patientList': (context) => const RecentPatientsListScreen(),
+        '/patientData': (context) => const PatientDataTabsScreen(),
         '/permissionManagement': (context) => const Permissionmanagementscreen(),
       },
     );

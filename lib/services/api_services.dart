@@ -36,10 +36,12 @@ enum API {
   frontpatientbyid,
   getallusers,
   getAllRoles,
+  getuserpermissons,
   addPatient,
   updateUserById,
   getPatientById,
   getUserById,
+  getrolebyid,
   createRole,
   createUser,
   deleteRoleById,
@@ -47,6 +49,7 @@ enum API {
   updateRoleById,
   activeUserById,
   summaryadd,
+  savepermissions,
   permissionslist,
   checkpatientinfo,
 }
@@ -88,14 +91,20 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/updateRoleById';
         case API.deleteUserById:
         return '${ConfigManager.getBaseURL()}/deleteUserById';
+        case API.getrolebyid:
+        return '${ConfigManager.getBaseURL()}/getrole_by_id';
         case API.createUser:
         return '${ConfigManager.getBaseURL()}/createUser';
         case API.getUserById:
         return '${ConfigManager.getBaseURL()}/getUserById';
+        case API.getuserpermissons:
+        return '${ConfigManager.getBaseURL()}/get_user_permissons';
         case API.activeUserById:
         return '${ConfigManager.getBaseURL()}/activeUserById';
         case API.permissionslist:
         return '${ConfigManager.getBaseURL()}/permissions_list';
+        case API.savepermissions:
+        return '${ConfigManager.getBaseURL()}/save_permissions';
       default:
         throw Exception('API not defined');
     }
@@ -114,6 +123,9 @@ class APIManager {
       case API.deleteUserById:
       case API.getUserById:
       case API.permissionslist:
+      case API.getrolebyid:
+      case API.getuserpermissons:
+      case API.savepermissions:
 
       case API.createRole:
       case API.createUser:

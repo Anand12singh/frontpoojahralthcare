@@ -110,14 +110,14 @@ class _SidebarState extends State<Sidebar> {
                       ),
                       _buildSidebarItem(
                         assetPath: 'assets/UserManagement.png',
-                        label: 'User Management',
+                        label: 'User',
                         index: 3,
                         onTap: () {
                           Navigator.pushNamed(context, '/userManagement');
                         },
                       ),  _buildSidebarItem(
                         assetPath: 'assets/UserManagement.png',
-                        label: 'Role Management',
+                        label: 'Role',
                         index: 4,
                         onTap: () {
                           Navigator.pushNamed(context, '/roleManagement');
@@ -126,7 +126,7 @@ class _SidebarState extends State<Sidebar> {
 
                       _buildSidebarItem(
                         assetPath: 'assets/UserManagement.png',
-                        label: 'Permission Management',
+                        label: 'Permission',
                         index: 5,
                         onTap: () {
                           Navigator.pushNamed(context, '/permissionManagement');

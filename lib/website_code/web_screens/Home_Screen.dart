@@ -6,9 +6,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+
 import '../../screens/patient_list.dart';
 import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
@@ -56,10 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
     _fetchPatients();
+
     _pageController = PageController(initialPage: widget.initialPage); // Modify this line
     selectedPageIndex = widget.initialPage; // Add this line
   }
-
 
   String _formatDateTime(DateTime dt) {
     final time = DateFormat('HH:mm:ss').format(dt);

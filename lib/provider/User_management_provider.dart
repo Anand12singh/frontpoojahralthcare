@@ -253,15 +253,25 @@ class UserManagementProvider with ChangeNotifier{
   }
   Future<bool> addUser({
     required BuildContext context,
-
-
-    required  int?  roleId,
+    required int? roleId,
   }) async {
+    // Validate inputs first
+
+
     isLoading = true;
     notifyListeners();
 
     String? token = await AuthService.getToken();
-    if (token == null) return false;
+    if (token == null) {
+      showTopRightToast(
+        context,
+        'Authentication failed. Please login again.',
+        backgroundColor: Colors.red,
+      );
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
 
     try {
       bool success = false;
@@ -270,33 +280,56 @@ class UserManagementProvider with ChangeNotifier{
         API.createUser,
         token: token,
         params: {
-      "name":nameController.text,
-      "role":roleId,
-      "password":passwordController.text
-
+          "name": nameController.text.trim(),
+          "role": roleId,
+          "password": passwordController.text,
         },
-
         onSuccess: (responseBody) {
-
-          final data = json.decode(responseBody);
-          if (data['status'] == true) {
-            Navigator.of(context).pop();
-            success = true;
-
-            fetchUserData(context);
-
-         showTopRightToast(context, data['message'],backgroundColor: Colors.green);
-          } else {
-            errorMessage = data['message'] ?? 'Failed to add role';
+          try {
+            final data = json.decode(responseBody);
+            if (data['status'] == true) {
+              success = true;
+              fetchUserData(context);
+              showTopRightToast(
+                context,
+                data['message'] ?? 'User added successfully',
+                backgroundColor: Colors.green,
+              );
+              Navigator.of(context).pop();
+            } else {
+              errorMessage = data['message'] ?? 'Failed to add user';
+              showTopRightToast(
+                context,
+                errorMessage,
+                backgroundColor: Colors.red,
+              );
+            }
+          } catch (e) {
+            errorMessage = 'Failed to parse server response';
+            showTopRightToast(
+              context,
+              errorMessage,
+              backgroundColor: Colors.red,
+            );
           }
         },
         onFailure: (error) {
-          errorMessage = 'Error adding role: $error';
+          errorMessage = 'Error adding user: ${error.toString()}';
+          showTopRightToast(
+            context,
+            errorMessage,
+            backgroundColor: Colors.red,
+          );
         },
       );
       return success;
     } catch (e) {
-      errorMessage = 'Exception occurred: $e';
+      errorMessage = 'An unexpected error occurred: ${e.toString()}';
+      showTopRightToast(
+        context,
+        errorMessage,
+        backgroundColor: Colors.red,
+      );
       return false;
     } finally {
       isLoading = false;

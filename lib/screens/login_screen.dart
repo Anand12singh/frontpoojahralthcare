@@ -1,7 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../constants/base_url.dart';
+import '../models/GlobalPermissionResponse.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/AnimatedButton.dart';
@@ -75,18 +77,65 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  Future<void> _login() async {
-if(_nameController.text.trim().isEmpty)
-  {
-    _setErrorMessage('Please enter your user name.');
-return;
+
+
+// Update your _fetchGlobalPermissions method
+  Future<void> _fetchGlobalPermissions(String token) async {
+    if (token == null || token.isEmpty) {
+      Navigator.of(context).pop();
+      showTopRightToast(
+          context, 'Authentication token not found. Please login again.');
+      return;
+    }
+
+    try {
+      // Construct the URL properly
+      final url = Uri.parse('$localurl/global_permission');
+      print('Fetching permissions from: $url'); // Debug logging
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: {}
+      );
+
+      print('Response status: ${response.statusCode}'); // Debug logging
+      print('Response body: ${response.body}'); // Debug logging
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(utf8.decode(response.bodyBytes));
+        if (responseData['status'] == true) {
+          print(responseData['data']);
+
+
+        } else {
+          print('API returned false status: ${responseData['message']}');
+        }
+      } else {
+        print('Failed to fetch permissions: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching permissions: $e');
+      if (mounted) {
+        showTopRightToast(context, 'Failed to fetch permissions: ${e.toString()}');
+      }
+    }
   }
 
-if(_passwordController.text.trim().isEmpty)
-  {
-    _setErrorMessage('Please enter your password.');
-    return;
-  }
+  Future<void> _login() async {
+    if(_nameController.text.trim().isEmpty) {
+      _setErrorMessage('Please enter your user name.');
+      return;
+    }
+
+    if(_passwordController.text.trim().isEmpty) {
+      _setErrorMessage('Please enter your password.');
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
       if (!mounted) return;
@@ -95,47 +144,36 @@ if(_passwordController.text.trim().isEmpty)
       try {
         final response = await http
             .post(
-              // Uri.parse('$localurl/login'),
-              Uri.parse('$localurl/login'),
-
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-              },
-              body: json.encode({
-                "name": _nameController.text.trim(),
-                "password": _passwordController.text.trim()
-              }),
-            )
+          Uri.parse('$localurl/login'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            "name": _nameController.text.trim(),
+            "password": _passwordController.text.trim()
+          }),
+        )
             .timeout(const Duration(seconds: 10));
 
         final responseData = json.decode(utf8.decode(response.bodyBytes));
 
         if (mounted) {
           if (response.statusCode == 200 && responseData['status'] == true) {
-
-
             final token = responseData['token'] ?? responseData['access_token'];
 
             if (token != null) {
               await AuthService.saveToken(token);
+              // Fetch and store permissions after successful login
+              await _fetchGlobalPermissions(token);
             }
             Navigator.pushReplacementNamed(context, '/dashboard');
           } else {
-            print('error messgae ');
             _setErrorMessage(responseData['message'] ?? 'Login failed');
-
-
           }
         }
       } catch (e) {
-        print('error $e');
-        if (mounted) {
-         // showTopRightToast(context,'Error: ${e.toString()}',backgroundColor: Colors.red);
-          _setErrorMessage('Error: ${e.toString()}');
-
-
-        }
+        _setErrorMessage('Error: ${e.toString()}');
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);

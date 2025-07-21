@@ -58,6 +58,16 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       },
     );
   }
+
+  String _formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return '${date.day}/${date.month}/${date.year}'; // Format as DD/MM/YYYY
+    } catch (e) {
+      return isoDate; // Return original string if parsing fails
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<UserManagementProvider>(context);
@@ -107,7 +117,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              const Text('Show '),
+                                      /*        const Text('Show '),
                                               const SizedBox(width: 8),
                                               DropdownButton2<dynamic>(
                                                 dropdownStyleData:
@@ -130,7 +140,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                 onChanged: (value) {
                                                   setState(() {});
                                                 },
-                                              ),
+                                              ),*/
                                             ],
                                           ),
                                         ],
@@ -379,7 +389,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                         flex: 2,
                                                         child: Text(
                                                           DateFormat(
-                                                              'yyyy-MM-dd HH:mm')
+                                                              'dd-MM-yyyy HH:mm')
                                                               .format(
                                                               user.createdAt),
                                                           style: TextStyle(
@@ -437,7 +447,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                     ),
                                   ),
                                 ),
-                                Padding(
+                      /*          Padding(
                                   padding:
                                   const EdgeInsets.all(8.0),
                                   child: Row(
@@ -518,7 +528,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                       ),
                                     ],
                                   ),
-                                ),
+                                ),*/
                               ],
                             ),
                           ),

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/constants/ResponsiveUtils.dart';
-
+import 'package:http/http.dart' as http;
+import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/confirmation_dialog.dart';
+import '../../widgets/showTopSnackBar.dart';
 
 class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
@@ -22,33 +26,49 @@ class _SidebarState extends State<Sidebar> {
       isSidebarCollapsed = !isSidebarCollapsed;
     });
   }
+  Future<void> _logout() async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return;
 
-  void _showLogoutConfirmation() {
-    showDialog(
+      final response = await http.post(
+        Uri.parse('$localurl/logout'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Clear any stored tokens or user data
+        await AuthService.deleteToken();
+        // Navigate to login screen
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        throw Exception('Logout failed');
+      }
+    } catch (e) {
+      showTopRightToast(
+        context,
+        'Error during logout: ${e.toString()}',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    await ConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Logout"),
-        content: const Text("Are you sure you want to logout?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // perform logout logic here
-            },
-            child: const Text("Logout"),
-          ),
-        ],
-      ),
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      confirmText: 'Logout',  // Changed from 'Delete' to 'Logout'
+      confirmColor: AppColors.secondary,
+      onConfirm: _logout,
     );
   }
 
-  @override
+
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -138,7 +158,7 @@ class _SidebarState extends State<Sidebar> {
                         label: 'Logout',
                         index: 6,
                         isLogout: true,
-                        onTap: _showLogoutConfirmation,
+                        onTap: () => _showLogoutConfirmation(context), // Wrap in a function
                       ),
                       const Divider(
                         color: AppColors.secondary,
@@ -294,11 +314,9 @@ class _SidebarState extends State<Sidebar> {
           child: InkWell(
             onTap: () {
               if (isLogout) {
-                onTap?.call();
+                _showLogoutConfirmation(context); // Call directly here
               } else {
-                setState(() {
-                  selectedPageIndex = index;
-                });
+                setState(() => selectedPageIndex = index);
                 onTap?.call();
               }
             },

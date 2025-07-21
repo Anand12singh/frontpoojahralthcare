@@ -15,6 +15,7 @@ class RoleManagementProvider with ChangeNotifier {
   List<String> get roleNames => _roles.map((role) => role.roleName).toList();
   TextEditingController searchController = TextEditingController();
 bool isupdate=false;
+  bool updateSuccess = false;
   final TextEditingController roleController = TextEditingController();
 
   // Add these properties to your provider
@@ -23,12 +24,14 @@ bool isupdate=false;
 
   void startEditing(Role role) {
     _editingRoleId = role.id;
+    updateSuccess = false; // Reset success flag when starting new edit
     roleController.text = role.roleName;
     notifyListeners();
   }
 
   void cancelEditing() {
     _editingRoleId = null;
+    updateSuccess = false; // Reset success flag
     roleController.clear();
     notifyListeners();
   }
@@ -154,14 +157,13 @@ bool isupdate=false;
       notifyListeners();
     }
   }
-
-  // Update an existing role
   Future<bool> updateRole({
     required BuildContext context,
     required int roleId,
     required String roleName,
   }) async {
     isLoading = true;
+    updateSuccess = false; // Reset success flag
     notifyListeners();
 
     String? token = await AuthService.getToken();
@@ -181,10 +183,13 @@ bool isupdate=false;
           final data = json.decode(responseBody);
           if (data['status'] == true) {
             success = true;
-            // Update the local role immediately
+            updateSuccess = true; // Set success flag
             fetchRoleData(context);
-            showTopRightToast(context, data['message'] ?? 'Role updated successfully',
-                backgroundColor: Colors.green);
+            showTopRightToast(
+              context,
+              data['message'] ?? 'Role updated successfully',
+              backgroundColor: Colors.green,
+            );
           } else {
             errorMessage = data['message'] ?? 'Failed to update role';
             showTopRightToast(context, errorMessage, backgroundColor: Colors.red);
@@ -202,7 +207,9 @@ bool isupdate=false;
       return false;
     } finally {
       isLoading = false;
-      _editingRoleId = null; // Reset editing state
+      if (updateSuccess) {
+        _editingRoleId = null; // Only reset if update was successful
+      }
       notifyListeners();
     }
   }

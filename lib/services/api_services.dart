@@ -50,6 +50,7 @@ enum API {
   activeUserById,
   summaryadd,
   savepermissions,
+  globalpermission,
   permissionslist,
   checkpatientinfo,
 }
@@ -97,6 +98,8 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/createUser';
         case API.getUserById:
         return '${ConfigManager.getBaseURL()}/getUserById';
+        case API.globalpermission:
+        return '${ConfigManager.getBaseURL()}/global_permission';
         case API.getuserpermissons:
         return '${ConfigManager.getBaseURL()}/get_user_permissons';
         case API.activeUserById:
@@ -124,6 +127,7 @@ class APIManager {
       case API.getUserById:
       case API.permissionslist:
       case API.getrolebyid:
+      case API.globalpermission:
       case API.getuserpermissons:
       case API.savepermissions:
 

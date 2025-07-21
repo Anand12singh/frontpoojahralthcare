@@ -36,7 +36,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   bool sortByName = true;
   bool _isSubmitting = false;
   int _currentPage = 1;
-  int _rowsPerPage = 10;
+  int _rowsPerPage = 100;
   int _totalRecords = 0;
 
   String _search = '';
@@ -44,7 +44,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
 
   String _sortOrder = 'asc';
 
-  List<int> _rowsPerPageOptions = [5, 10, 20, 50];
+  List<int> _rowsPerPageOptions = [100, 0]; // 0 will represent "ALL"
 
   final _formKey = GlobalKey<FormState>();
   bool isLoading = true;
@@ -73,8 +73,8 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       };
 
       final body = json.encode({
-        "page": _currentPage,
-        "limit": _rowsPerPage,
+        "page": _rowsPerPage == 0 ? 1 : _currentPage, // When showing ALL, always request page 1
+        "limit": _rowsPerPage == 0 ? 10000 : _rowsPerPage, // Use a large number for "ALL"
         "search": _search,
         "sortBy": _sortBy ?? "",
         "sortOrder": _sortOrder,
@@ -467,8 +467,10 @@ print(response.body);
   }
   @override
   Widget build(BuildContext context) {
-    int fromRecord = ((_currentPage - 1) * _rowsPerPage) + 1;
-    int toRecord = ((_currentPage - 1) * _rowsPerPage) + filteredPatients.length;
+    int fromRecord = ((_currentPage - 1) * (_rowsPerPage == 0 ? filteredPatients.length : _rowsPerPage)) + 1;
+    int toRecord = _rowsPerPage == 0
+        ? filteredPatients.length
+        : ((_currentPage - 1) * _rowsPerPage) + filteredPatients.length;
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
 
@@ -542,17 +544,18 @@ print(response.body);
                             child: Row(
                               children: [
                                 Row(
-
                                   children: [
                                     const Text('Show '),
                                     const SizedBox(width: 8),
                                     DropdownButton2<int>(
-                                      dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
+                                      dropdownStyleData: DropdownStyleData(
+                                          decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))
+                                      ),
                                       value: _rowsPerPage,
                                       items: _rowsPerPageOptions.map((int value) {
                                         return DropdownMenuItem<int>(
                                           value: value,
-                                          child: Text(value.toString()),
+                                          child: Text(value == 0 ? 'ALL' : value.toString()),
                                         );
                                       }).toList(),
                                       onChanged: (value) {
@@ -565,6 +568,8 @@ print(response.body);
                                     ),
                                   ],
                                 ),
+
+
                               /*  SizedBox(width: 10,),
                                 const Text('Sort By'),
                                 DropdownButton2<String>(
@@ -906,6 +911,7 @@ print(response.body);
 
   int get totalPages {
     if (_totalRecords == 0) return 1;
+    if (_rowsPerPage == 0) return 1; // When showing ALL, there's only 1 page
     return (_totalRecords / _rowsPerPage).ceil();
   }
 

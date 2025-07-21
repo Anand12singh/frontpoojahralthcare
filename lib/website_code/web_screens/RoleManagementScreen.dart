@@ -9,6 +9,7 @@ import '../../widgets/AnimatedButton.dart';
 import '../../widgets/DropdownInput.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/showTopSnackBar.dart';
 import 'CustomSidebar.dart';
 import 'SearchBar.dart';
 class Rolemanagementscreen extends StatefulWidget {
@@ -55,6 +56,15 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
       },
     );
   }
+  String _formatDate(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      return '${date.day}/${date.month}/${date.year}'; // Format as DD/MM/YYYY
+    } catch (e) {
+      return isoDate; // Return original string if parsing fails
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<RoleManagementProvider>(context, listen: false);
@@ -122,13 +132,26 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                           width: 150,
                                           child: Animatedbutton(
                                             onPressed: () async {
+
+                                              final name = provider.roleController.text.trim();
+
+
+                                              if (name.isEmpty) {
+                                                showTopRightToast(
+                                                  context,
+                                                  'Please enter a Role',
+                                                  backgroundColor: Colors.red,
+                                                );
+                                                return;
+                                              }
+
                                               final success = await provider.saveRole(context: context);
                                               if (success) {
                                                 provider.cancelEditing(); // Clear after successful save
                                               }
                                             },
                                             shadowColor: AppColors.primary,
-                                            title: provider.isEditing ? 'Update' : 'Save',
+                                            title: provider.isEditing && !provider.updateSuccess ? 'Update' : 'Save',
                                             backgroundColor: AppColors.secondary,
                                           ),
                                         );
@@ -175,7 +198,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                           Row(
 
                                             children: [
-                                              const Text('Show '),
+                                          /*    const Text('Show '),
                                               const SizedBox(width: 8),
                                               DropdownButton2<dynamic>(
                                                 dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
@@ -191,7 +214,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
 
                                                   });
                                                 },
-                                              ),
+                                              ),*/
                                             ],
                                           ),
 
@@ -265,7 +288,8 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                     child: Row(
                                                       children: [
                                                         Expanded(flex: 2, child: Text(role.roleName ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                        Expanded(flex: 2, child: Text(role.createdAt.toString()?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                        Expanded(flex: 2, child: Text(  _formatDate(role.createdAt.toString())
+                                                            ,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                             
                                                         Expanded(
                                                           flex: 1,
@@ -302,7 +326,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                   ),
                                 ),
 
-                                Padding(
+                        /*        Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -370,7 +394,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                       ),
                                     ],
                                   ),
-                                ),
+                                ),*/
 
                               ],
                             ),

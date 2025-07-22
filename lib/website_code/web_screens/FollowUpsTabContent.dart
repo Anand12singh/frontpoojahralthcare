@@ -4,6 +4,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../constants/ResponsiveUtils.dart';
+import '../../provider/PermissionService.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/DatePickerInput.dart';
 import '../../widgets/showTopSnackBar.dart';
@@ -33,6 +34,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   void initState() {
     super.initState();
     _fetchFollowUpData();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
   }
 
   Future<void> _fetchFollowUpData() async {
@@ -318,22 +321,25 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              SizedBox(
-                width: ResponsiveUtils.scaleWidth(context, 150),
-                child: Animatedbutton(
-                  onPressed: _isAddingFollowUp ? null : _addFollowUp,
-                  shadowColor: Colors.white,
-                  titlecolor: Colors.white,
-                  backgroundColor: AppColors.secondary,
-                  borderColor: AppColors.secondary,
-                  isLoading: false,
-                  title: '+ Follow up',
+          Visibility(
+            visible:PermissionService().canEditPatients ,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: ResponsiveUtils.scaleWidth(context, 150),
+                  child: Animatedbutton(
+                    onPressed: _isAddingFollowUp ? null : _addFollowUp,
+                    shadowColor: Colors.white,
+                    titlecolor: Colors.white,
+                    backgroundColor: AppColors.secondary,
+                    borderColor: AppColors.secondary,
+                    isLoading: false,
+                    title: '+ Follow up',
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           ...followUpEntries.asMap().entries.map(
@@ -377,26 +383,29 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                             ],
                           ),
                         if (isEditingList[entry.key])
-                          Row(
-                            children: [
-                            /*  GestureDetector(
-                                onTap: () => _UpdateSingleFollowUp(entry.key),
-                                child: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedTick04,
-                                  color: AppColors.primary,
+                          Visibility(
+                            visible:PermissionService().canEditPatients ,
+                            child: Row(
+                              children: [
+                              /*  GestureDetector(
+                                  onTap: () => _UpdateSingleFollowUp(entry.key),
+                                  child: HugeIcon(
+                                    icon: HugeIcons.strokeRoundedTick04,
+                                    color: AppColors.primary,
 
+                                  ),
+                                ),*/
+                                IconButton(
+                                  icon: Icon(Icons.check_rounded, color: AppColors.primary),
+                                  onPressed: () => _UpdateSingleFollowUp(entry.key),
                                 ),
-                              ),*/
-                              IconButton(
-                                icon: Icon(Icons.check_rounded, color: AppColors.primary),
-                                onPressed: () => _UpdateSingleFollowUp(entry.key),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.close_rounded, color: Colors.red),
-                                onPressed: () => _cancelEditOrDelete(entry.key),
-                              ),
+                                IconButton(
+                                  icon: Icon(Icons.close_rounded, color: Colors.red),
+                                  onPressed: () => _cancelEditOrDelete(entry.key),
+                                ),
 
-                            ],
+                              ],
+                            ),
                           )
                       ],
                     ),

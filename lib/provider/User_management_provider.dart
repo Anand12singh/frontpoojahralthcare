@@ -32,7 +32,7 @@ class UserManagementProvider with ChangeNotifier{
       notifyListeners();
     }
 
-    errorMessage = '';
+
 
     String? token = await AuthService.getToken();
     if (token == null || token.isEmpty) {
@@ -57,11 +57,13 @@ class UserManagementProvider with ChangeNotifier{
           final List<dynamic> userList = data['data'];
           _users = userList.map((userJson) => UserModel.fromJson(userJson)).toList();
         } else {
-          errorMessage = data['message'] ?? 'Users not found';
+          showTopRightToast(context, data['message'] ?? 'Users not found',backgroundColor: Colors.red);
+
         }
       },
       onFailure: (error) {
-        errorMessage = 'Error: $error';
+        showTopRightToast(context, error,backgroundColor: Colors.red);
+
       },
     );
 
@@ -107,12 +109,14 @@ class UserManagementProvider with ChangeNotifier{
             _users.add(updatedUser);
           }
         } else {
-          errorMessage = data['message'] ?? 'User not found';
+          showTopRightToast(context, data['message'] ?? 'User not found',backgroundColor: Colors.red);
+
         }
       },
       onFailure: (error) {
+        showTopRightToast(context, error);
         print("Error fetching user: $error");
-        errorMessage = 'Error: $error';
+
       },
     );
 
@@ -156,6 +160,7 @@ class UserManagementProvider with ChangeNotifier{
         },
       );
     } catch (e) {
+
       // Handle exception
     } finally {
       isLoading = false;
@@ -197,16 +202,21 @@ class UserManagementProvider with ChangeNotifier{
             fetchUserData(context);
             showTopRightToast(context, data['message'], backgroundColor: Colors.green);
           } else {
-            errorMessage = data['message'] ?? 'Failed to update user';
+            showTopRightToast(context, data['message'] ?? 'Failed to update user',backgroundColor: Colors.red);
+
           }
         },
         onFailure: (error) {
-          errorMessage = 'Error updating user: $error';
+          showTopRightToast(context,error,backgroundColor: Colors.red);
+
+
         },
       );
       return success;
     } catch (e) {
-      errorMessage = 'Exception occurred: $e';
+      showTopRightToast(context,"$e",backgroundColor: Colors.red);
+
+
       return false;
     } finally {
       isLoading = false;
@@ -297,15 +307,12 @@ class UserManagementProvider with ChangeNotifier{
               );
               Navigator.of(context).pop();
             } else {
-              errorMessage = data['message'] ?? 'Failed to add user';
-              showTopRightToast(
-                context,
-                errorMessage,
-                backgroundColor: Colors.red,
-              );
+              showTopRightToast(context, data['message'] ?? 'Failed to add user',backgroundColor: Colors.red);
+
+
             }
           } catch (e) {
-            errorMessage = 'Failed to parse server response';
+
             showTopRightToast(
               context,
               errorMessage,
@@ -314,7 +321,7 @@ class UserManagementProvider with ChangeNotifier{
           }
         },
         onFailure: (error) {
-          errorMessage = 'Error adding user: ${error.toString()}';
+
           showTopRightToast(
             context,
             errorMessage,
@@ -324,7 +331,7 @@ class UserManagementProvider with ChangeNotifier{
       );
       return success;
     } catch (e) {
-      errorMessage = 'An unexpected error occurred: ${e.toString()}';
+
       showTopRightToast(
         context,
         errorMessage,

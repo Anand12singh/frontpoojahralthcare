@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
+import '../../provider/PermissionService.dart';
 import '../../services/api_services.dart';
 import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
@@ -35,6 +36,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
   void initState() {
     super.initState();
     fetchPatientData();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
   }
 
   Future<void> fetchPatientData() async {
@@ -843,17 +846,20 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                         patientData!['summary'] != null &&
                         patientData!['summary'].isNotEmpty)*/
                       if (!isEditingSummary)
-                        IconButton(
-                          icon: Icon(Icons.edit_outlined, color: AppColors.primary),
-                          onPressed: () {
-                            setState(() {
-                              isEditingSummary = true;
-                              summaryController.text = (patientData!['summary'] != null &&
-                                  patientData!['summary'].isNotEmpty)
-                                  ? patientData!['summary'][0]['summary'] ?? ''
-                                  : '';
-                            });
-                          },
+                        Visibility(
+                          visible:PermissionService().canEditPatients ,
+                          child: IconButton(
+                            icon: Icon(Icons.edit_outlined, color: AppColors.primary),
+                            onPressed: () {
+                              setState(() {
+                                isEditingSummary = true;
+                                summaryController.text = (patientData!['summary'] != null &&
+                                    patientData!['summary'].isNotEmpty)
+                                    ? patientData!['summary'][0]['summary'] ?? ''
+                                    : '';
+                              });
+                            },
+                          ),
                         ),
         
                       if (isEditingSummary)

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
+import '../../provider/PermissionService.dart';
 import '../../provider/Role_management_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
@@ -35,11 +36,24 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+    // Create and call an async function immediately
+    _initializeData();
+  }
+
+// Separate async function for initialization
+  Future<void> _initializeData() async {
+    // Ensure widgets binding is initialized
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Wait for permission service initialization
+    await PermissionService().initialize();
+
+    // Fetch role data after frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<RoleManagementProvider>(context, listen: false);
-      provider.fetchRoleData(context);
+      await provider.fetchRoleData(context);
     });
   }
 
@@ -90,89 +104,95 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        Container(
-                          padding: EdgeInsets.all(12),
-                        
-                          margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                flex:2,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Role Name",  style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                      fontSize: ResponsiveUtils.fontSize(context, 14),
-                                    ),),
-                                    const SizedBox(height: 6),
-                                    CustomTextField(
-                                      controller: provider.roleController,
-                                      hintText: 'Enter Role',
-                                    ),
-                                  ],
+                        Visibility(
+                          visible: PermissionService().canAddRoles || PermissionService().canEditRoles,
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Role Name", style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                        fontSize: ResponsiveUtils.fontSize(context, 14),
+                                      )),
+                                      const SizedBox(height: 6),
+                                      CustomTextField(
+                                        controller: provider.roleController,
+                                        hintText: 'Enter Role',
+                                        enabled: PermissionService().canAddRoles ||
+                                            (PermissionService().canEditRoles && provider.isEditing),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              // In your build method, update the button section:
-                              Expanded(
-                                flex: 1,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Consumer<RoleManagementProvider>(
-                                      builder: (context, provider, child) {
-                                        return SizedBox(
-                                          width: 150,
-                                          child: Animatedbutton(
-                                            onPressed: () async {
-
-                                              final name = provider.roleController.text.trim();
-
-
-                                              if (name.isEmpty) {
-                                                showTopRightToast(
-                                                  context,
-                                                  'Please enter a Role',
-                                                  backgroundColor: Colors.red,
-                                                );
-                                                return;
-                                              }
-
-                                              final success = await provider.saveRole(context: context);
-                                              if (success) {
-                                                provider.cancelEditing(); // Clear after successful save
-                                              }
-                                            },
-                                            shadowColor: AppColors.primary,
-                                            title: provider.isEditing && !provider.updateSuccess ? 'Update' : 'Save',
-                                            backgroundColor: AppColors.secondary,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Animatedbutton(
-                                      onPressed: () {
-                                        Provider.of<RoleManagementProvider>(context, listen: false)
-                                            .cancelEditing();
-                                      },
-                                      shadowColor: AppColors.primary,
-                                      titlecolor: AppColors.red,
-                                      title: 'Cancel',
-                                      backgroundColor: Colors.white,
-                                      borderColor: AppColors.red,
-                                    ),
-                                  ],
+                                Expanded(
+                                  flex: 1,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // Show Save/Update button when:
+                                      // 1. Can add roles AND not editing (new role)
+                                      // 2. Can edit roles AND is editing (existing role)
+                                      if ((PermissionService().canAddRoles && !provider.isEditing) ||
+                                          (PermissionService().canEditRoles && provider.isEditing))
+                                        Consumer<RoleManagementProvider>(
+                                          builder: (context, provider, child) {
+                                            return SizedBox(
+                                              width: 150,
+                                              child: Animatedbutton(
+                                                onPressed: () async {
+                                                  final name = provider.roleController.text.trim();
+                                                  if (name.isEmpty) {
+                                                    showTopRightToast(
+                                                      context,
+                                                      'Please enter a Role',
+                                                      backgroundColor: Colors.red,
+                                                    );
+                                                    return;
+                                                  }
+                                                  final success = await provider.saveRole(context: context);
+                                                  if (success) {
+                                                    provider.cancelEditing();
+                                                  }
+                                                },
+                                                shadowColor: AppColors.primary,
+                                                title: provider.isEditing ? 'Update' : 'Save',
+                                                backgroundColor: AppColors.secondary,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      if ((PermissionService().canAddRoles && !provider.isEditing) ||
+                                          (PermissionService().canEditRoles && provider.isEditing))
+                                        const SizedBox(width: 16),
+                                      Animatedbutton(
+                                        onPressed: () {
+                                          Provider.of<RoleManagementProvider>(context, listen: false)
+                                              .cancelEditing();
+                                        },
+                                        shadowColor: AppColors.primary,
+                                        titlecolor: AppColors.red,
+                                        title: 'Cancel',
+                                        backgroundColor: Colors.white,
+                                        borderColor: AppColors.red,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
 
@@ -264,7 +284,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                               children: [
                                                 Expanded(flex: 2, child: Text("NAME", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                               Expanded(flex: 2, child: Text("CREATED/UPDATED BY", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
-
+                                                if(PermissionService().canEditRoles ||PermissionService().canDeleteRoles )
                                                 Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                               ],
                                             ),
@@ -290,25 +310,31 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                         Expanded(flex: 2, child: Text(role.roleName ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                         Expanded(flex: 2, child: Text(  _formatDate(role.createdAt.toString())
                                                             ,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                            
+                                                if(PermissionService().canEditRoles ||PermissionService().canDeleteRoles )
                                                         Expanded(
                                                           flex: 1,
                                                           child: Wrap(
                                                             children: [
                                             
-                                                              IconButton(
-                                                                icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
-                                                                onPressed: () {
+                                                              Visibility(
+                                                                visible:PermissionService().canEditRoles ,
+                                                                child: IconButton(
+                                                                  icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
+                                                                  onPressed: () {
 
-                                                                  Provider.of<RoleManagementProvider>(context, listen: false)
-                                                                      .startEditing(role);
-                                                                },
+                                                                    Provider.of<RoleManagementProvider>(context, listen: false)
+                                                                        .startEditing(role);
+                                                                  },
+                                                                ),
                                                               ),
-                                                              IconButton(
-                                                                icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
-                                                                onPressed: () {
-                                                                  _showDeleteConfirmation(context,role.id);
-                                                                },
+                                                              Visibility(
+                                                                visible:PermissionService().canDeleteRoles ,
+                                                                child: IconButton(
+                                                                  icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
+                                                                  onPressed: () {
+                                                                    _showDeleteConfirmation(context,role.id);
+                                                                  },
+                                                                ),
                                                               ),
                                                             ],
                                                           ),

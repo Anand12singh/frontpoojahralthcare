@@ -9,6 +9,7 @@ import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+import '../../provider/PermissionService.dart';
 import '../../screens/olddpatientfom.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/AnimatedButton.dart';
@@ -32,6 +33,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TextEditingController _phoneController = TextEditingController();
   bool isHovered = false;
 
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
+  }
   final List<Map<String, String>> bookmarksData = const [
     {
       'patientName': 'Gretchen O\'Kon, M/31',
@@ -274,17 +287,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                              ),
 
-                             Container(
-                               width:ResponsiveUtils.scaleWidth(context, 160),
+                             Visibility(
+                               visible: PermissionService().canAddPatients,
+                               child: Container(
+                                 width:ResponsiveUtils.scaleWidth(context, 160),
 
-                               child:Animatedbutton(
-                                 title: '+ Add Patient',
-                                 isLoading: _isLoading,
-                                 onPressed: () {
-                                   _showAddPatientModal(context);
-                                 },
-                                 backgroundColor: AppColors.secondary,
-                                 shadowColor: AppColors.primary,
+                                 child:Animatedbutton(
+                                   title: '+ Add Patient',
+                                   isLoading: _isLoading,
+                                   onPressed: () {
+                                     _showAddPatientModal(context);
+                                   },
+                                   backgroundColor: AppColors.secondary,
+                                   shadowColor: AppColors.primary,
+                                 ),
                                ),
                              ),
                            ],
@@ -660,16 +676,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
 
 
-                Expanded(
-                  child: Animatedbutton(
-                    title: 'Add Patient',
-                    isLoading: isLoading,
-                    onPressed: _isSubmitting ? null : () => _AddPatientsubmit(),
+                Visibility(
+                   visible: PermissionService().canAddPatients,
+                  child: Expanded(
+                    child: Animatedbutton(
+                      title: 'Add Patient',
+                      isLoading: isLoading,
+                      onPressed: _isSubmitting ? null : () => _AddPatientsubmit(),
 
 
 
-                    backgroundColor: AppColors.secondary,
-                    shadowColor: AppColors.primary,
+                      backgroundColor: AppColors.secondary,
+                      shadowColor: AppColors.primary,
+                    ),
                   ),
                 ),
               ],

@@ -5,6 +5,7 @@ import 'package:poojaheakthcare/constants/ResponsiveUtils.dart';
 import 'package:http/http.dart' as http;
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+import '../../provider/PermissionService.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/showTopSnackBar.dart';
@@ -20,6 +21,19 @@ class _SidebarState extends State<Sidebar> {
   bool isSidebarCollapsed = false;
 
   int? hoveredSidebarIndex;
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _initializeData();
+
+  }
+  Future<void> _initializeData() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
+  }
 
   void onToggleSidebar() {
     setState(() {
@@ -128,29 +142,39 @@ class _SidebarState extends State<Sidebar> {
                           Navigator.pushNamed(context, '/patientList');
                         },
                       ),
-                      _buildSidebarItem(
-                        assetPath: 'assets/UserManagement.png',
-                        label: 'User',
-                        index: 3,
-                        onTap: () {
-                          Navigator.pushNamed(context, '/userManagement');
-                        },
-                      ),  _buildSidebarItem(
-                        assetPath: 'assets/UserManagement.png',
-                        label: 'Role',
-                        index: 4,
-                        onTap: () {
-                          Navigator.pushNamed(context, '/roleManagement');
-                        },
+                      Visibility(
+                        visible:     PermissionService().canViewUsers,
+                        child: _buildSidebarItem(
+                          assetPath: 'assets/UserManagement.png',
+                          label: 'User',
+                          index: 3,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/userManagement');
+                          },
+                        ),
+                      ),  Visibility(
+                        visible: PermissionService().canViewRoles,
+
+                        child: _buildSidebarItem(
+                          assetPath: 'assets/UserManagement.png',
+                          label: 'Role',
+                          index: 4,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/roleManagement');
+                          },
+                        ),
                       ),
 
-                      _buildSidebarItem(
-                        assetPath: 'assets/UserManagement.png',
-                        label: 'Permission',
-                        index: 5,
-                        onTap: () {
-                          Navigator.pushNamed(context, '/permissionManagement');
-                        },
+                      Visibility(
+                        visible: PermissionService().canViewPermissions,
+                        child: _buildSidebarItem(
+                          assetPath: 'assets/UserManagement.png',
+                          label: 'Permission',
+                          index: 5,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/permissionManagement');
+                          },
+                        ),
                       ),
                       const Spacer(),
                       _buildSidebarItem(

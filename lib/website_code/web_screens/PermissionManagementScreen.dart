@@ -46,6 +46,11 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
   @override
   void initState() {
     super.initState();
+    _initializeData();
+  }
+
+
+  Future<void> _initializeData() async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = Provider.of<UserManagementProvider>(context, listen: false);
       final roleProvider = Provider.of<RoleManagementProvider>(context, listen: false);
@@ -117,6 +122,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                         }).toList(),
                                         onChanged: (val) {
                                           setState(() {
+                                            permissionProvider.resetUserSelection();
                                             roleProvider.selectedRoleName = val;
                                             roleProvider.selectedRoleId = roleProvider.roles
                                                 .firstWhere((role) => role.roleName == val)
@@ -165,7 +171,10 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                         ],
                                         onChanged: permissionProvider.roleUserNames.isNotEmpty
                                             ? (val) {
+                                          permissionProvider.resetPermissionStates();
                                           setState(() {
+
+
                                             permissionProvider.selectedUser = val;
                                             final selectedUser = permissionProvider.roleUsers
                                                 .firstWhere((user) => user.name == val);

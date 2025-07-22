@@ -11,6 +11,7 @@ import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+import '../../provider/PermissionService.dart';
 import '../../screens/patient_info_screen.dart';
 import '../../services/api_services.dart';
 import '../../utils/colors.dart';
@@ -268,6 +269,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
   void initState() {
     super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
     _phIdController.text = 'PH-${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
@@ -2248,26 +2251,29 @@ class _OnboardingFormState extends State<OnboardingForm> {
             const SizedBox(width: 120),
 
           const SizedBox(width: 10),
-          SizedBox(
-            width: ResponsiveUtils.scaleWidth(context, 150),
-            child: Animatedbutton(
+          Visibility(
+            visible: isLastStep ? PermissionService().canEditPatients : true,
+            child: SizedBox(
+              width: ResponsiveUtils.scaleWidth(context, 150),
+              child: Animatedbutton(
 
-              onPressed: () {
-                if (!isLastStep) {
-                  setState(() => _currentStep++);
-                  _scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                } else {
-                  _submitForm();
-                }
-              },
-              shadowColor: Colors.white,
-              backgroundColor: AppColors.secondary,
-              isLoading: _isLoading,
-              title: isLastStep ? 'SUBMIT' : 'NEXT',
+                onPressed: () {
+                  if (!isLastStep) {
+                    setState(() => _currentStep++);
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  } else {
+                    _submitForm();
+                  }
+                },
+                shadowColor: Colors.white,
+                backgroundColor: AppColors.secondary,
+                isLoading: _isLoading,
+                title: isLastStep ? 'SUBMIT' : 'NEXT',
+              ),
             ),
           ),
         ],

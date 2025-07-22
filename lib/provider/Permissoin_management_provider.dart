@@ -155,6 +155,34 @@ class PermissoinManagementProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+  // Add these methods to your PermissoinManagementProvider class
+  void resetUserSelection() {
+    selectedUser = null;
+    selectedUserID = null;
+    _userPermissions.clear();
+    resetPermissionStates();
+    notifyListeners();
+  }
+
+  void resetRoleSelection() {
+    selectedRole = null;
+    selectedRoleID = null;
+    _roleUsers.clear();
+    resetUserSelection(); // Also reset user selection
+    notifyListeners();
+  }
+
+  void resetPermissionStates() {
+    permissionStates.forEach((groupName, modules) {
+      modules.forEach((moduleName, permissions) {
+        permissions.forEach((accessName, _) {
+          permissionStates[groupName]?[moduleName]?[accessName] = false;
+        });
+      });
+    });
+    _userPermissions.clear();
+    notifyListeners();
+  }
 
   Future<bool> savepermissions({
     required BuildContext context,
@@ -287,7 +315,7 @@ class PermissoinManagementProvider with ChangeNotifier {
   void _parseUserPermissionData(Map<String, dynamic> permissionData) {
     print('\n👤 Starting to parse USER permission data...');
     print('Raw user permission data: ${jsonEncode(permissionData)}');
-
+    resetPermissionStates();
     _userPermissions.clear();
 
     // First reset all permission states to false
@@ -415,6 +443,8 @@ class PermissoinManagementProvider with ChangeNotifier {
 }
 
 
+
+
 class UserPermissionModel {
   final int id;
   final String name;
@@ -431,3 +461,5 @@ class UserPermissionModel {
     );
   }
 }
+
+

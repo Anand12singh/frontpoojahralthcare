@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../constants/base_url.dart';
 import '../models/GlobalPermissionResponse.dart';
+import '../provider/PermissionService.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../widgets/AnimatedButton.dart';
@@ -77,45 +78,41 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-
-
-// Update your _fetchGlobalPermissions method
   Future<void> _fetchGlobalPermissions(String token) async {
-    if (token == null || token.isEmpty) {
+    if (token.isEmpty) {
       Navigator.of(context).pop();
-      showTopRightToast(
-          context, 'Authentication token not found. Please login again.');
+      showTopRightToast(context, 'Authentication token not found. Please login again.');
       return;
     }
 
     try {
-      // Construct the URL properly
       final url = Uri.parse('$localurl/global_permission');
-      print('Fetching permissions from: $url'); // Debug logging
-
       final response = await http.post(
-        url,
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: {}
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: {}
       );
-
-      print('Response status: ${response.statusCode}'); // Debug logging
-      print('Response body: ${response.body}'); // Debug logging
 
       if (response.statusCode == 200) {
         final responseData = json.decode(utf8.decode(response.bodyBytes));
         if (responseData['status'] == true) {
-          print(responseData['data']);
+          // Parse the response
+          final globalPermissions = GlobalPermissions.fromJson(responseData['data']);
 
+          // Now you can access permissions through these variables:
+          final patientPermissions = globalPermissions.patientList;
+          final userManagement = globalPermissions.userManagements;
 
-        } else {
-          print('API returned false status: ${responseData['message']}');
+        
+          // Store in SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('global_permissions', json.encode(responseData['data']));
+          checkPermissions();
+          print('Permissions parsed and stored successfully');
         }
-      } else {
-        print('Failed to fetch permissions: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching permissions: $e');
@@ -124,6 +121,9 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
   }
+
+
+
 
   Future<void> _login() async {
     if(_nameController.text.trim().isEmpty) {

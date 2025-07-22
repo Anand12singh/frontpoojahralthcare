@@ -7,6 +7,7 @@ import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 import 'package:provider/provider.dart';
 import '../../constants/ResponsiveUtils.dart';
+import '../../provider/PermissionService.dart';
 import '../../services/api_services.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
@@ -34,11 +35,18 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
   @override
   void initState() {
     super.initState();
+    _initializeData();
+  }
+  Future<void> _initializeData() async {
+    // Ensure widgets binding is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<UserManagementProvider>(context, listen: false);
       provider.fetchUserData(context);
     });
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
   }
+
 
   int get totalPages {
     if (_totalRecords == 0) return 1;
@@ -87,11 +95,11 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                         ? const Center(
                         child: CircularProgressIndicator(
                             color: AppColors.primary))
-                        : provider.errorMessage.isNotEmpty
+                        :/* provider.errorMessage.isNotEmpty
                         ? Center(
                         child: Text(provider.errorMessage,
                             style: const TextStyle(color: Colors.red)))
-                        : Column(
+                        :*/ Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
@@ -160,30 +168,33 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                         Icons.search_rounded,
                                       ),
                                     ),
-                                    Center(
-                                      child: Container(
-                                        margin: EdgeInsets.only(
-                                            left: 16, right: 16),
-                                        height: 50,
-                                        width: ResponsiveUtils
-                                            .scaleWidth(context, 160),
-                                        child: Animatedbutton(
-                                          title: '+ Add User',
-                                          isLoading:
-                                          provider.isLoading,
-                                          onPressed: () {
-                                            showDialog(
-                                              context: context,
-                                              barrierDismissible:
-                                              false,
-                                              builder: (context) =>
-                                              const AddUserDialog(),
-                                            );
-                                          },
-                                          backgroundColor:
-                                          AppColors.secondary,
-                                          shadowColor:
-                                          AppColors.primary,
+                                    Visibility(
+                                      visible:true ,//PermissionService().canAddUsers ,
+                                      child: Center(
+                                        child: Container(
+                                          margin: EdgeInsets.only(
+                                              left: 16, right: 16),
+                                          height: 50,
+                                          width: ResponsiveUtils
+                                              .scaleWidth(context, 160),
+                                          child: Animatedbutton(
+                                            title: '+ Add User',
+                                            isLoading:
+                                            provider.isLoading,
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                barrierDismissible:
+                                                false,
+                                                builder: (context) =>
+                                                const AddUserDialog(),
+                                              );
+                                            },
+                                            backgroundColor:
+                                            AppColors.secondary,
+                                            shadowColor:
+                                            AppColors.primary,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -303,6 +314,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                                 .fontSize(
                                                                 context,
                                                                 16)))),
+                                                if(   PermissionService().canEditUsers ||      PermissionService().canDeleteUsers )
                                                 Expanded(
                                                     flex: 1,
                                                     child: Text(
@@ -397,35 +409,42 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                               ResponsiveUtils.fontSize(context, 14)),
                                                         ),
                                                       ),
+                                                      if(   PermissionService().canEditUsers ||      PermissionService().canDeleteUsers )
                                                       Expanded(
                                                         flex: 1,
                                                         child: Wrap(
                                                           children: [
-                                                            IconButton(
-                                                              icon: Icon(
-                                                                  Icons
-                                                                      .edit_outlined,
-                                                                  color:
-                                                                  AppColors.primary,
-                                                                  size: ResponsiveUtils.fontSize(context, 22)),
-                                                              onPressed: () async {
-                                                                await Provider.of<UserManagementProvider>(context, listen: false)
-                                                                    .getUserById(context, user.id);
-                                                                showDialog(
-                                                                  context: context,
-                                                                  barrierDismissible: false,
-                                                                  builder: (context) => AddUserDialog(user: user), // Pass the user here
-                                                                );
-                                                              },
+                                                            Visibility(
+                                                              visible:PermissionService().canEditUsers ,
+                                                              child: IconButton(
+                                                                icon: Icon(
+                                                                    Icons
+                                                                        .edit_outlined,
+                                                                    color:
+                                                                    AppColors.primary,
+                                                                    size: ResponsiveUtils.fontSize(context, 22)),
+                                                                onPressed: () async {
+                                                                  await Provider.of<UserManagementProvider>(context, listen: false)
+                                                                      .getUserById(context, user.id);
+                                                                  showDialog(
+                                                                    context: context,
+                                                                    barrierDismissible: false,
+                                                                    builder: (context) => AddUserDialog(user: user), // Pass the user here
+                                                                  );
+                                                                },
+                                                              ),
                                                             ),
-                                                            IconButton(
-                                                              icon: Icon(
-                                                                  Icons
-                                                                      .delete_outline,
-                                                                  color:
-                                                                  Colors.red,
-                                                                  size: ResponsiveUtils.fontSize(context, 22)),
-                                                              onPressed: () => _showDeleteConfirmation(context, user.id),
+                                                            Visibility(
+                                                              visible:PermissionService().canDeleteUsers ,
+                                                              child: IconButton(
+                                                                icon: Icon(
+                                                                    Icons
+                                                                        .delete_outline,
+                                                                    color:
+                                                                    Colors.red,
+                                                                    size: ResponsiveUtils.fontSize(context, 22)),
+                                                                onPressed: () => _showDeleteConfirmation(context, user.id),
+                                                              ),
                                                             ),
                                                           ],
                                                         ),

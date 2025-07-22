@@ -8,6 +8,7 @@ import 'package:poojaheakthcare/constants/global_variable.dart';
 import 'package:poojaheakthcare/screens/patient_form_screen.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../constants/base_url.dart';
+import '../provider/PermissionService.dart';
 import '../services/auth_service.dart';
 import '../utils/colors.dart';
 import '../website_code/web_screens/CustomSidebar.dart';
@@ -53,6 +54,11 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeData();
+  }
+  Future<void> _initializeData() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
     _fetchPatients();
   }
 
@@ -505,19 +511,22 @@ print(response.body);
                                 fontSize: 26,
                               ),
                             ),
-                            Center(
-                              child: Container(
-                                margin: EdgeInsets.only(left: 16),
-                                height: 50, // define desired button height
-                                width: ResponsiveUtils.scaleWidth(context, 160),
-                                child: Animatedbutton(
-                                  title: '+ Add Patient',
-                                  isLoading: _isLoading,
-                                  onPressed: () {
-                                    _showAddPatientModal(context);
-                                  },
-                                  backgroundColor: AppColors.secondary,
-                                  shadowColor: AppColors.primary,
+                            Visibility(
+                              visible: PermissionService().canAddPatients,
+                              child: Center(
+                                child: Container(
+                                  margin: EdgeInsets.only(left: 16),
+                                  height: 50, // define desired button height
+                                  width: ResponsiveUtils.scaleWidth(context, 160),
+                                  child: Animatedbutton(
+                                    title: '+ Add Patient',
+                                    isLoading: _isLoading,
+                                    onPressed: () {
+                                      _showAddPatientModal(context);
+                                    },
+                                    backgroundColor: AppColors.secondary,
+                                    shadowColor: AppColors.primary,
+                                  ),
                                 ),
                               ),
                             ),
@@ -718,6 +727,8 @@ print(response.body);
                                               Expanded(flex: 2, child: Text("Patient Gender", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                               Expanded(flex: 2, child: Text("Phone Number", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                               Expanded(flex: 2, child: Text("Last Visit", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+
+                                              if(PermissionService().canEditPatients ||   PermissionService().canDeletePatients)
                                               Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                             ],
                                           ),
@@ -742,39 +753,47 @@ print(response.body);
                                                   Expanded(flex: 2, child: Text(_gender ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(_toCamelCase(patient['lastVisit']) ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+
+                                                  if(PermissionService().canEditPatients ||   PermissionService().canDeletePatients)
                                                   Expanded(
                                                     flex: 1,
                                                     child: Wrap(
                                                       children: [
 
-                                                        IconButton(
-                                                          icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
-                                                          onPressed: () {
+                                                        Visibility(
+                                                          visible: PermissionService().canEditPatients,
+                                                          child: IconButton(
+                                                            icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
+                                                            onPressed: () {
 
-                                                            GlobalPatientData.firstName = patient['name'].split(' ')[0];
-                                                            GlobalPatientData.lastName = patient['name'].split(' ').length > 1
-                                                                ? patient['name'].split(' ')[1]
-                                                                : '';
-                                                            GlobalPatientData.phone = patient['phone'];
-                                                            GlobalPatientData.patientExist =patient['patientExist'];
+                                                              GlobalPatientData.firstName = patient['name'].split(' ')[0];
+                                                              GlobalPatientData.lastName = patient['name'].split(' ').length > 1
+                                                                  ? patient['name'].split(' ')[1]
+                                                                  : '';
+                                                              GlobalPatientData.phone = patient['phone'];
+                                                              GlobalPatientData.patientExist =patient['patientExist'];
 
 
-                                                            Global.status ="2";
-                                                            Global.phid =patient['id'].toString();
-                                                            GlobalPatientData.patientId =patient['phid'] ;
+                                                              Global.status ="2";
+                                                              Global.phid =patient['id'].toString();
+                                                              GlobalPatientData.patientId =patient['phid'] ;
 
-                                                            print("patient['patient_id']");
-                                                            print(GlobalPatientData.patientId);
-                                                            print( Global.phid);
-                                                            Navigator.pushReplacementNamed(context, '/patientData');
+                                                              print("patient['patient_id']");
+                                                              print(GlobalPatientData.patientId);
+                                                              print( Global.phid);
+                                                              Navigator.pushReplacementNamed(context, '/patientData');
 
-                                                          },
+                                                            },
+                                                          ),
                                                         ),
-                                                        IconButton(
-                                                          icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
-                                                          onPressed: () {
-                                                            _showDeleteDialog(context, patient['phid']);
-                                                          },
+                                                        Visibility(
+                                                          visible: PermissionService().canDeletePatients,
+                                                          child: IconButton(
+                                                            icon:  Icon(Icons.delete_outline, color: Colors.red,size:  ResponsiveUtils.fontSize(context, 22),),
+                                                            onPressed: () {
+                                                              _showDeleteDialog(context, patient['phid']);
+                                                            },
+                                                          ),
                                                         ),
                                                       ],
                                                     ),

@@ -9,6 +9,7 @@ import 'package:toast/toast.dart';
 
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
+import '../../provider/PermissionService.dart';
 import '../../services/auth_service.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
@@ -87,6 +88,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   void initState() {
     super.initState();
     _fetchDischargeData();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
   }
 
   Future<void> _fetchDischargeData() async {
@@ -897,35 +900,38 @@ maxlength: 4,
 
             const SizedBox(height: 32),
             // Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: ResponsiveUtils.scaleWidth(context, 150),
-                  child: Animatedbutton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    shadowColor: Colors.white,
-                    titlecolor: AppColors.primary,
-                    backgroundColor: Colors.white,
-                    borderColor: AppColors.secondary,
-                    isLoading: false,
-                    title: 'Cancel',
+            Visibility(
+              visible:PermissionService().canEditPatients ,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: ResponsiveUtils.scaleWidth(context, 150),
+                    child: Animatedbutton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      shadowColor: Colors.white,
+                      titlecolor: AppColors.primary,
+                      backgroundColor: Colors.white,
+                      borderColor: AppColors.secondary,
+                      isLoading: false,
+                      title: 'Cancel',
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: ResponsiveUtils.scaleWidth(context, 150),
-                  child: Animatedbutton(
-                    onPressed: _submitForm,
-                    shadowColor: Colors.white,
-                    backgroundColor: AppColors.secondary,
-                    isLoading: _isLoading,
-                    title: _isEditing ? 'Update' : 'Save',
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: ResponsiveUtils.scaleWidth(context, 150),
+                    child: Animatedbutton(
+                      onPressed: _submitForm,
+                      shadowColor: Colors.white,
+                      backgroundColor: AppColors.secondary,
+                      isLoading: _isLoading,
+                      title: _isEditing ? 'Update' : 'Save',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

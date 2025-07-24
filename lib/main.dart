@@ -21,6 +21,7 @@ import 'package:poojaheakthcare/website_code/web_screens/UserManagementScreen.da
 import 'package:provider/provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
@@ -48,6 +49,16 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
         primaryTextTheme: GoogleFonts.plusJakartaSansTextTheme(),
+
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: NoTransitionsBuilder(),
+              TargetPlatform.iOS: NoTransitionsBuilder(),
+              TargetPlatform.linux: NoTransitionsBuilder(),
+              TargetPlatform.macOS: NoTransitionsBuilder(),
+              TargetPlatform.windows: NoTransitionsBuilder(),
+            },
+          ),
 
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[100],
@@ -86,5 +97,19 @@ class MyApp extends StatelessWidget {
         '/permissionManagement': (context) => const Permissionmanagementscreen(),
       },
     );
+  }
+}
+
+
+class NoTransitionsBuilder extends PageTransitionsBuilder {
+  @override
+  Widget buildTransitions<T>(
+      PageRoute<T> route,
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child,
+      ) {
+    return child;
   }
 }

@@ -830,8 +830,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       ),
                     ],
                   ),
-        
-        
+
+
                   Row(
 
                     children: [
@@ -839,7 +839,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                           "Summary",
 
                           (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
-                              ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? 'Not specified') :''
+                              ? !isEditingSummary ? (patientData!['summary'][0]['summary'] ?? '') :''
                               : 'Not specified'
                       ),
                       /*        if (!isEditingSummary &&
@@ -861,27 +861,27 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                             },
                           ),
                         ),
-        
+
                       if (isEditingSummary)
                         Row(
                           children: [
-        
+
                             IconButton(
                               onPressed: isAddingSummary ? null : addSummary,
                               icon:   Icon(Icons.check_rounded,  color: AppColors.primary,),
-        
-        
-        
+
+
+
                             ),
-        
-        
-        
+
+
+
                             IconButton(
                               icon: Icon(Icons.close_rounded, color: Colors.red),
                               onPressed: () {
                                 setState(() {
                                   isEditingSummary = false;
-        
+
                                 });
                               },
                             ),

@@ -43,6 +43,7 @@ enum API {
   getUserById,
   getrolebyid,
   createRole,
+  fogotpassword,
   createUser,
   deleteRoleById,
   deleteUserById,
@@ -82,6 +83,8 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/get_allusers';
         case API.getAllRoles:
         return '${ConfigManager.getBaseURL()}/getAllRoles';
+        case API.fogotpassword:
+        return '${ConfigManager.getBaseURL()}/fogot_password';
         case API.updateUserById:
         return '${ConfigManager.getBaseURL()}/updateUserById';
         case API.createRole:
@@ -128,6 +131,7 @@ class APIManager {
       case API.permissionslist:
       case API.getrolebyid:
       case API.globalpermission:
+      case API.fogotpassword:
       case API.getuserpermissons:
       case API.savepermissions:
 

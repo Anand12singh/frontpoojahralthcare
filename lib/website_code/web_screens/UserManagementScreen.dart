@@ -75,7 +75,17 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       return isoDate; // Return original string if parsing fails
     }
   }
+  String _toCamelCase(String text) {
+    if (text.isEmpty) return text;
 
+    return text
+        .split(' ')
+        .map((word) =>
+    word.isNotEmpty
+        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+        : '')
+        .join(' ');
+  }
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<UserManagementProvider>(context);
@@ -378,7 +388,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                       Expanded(
                                                           flex: 2,
                                                           child: Text(
-                                                              user.roleName,
+                                                              _toCamelCase(user.roleName),
                                                               style: TextStyle(
                                                                   fontSize:
                                                                   ResponsiveUtils.fontSize(context, 14)))),
@@ -575,7 +585,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
         Switch(
           value: value,
           onChanged: isLoading ? null : onChanged,
-          activeColor: AppColors.primary,
+          activeColor:Colors.green ,
+          activeTrackColor: Colors.green.shade100,
           inactiveThumbColor: Colors.grey[300],
           inactiveTrackColor: Colors.grey[400],
         ),

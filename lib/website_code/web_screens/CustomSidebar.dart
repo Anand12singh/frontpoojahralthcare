@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/constants/ResponsiveUtils.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../provider/PermissionService.dart';
@@ -28,12 +29,23 @@ class _SidebarState extends State<Sidebar> {
     // TODO: implement initState
     super.initState();
     _initializeData();
-
+  //  _loadSelectedIndex();
+    _loadPermissionsAndIndex();
   }
   Future<void> _initializeData() async {
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
   }
+
+  Future<void> _loadPermissionsAndIndex() async {
+    await PermissionService().initialize();
+    final index = await AppState.getSelectedPageIndex();
+    if (mounted) {
+      setState(() {
+        selectedPageIndex = index;
+      });
+    }}
+
 
   void onToggleSidebar() {
     setState(() {
@@ -56,6 +68,13 @@ class _SidebarState extends State<Sidebar> {
       if (response.statusCode == 200) {
         // Clear any stored tokens or user data
         await AuthService.deleteToken();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('global_permissions');
+
+
+        // Reset permission service
+        PermissionService().forceReload();
+        await AppState.setSelectedPageIndex(0);
         // Navigate to login screen
         Navigator.pushReplacementNamed(context, '/login');
       } else {
@@ -79,6 +98,20 @@ class _SidebarState extends State<Sidebar> {
       confirmColor: AppColors.secondary,
       onConfirm: _logout,
     );
+  }
+  Future<void> _loadSelectedIndex() async {
+    final index = await AppState.getSelectedPageIndex();
+    setState(() {
+      selectedPageIndex = index;
+    });
+  }
+
+// Modify where you change the index to save it:
+  void _updateSelectedIndex(int index) async {
+    await AppState.setSelectedPageIndex(index);
+    setState(() {
+      selectedPageIndex = index;
+    });
   }
 
 
@@ -131,7 +164,7 @@ class _SidebarState extends State<Sidebar> {
                         label: 'Dashboard',
                         index: 0,
                         onTap: () {
-                          Navigator.pushNamed(context, '/dashboard');
+                          Navigator.pushReplacementNamed(context, '/dashboard');
                         },
                       ),
                       _buildSidebarItem(
@@ -139,7 +172,7 @@ class _SidebarState extends State<Sidebar> {
                         label: 'Patient list',
                         index: 1,
                         onTap: () {
-                          Navigator.pushNamed(context, '/patientList');
+                          Navigator.pushReplacementNamed(context, '/patientList');
                         },
                       ),
                       Visibility(
@@ -149,18 +182,18 @@ class _SidebarState extends State<Sidebar> {
                           label: 'User',
                           index: 3,
                           onTap: () {
-                            Navigator.pushNamed(context, '/userManagement');
+                            Navigator.pushReplacementNamed(context, '/userManagement');
                           },
                         ),
                       ),  Visibility(
                         visible: PermissionService().canViewRoles,
 
                         child: _buildSidebarItem(
-                          assetPath: 'assets/UserManagement.png',
+                          assetPath: 'assets/roles.png',
                           label: 'Role',
                           index: 4,
                           onTap: () {
-                            Navigator.pushNamed(context, '/roleManagement');
+                            Navigator.pushReplacementNamed(context, '/roleManagement');
                           },
                         ),
                       ),
@@ -168,11 +201,11 @@ class _SidebarState extends State<Sidebar> {
                       Visibility(
                         visible: PermissionService().canViewPermissions,
                         child: _buildSidebarItem(
-                          assetPath: 'assets/UserManagement.png',
+                          assetPath: 'assets/permission.png',
                           label: 'Permission',
                           index: 5,
                           onTap: () {
-                            Navigator.pushNamed(context, '/permissionManagement');
+                            Navigator.pushReplacementNamed(context, '/permissionManagement');
                           },
                         ),
                       ),
@@ -338,9 +371,9 @@ class _SidebarState extends State<Sidebar> {
           child: InkWell(
             onTap: () {
               if (isLogout) {
-                _showLogoutConfirmation(context); // Call directly here
+                _showLogoutConfirmation(context);
               } else {
-                setState(() => selectedPageIndex = index);
+                _updateSelectedIndex(index);
                 onTap?.call();
               }
             },

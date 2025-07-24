@@ -1,6 +1,7 @@
 // Model Classes
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionItem {
@@ -138,6 +139,8 @@ class PermissionService {
 
   GlobalPermissions? _permissions;
   bool _isInitialized = false;
+  bool _initializationFailed = false;
+
 
   Future<void> initialize() async {
     try {
@@ -158,6 +161,12 @@ class PermissionService {
     }
   }
 
+  // Add this method to force reload permissions
+  Future<void> forceReload() async {
+    _isInitialized = false;
+    await initialize();
+  }
+  bool get initializationFailed => _initializationFailed;
   // Patient Permissions
   bool get canAddPatients =>
       _permissions?.patientList?.items?.any((p) => p.permission == '1') ?? false;

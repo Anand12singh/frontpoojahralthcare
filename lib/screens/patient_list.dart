@@ -274,7 +274,7 @@ print(response.body);
   })
   {
     return Container(
-      width: 400,
+      width: ResponsiveUtils.scaleWidth(context, 500),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,

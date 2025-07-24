@@ -22,20 +22,20 @@ bool isupdate=false;
   int? _editingRoleId;
   bool get isEditing => _editingRoleId != null;
 
+  // In RoleManagementProvider
   void startEditing(Role role) {
     _editingRoleId = role.id;
-    updateSuccess = false; // Reset success flag when starting new edit
-    roleController.text = role.roleName;
-    notifyListeners();
+    updateSuccess = false;
+    roleController.text = role.roleName ?? '';
+    notifyListeners(); // This is crucial
   }
 
   void cancelEditing() {
     _editingRoleId = null;
-    updateSuccess = false; // Reset success flag
+    updateSuccess = false;
     roleController.clear();
-    notifyListeners();
+    notifyListeners(); // This is crucial
   }
-
 // Modify your addRole method to handle both cases
   Future<bool> saveRole({
     required BuildContext context,

@@ -117,7 +117,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                         items: roleProvider.roleNames.map((role) {
                                           return DropdownMenuItem(
                                             value: role,
-                                            child: Text(role),
+                                            child: Text(_toCamelCase(role)),
                                           );
                                         }).toList(),
                                         onChanged: (val) {
@@ -384,7 +384,8 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                               },
                             ),
                             Text(
-                              permission['access_name'] ?? '',
+                              _toCamelCase(      permission['access_name'] ?? ''),
+
                               style: TextStyle(
 
                                 fontSize: ResponsiveUtils.fontSize(context, 14),
@@ -417,5 +418,16 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
         ),
       ),
     );
+  }
+  String _toCamelCase(String text) {
+    if (text.isEmpty) return text;
+
+    return text
+        .split(' ')
+        .map((word) =>
+    word.isNotEmpty
+        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+        : '')
+        .join(' ');
   }
 }

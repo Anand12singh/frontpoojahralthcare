@@ -79,6 +79,19 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
     }
   }
 
+  String _toCamelCase(String text) {
+    if (text.isEmpty) return text;
+
+    return text
+        .split(' ')
+        .map((word) =>
+    word.isNotEmpty
+        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+        : '')
+        .join(' ');
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<RoleManagementProvider>(context, listen: false);
@@ -106,50 +119,50 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
 
                         Visibility(
                           visible: PermissionService().canAddRoles || PermissionService().canEditRoles,
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text("Role Name", style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primary,
-                                        fontSize: ResponsiveUtils.fontSize(context, 14),
-                                      )),
-                                      const SizedBox(height: 6),
-                                      CustomTextField(
-                                        controller: provider.roleController,
-                                        hintText: 'Enter Role',
-                                        enabled: PermissionService().canAddRoles ||
-                                            (PermissionService().canEditRoles && provider.isEditing),
-                                      ),
-                                    ],
-                                  ),
+                          child: Consumer<RoleManagementProvider>(
+                            builder: (context, provider, child) {
+                              return Container(
+                                padding: EdgeInsets.all(12),
+                                margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
                                 ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      // Show Save/Update button when:
-                                      // 1. Can add roles AND not editing (new role)
-                                      // 2. Can edit roles AND is editing (existing role)
-                                      if ((PermissionService().canAddRoles && !provider.isEditing) ||
-                                          (PermissionService().canEditRoles && provider.isEditing))
-                                        Consumer<RoleManagementProvider>(
-                                          builder: (context, provider, child) {
-                                            return SizedBox(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text("Role Name", style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
+                                            fontSize: ResponsiveUtils.fontSize(context, 14),
+                                          )),
+                                          const SizedBox(height: 6),
+                                          CustomTextField(
+                                            controller: provider.roleController,
+                                            hintText: 'Enter Role',
+                                            enabled: PermissionService().canAddRoles ||
+                                                (PermissionService().canEditRoles && provider.isEditing),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 1,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          // Show Save/Update button when:
+                                          // 1. Can add roles AND not editing (new role)
+                                          // 2. Can edit roles AND is editing (existing role)
+                                          if ((PermissionService().canAddRoles && !provider.isEditing) ||
+                                              (PermissionService().canEditRoles && provider.isEditing))
+                                            SizedBox(
                                               width: 150,
                                               child: Animatedbutton(
                                                 onPressed: () async {
@@ -171,28 +184,30 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                 title: provider.isEditing ? 'Update' : 'Save',
                                                 backgroundColor: AppColors.secondary,
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      if ((PermissionService().canAddRoles && !provider.isEditing) ||
-                                          (PermissionService().canEditRoles && provider.isEditing))
-                                        const SizedBox(width: 16),
-                                      Animatedbutton(
-                                        onPressed: () {
-                                          Provider.of<RoleManagementProvider>(context, listen: false)
-                                              .cancelEditing();
-                                        },
-                                        shadowColor: AppColors.primary,
-                                        titlecolor: AppColors.red,
-                                        title: 'Cancel',
-                                        backgroundColor: Colors.white,
-                                        borderColor: AppColors.red,
+                                            ),
+                                          if ((PermissionService().canAddRoles && !provider.isEditing) ||
+                                              (PermissionService().canEditRoles && provider.isEditing))
+                                            const SizedBox(width: 16),
+                                          if ((PermissionService().canAddRoles && !provider.isEditing) ||
+                                              (PermissionService().canEditRoles && provider.isEditing))
+                                          Animatedbutton(
+                                            onPressed: () {
+                                              Provider.of<RoleManagementProvider>(context, listen: false)
+                                                  .cancelEditing();
+                                            },
+                                            shadowColor: AppColors.primary,
+                                            titlecolor: AppColors.red,
+                                            title: 'Cancel',
+                                            backgroundColor: Colors.white,
+                                            borderColor: AppColors.red,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              );
+                            }
                           ),
                         ),
 
@@ -307,7 +322,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                     padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
                                                     child: Row(
                                                       children: [
-                                                        Expanded(flex: 2, child: Text(role.roleName ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                        Expanded(flex: 2, child: Text(_toCamelCase(role.roleName ?? ''),style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                         Expanded(flex: 2, child: Text(  _formatDate(role.createdAt.toString())
                                                             ,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                 if(PermissionService().canEditRoles ||PermissionService().canDeleteRoles )
@@ -319,9 +334,8 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                               Visibility(
                                                                 visible:PermissionService().canEditRoles ,
                                                                 child: IconButton(
-                                                                  icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
+                                                                  icon: Icon(Icons.edit_outlined, color: AppColors.primary),
                                                                   onPressed: () {
-
                                                                     Provider.of<RoleManagementProvider>(context, listen: false)
                                                                         .startEditing(role);
                                                                   },

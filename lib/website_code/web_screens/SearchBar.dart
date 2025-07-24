@@ -181,19 +181,19 @@ class _SearchbarState extends State<Searchbar> {
               Container(
                 height: ResponsiveUtils.scaleHeight(context, 80),
                 color: Colors.white,
-                padding: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.only(right: 16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    IconButton(
+                  /*  IconButton(
                       icon: Icon(
                         isSidebarCollapsed
                             ? Icons.keyboard_arrow_right
                             : Icons.keyboard_arrow_left,
                       ),
                       onPressed: _toggleSidebar,
-                    ),
-                    const SizedBox(width: 12),
+                    ),*/
+                    const SizedBox(width: 16),
                     Expanded(
                       flex: 4,
                       child: Row(

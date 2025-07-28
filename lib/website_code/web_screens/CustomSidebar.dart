@@ -28,7 +28,7 @@ class _SidebarState extends State<Sidebar> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    _initializeData();
+   // _initializeData();
   //  _loadSelectedIndex();
     _loadPermissionsAndIndex();
   }

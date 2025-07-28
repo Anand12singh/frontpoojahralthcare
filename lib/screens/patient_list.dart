@@ -37,7 +37,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   bool sortByName = true;
   bool _isSubmitting = false;
   int _currentPage = 1;
-  int _rowsPerPage = 100;
+  int _rowsPerPage = 20;
   int _totalRecords = 0;
 
   String _search = '';
@@ -45,7 +45,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
 
   String _sortOrder = 'asc';
 
-  List<int> _rowsPerPageOptions = [100, 0]; // 0 will represent "ALL"
+  List<int> _rowsPerPageOptions = [10, 20, 50, 100, 0]; // 0 will represent "ALL"
 
   final _formKey = GlobalKey<FormState>();
   bool isLoading = true;

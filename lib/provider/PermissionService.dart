@@ -168,7 +168,7 @@ class PermissionService {
   }
   bool get initializationFailed => _initializationFailed;
   // Patient Permissions
-  bool get canAddPatients =>
+  bool get  canAddPatients =>
       _permissions?.patientList?.items?.any((p) => p.permission == '1') ?? false;
 
   bool get canEditPatients =>

@@ -171,6 +171,7 @@ class PermissionService {
   bool get  canAddPatients =>
       _permissions?.patientList?.items?.any((p) => p.permission == '1') ?? false;
 
+
   bool get canEditPatients =>
       _permissions?.patientList?.items?.any((p) => p.permission == '2') ?? false;
 

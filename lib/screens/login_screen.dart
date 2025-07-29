@@ -176,6 +176,8 @@ class _LoginScreenState extends State<LoginScreen>
               await AuthService.saveToken(token);
               // Fetch and store permissions after successful login
               await _fetchGlobalPermissions(token);
+              WidgetsFlutterBinding.ensureInitialized();
+              PermissionService().initialize();
             }
             Navigator.pushReplacementNamed(context, '/dashboard');
           } else {

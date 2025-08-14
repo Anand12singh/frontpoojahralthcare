@@ -130,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _handleSuccessResponse(responseData);
         } else {
           _isLoading = false;
-          _showErrorSnackbar(responseData['message'] ?? 'Submission failed');
+          _showErrorSnackbar(responseData['message'] ?? 'Patient already exists.');
         }
       } else {
         _isLoading = false;
@@ -157,34 +157,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
 
-  void _handleSuccessResponse(Map<String, dynamic> responseData) {
-    final data = responseData['data'][0];
-    int patientExist = data['patientExist'] ?? 0;
-    String? phid = data['patient_id']?.toString() ?? 'NA';
-    String? phid1 = data['phid']?.toString() ?? 'NA';
+  Future<void> _handleSuccessResponse(Map<String, dynamic> responseData) async {
+    try {
+      final data = responseData['data'][0];
+      int patientExist = data['patientExist'] ?? 0;
+      String? phid = data['patient_id']?.toString() ?? 'NA';
+      String? phid1 = data['phid']?.toString() ?? 'NA';
 
-    Global.status = patientExist.toString();
-    Global.patient_id = phid;
-    Global.phid = phid;
-    Global.phid1 = phid1;
-    GlobalPatientData.firstName =_nameController.text.trim();
-    GlobalPatientData.lastName =_lastnameController.text.trim();
-    GlobalPatientData.phone =_phoneController.text.trim();
-    GlobalPatientData.patientExist =patientExist;
-    GlobalPatientData.phid =phid1;
-    GlobalPatientData.patientId =phid ;
+      // Update global variables
+      Global.status = patientExist.toString();
+      Global.patient_id = phid;
+      Global.phid = phid;
+      Global.phid1 = phid1;
 
-    log('Patient Exist: $patientExist, PHID: $phid');
+      // Update global patient data
+      GlobalPatientData.firstName = _nameController.text.trim();
+      GlobalPatientData.lastName = _lastnameController.text.trim();
+      GlobalPatientData.phone = _phoneController.text.trim();
+      GlobalPatientData.patientExist = patientExist;
+      GlobalPatientData.phid = phid1;
+      GlobalPatientData.patientId = phid;
+      await GlobalPatientData.saveToPrefs();
+      await GlobalPatientData.loadFromPrefs();
+      log('Patient Exist: $patientExist, PHID: $phid, PHID1: $phid1');
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(
-        initialPage: 2,
-        ),
-      ),
-    );
+      // Verify we have a valid phid before navigation
+      if (phid1 != 'NA') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientDataTabsScreen(),
+          ),
+        );
+      } else {
+        throw Exception('Invalid patient ID received from API');
+      }
+    } catch (e) {
+      log('Error in _handleSuccessResponse: $e');
+      showTopRightToast(
+        context,
+        'Error processing patient data',
+        backgroundColor: Colors.red,
+      );
+    }
   }
+
   void _showAddPatientModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -650,6 +667,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return 'Enter a valid 10-digit number';
               return null;
             },
+              isMobileNumber: true
             ),
             const SizedBox(height: 24),
             Row(
@@ -703,9 +721,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildField(
       String label,
       String hint,
+
   final List<TextInputFormatter>? inputFormatters,
       TextEditingController controller, {
         String? Function(String?)? validator,
+        bool isMobileNumber = false, // Add this parameter
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -721,6 +741,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         CustomTextField(
           controller: controller,
           hintText: hint,
+          maxLength: isMobileNumber ? 10 : 100, // Set length based on field type
           inputFormatters:inputFormatters,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,

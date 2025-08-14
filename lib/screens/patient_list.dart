@@ -87,7 +87,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       });
 
       final response = await http.post(
-        Uri.parse('https://uatpoojahealthcare.ortdemo.com/api/get_allpatients'), // your endpoint
+        Uri.parse('$localurl/get_allpatients'), // your endpoint
         headers: headers,
         body: body,
       );
@@ -119,7 +119,7 @@ print(response.body);
     showTopRightToast(context,message,backgroundColor: Colors.red);
 
   }
-  void _handleSuccessResponse(Map<String, dynamic> responseData) {
+  Future<void> _handleSuccessResponse(Map<String, dynamic> responseData) async {
     final data = responseData['data'][0];
     int patientExist = data['patientExist'] ?? 0;
     String? phid = data['patient_id']?.toString() ?? 'NA';
@@ -135,14 +135,15 @@ print(response.body);
     GlobalPatientData.patientExist =patientExist;
     GlobalPatientData.phid =phid1;
     GlobalPatientData.patientId =phid ;
-
+    await GlobalPatientData.saveToPrefs();
+    await GlobalPatientData.loadFromPrefs();
     log('Patient Exist: $patientExist, PHID: $phid');
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HomeScreen(
-          initialPage: 2,
+        builder: (context) => PatientDataTabsScreen(
+
         ),
       ),
     );
@@ -241,6 +242,7 @@ print(response.body);
       final List<TextInputFormatter>? inputFormatters,
       TextEditingController controller, {
         String? Function(String?)? validator,
+        bool isMobileNumber = false,
       }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,6 +258,7 @@ print(response.body);
         CustomTextField(
           controller: controller,
           hintText: hint,
+          maxLength: isMobileNumber ? 10 : 100, // Set length based on field type
           inputFormatters:inputFormatters,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
@@ -327,6 +330,7 @@ print(response.body);
                 return 'Enter a valid 10-digit number';
               return null;
             },
+              isMobileNumber: true
             ),
             const SizedBox(height: 24),
             Row(
@@ -735,7 +739,17 @@ print(response.body);
                                         ),
                                       ),
                                       Expanded(
-                                        child: ListView.separated(
+                                        child:filteredPatients.isEmpty
+                                            ? Center(
+                                          child: Text(
+                                            'No patient found',
+                                            style: TextStyle(
+                                              fontSize: ResponsiveUtils.fontSize(context, 18),
+                                              color: AppColors.secondary,
+                                            ),
+                                          ),
+                                        )
+                                            :  ListView.separated(
                                           itemCount: filteredPatients.length,
                                           separatorBuilder: (context, index) => const Divider( height: 1,
                                               thickness: 1,
@@ -764,7 +778,7 @@ print(response.body);
                                                           visible: PermissionService().canEditPatients,
                                                           child: IconButton(
                                                             icon:  Icon(Icons.edit_outlined , color: AppColors.primary,size:  ResponsiveUtils.fontSize(context, 22)),
-                                                            onPressed: () {
+                                                            onPressed: () async {
 
                                                               GlobalPatientData.firstName = patient['name'].split(' ')[0];
                                                               GlobalPatientData.lastName = patient['name'].split(' ').length > 1
@@ -775,12 +789,14 @@ print(response.body);
 
 
                                                               Global.status ="2";
-                                                              Global.phid =patient['id'].toString();
+                                                              GlobalPatientData.phid =patient['id'].toString();
                                                               GlobalPatientData.patientId =patient['phid'] ;
 
                                                               print("patient['patient_id']");
                                                               print(GlobalPatientData.patientId);
-                                                              print( Global.phid);
+                                                              print( GlobalPatientData.phid);
+                                                              await GlobalPatientData.saveToPrefs();
+                                                              await GlobalPatientData.loadFromPrefs();
                                                               Navigator.pushReplacementNamed(context, '/patientData');
 
                                                             },

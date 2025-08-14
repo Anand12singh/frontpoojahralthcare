@@ -50,7 +50,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
         });
       },
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+
         children: [
           Container(
             width: ResponsiveUtils.scaleWidth(context, 24),

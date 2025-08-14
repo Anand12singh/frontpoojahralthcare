@@ -3,9 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
 import 'package:poojaheakthcare/widgets/custom_text_field.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
-
+import 'package:printing/printing.dart';
+import 'package:pdf/widgets.dart' as pw;
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../provider/PermissionService.dart';
@@ -32,6 +34,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
   TextEditingController summaryController = TextEditingController(); // Add this
   bool isAddingSummary = false;
   bool isEditingSummary = false;
+
   @override
   void initState() {
     super.initState();
@@ -39,17 +42,37 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
   }
+  void _initializeData() {
+    fetchPatientData();
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final patientProvider = Provider.of<PatientProvider>(context, listen: true);
 
+    if (patientProvider.needsRefresh) {
+      patientProvider.clearRefresh();
+      _initializeData();
+    }
+  }
+
+
+  void refreshAll() {
+    fetchPatientData();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
+  }
   Future<void> fetchPatientData() async {
     setState(() {
       isLoading = true;
       errorMessage = '';
     });
-
+    String? token = await AuthService.getToken();
     await APIManager().apiRequest(
       context,
       API.frontpatientbyid,
       params: {'id': widget.patientId},
+      token: token,
       onSuccess: (responseBody) {
         final data = json.decode(responseBody);
 
@@ -57,7 +80,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
           setState(() {
             patientData = data['data'][0];
             debugPrint("patientData: $patientData");
-
+            print("patient Data");
+            print(patientData);
             // Safely initialize summaryController
             if (patientData!['summary'] != null &&
                 patientData!['summary'].isNotEmpty) {
@@ -329,6 +353,12 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       });
     }
   }*/
+
+  String _getDisplayText(dynamic value) {
+    return (value == null || value.toString().isEmpty)
+        ? 'Not specified'
+        : value.toString();
+  }
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
@@ -347,10 +377,18 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
     }
 
     final patient = patientData!['patient'][0];
+    final roleList = patientData?['role'];
+    final role = (roleList != null && roleList.isNotEmpty)
+        ? roleList[0]
+        : null;
 
     final dischargeInfo = patientData!['discharge_info'].isNotEmpty
         ? patientData!['discharge_info'][0]
         : null;
+    final visitInfo = patientData!['PatientVisitInfo'].isNotEmpty
+        ? patientData!['PatientVisitInfo'][0]
+        : null;
+
 
     return
       isMobile ?
@@ -375,16 +413,16 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     Expanded(
                       child: buildInfoBlock(
                         "Location",
-                        patient['location'] != 'Others'
-                            ? patient['location'] ??'Not specified'
-                            : patient['other_location']??'Not specified',
+                        _getDisplayText(dischargeInfo?['location'])
+
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: buildInfoBlock(
                         "Occupation",
-                        patient['occupation'] ?? 'Not specified',
+                        _getDisplayText(dischargeInfo?['occupation'])
+
                       ),
                     ),
                   ],
@@ -395,13 +433,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   children: [
                     buildInfoBlock(
                       "Location",
-                      patient['location'] != 'Others'
-                          ? patient['location']
-                          : patient['other_location'],
+                      _getDisplayText(dischargeInfo?['location'])
+
                     ),
                     buildInfoBlock(
                       "Occupation",
-                      patient['occupation'] ?? 'Not specified',
+                      _getDisplayText(dischargeInfo?['occupation'])
+
                     ),
                   ],
                 ),
@@ -414,14 +452,16 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     Expanded(
                       child: buildInfoBlock(
                         "Diagnosis",
-                        dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        _getDisplayText(dischargeInfo?['diagnosis'])
+
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: buildInfoBlock(
-                        "Surgery Type",
-                        dischargeInfo?['operation_type'] ?? 'Not specified',
+                        "Surgery Name",
+                        _getDisplayText(dischargeInfo?['operation_type'])
+
                       ),
                     ),
                   ],
@@ -430,11 +470,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   children: [
                     buildInfoBlock(
                       "Diagnosis",
-                      dischargeInfo?['diagnosis'] ?? 'Not specified',
+                      _getDisplayText(dischargeInfo?['diagnosis'])
+
                     ),
                     buildInfoBlock(
-                      "Surgery Type",
-                      dischargeInfo?['operation_type'] ?? 'Not specified',
+                      "Surgery Name",
+                      _getDisplayText(dischargeInfo?['operation_type'])
+
                     ),
                   ],
                 ),
@@ -447,14 +489,16 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     Expanded(
                       child: buildInfoBlock(
                         "Chief Complaints",
-                        patient['chief_complaints'] ?? 'Not specified',
+                          visitInfo != null ? _getDisplayText( visitInfo['chief_complaints'])  : 'Not specified'
+
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: buildInfoBlock(
                         "Clinical Diagnosis",
-                        dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        _getDisplayText(visitInfo?['clinical_diagnosis'])
+
                       ),
                     ),
                   ],
@@ -463,11 +507,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                   children: [
                     buildInfoBlock(
                       "Chief Complaints",
-                      patient['doctor_note'] ?? 'Not specified',
+                        visitInfo != null ? _getDisplayText( visitInfo['chief_complaints'])  : 'Not specified'
+
                     ),
                     buildInfoBlock(
                       "Clinical Diagnosis",
-                      dischargeInfo?['diagnosis'] ?? 'Not specified',
+                      _getDisplayText(visitInfo?['clinical_diagnosis'])
+
                     ),
                   ],
                 ),
@@ -745,7 +791,8 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       Expanded(
                         child: buildInfoBlock(
                           "Occupation",
-                          patient['occupation'] ?? 'Not specified',
+                          _getDisplayText( patient['occupation'])
+
                         ),
                       ),
                     ],
@@ -754,13 +801,15 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     children: [
                       buildInfoBlock(
                         "Location",
+
                         patient['location'] != 'Others'
                             ? patient['location']
                             : patient['other_location'],
                       ),
                       buildInfoBlock(
                         "Occupation",
-                        patient['occupation'] ?? 'Not specified',
+                        _getDisplayText( patient['occupation'])
+
                       ),
                     ],
                   ),
@@ -772,15 +821,15 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     children: [
                       Expanded(
                         child: buildInfoBlock(
-                          "Diagnosis",
-                          dischargeInfo?['diagnosis'] ?? 'Not specified',
+                            "Diagnosis",
+                            dischargeInfo != null ? _getDisplayText(dischargeInfo['diagnosis']) : 'Not specified'
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: buildInfoBlock(
-                          "Surgery Type",
-                          dischargeInfo?['operation_type'] ?? 'Not specified',
+                        child:buildInfoBlock(
+                            "Surgery Name",
+                            dischargeInfo != null ? _getDisplayText(dischargeInfo['operation_type']) : 'Not specified'
                         ),
                       ),
                     ],
@@ -789,11 +838,14 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     children: [
                       buildInfoBlock(
                         "Diagnosis",
-                        dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        _getDisplayText( dischargeInfo['diagnosis'])
+
                       ),
                       buildInfoBlock(
-                        "Surgery Type",
-                        dischargeInfo?['operation_type'] ?? 'Not specified',
+                        "Surgery Name",
+                        _getDisplayText( dischargeInfo['operation_type'])
+
+
                       ),
                     ],
                   ),
@@ -806,14 +858,15 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       Expanded(
                         child: buildInfoBlock(
                           "Chief Complaints",
-                          patient['chief_complaints'] ?? 'Not specified',
+                            visitInfo != null ? _getDisplayText( visitInfo['chief_complaints'])  : 'Not specified'
+
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: buildInfoBlock(
-                          "Clinical Diagnosis",
-                          dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        child:buildInfoBlock(
+                            "Clinical Diagnosis",
+                            dischargeInfo != null ? _getDisplayText(visitInfo?['clinical_diagnosis']) : 'Not specified'
                         ),
                       ),
                     ],
@@ -822,11 +875,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                     children: [
                       buildInfoBlock(
                         "Chief Complaints",
-                        patient['doctor_note'] ?? 'Not specified',
+                          visitInfo != null ? _getDisplayText( visitInfo['chief_complaints'])  : 'Not specified'
+
                       ),
                       buildInfoBlock(
                         "Clinical Diagnosis",
-                        dischargeInfo?['diagnosis'] ?? 'Not specified',
+                        _getDisplayText(visitInfo?['clinical_diagnosis'])
+
                       ),
                     ],
                   ),
@@ -845,7 +900,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                       /*        if (!isEditingSummary &&
                         patientData!['summary'] != null &&
                         patientData!['summary'].isNotEmpty)*/
-                      if (!isEditingSummary)
+                      if (!isEditingSummary && role['role']==1)
                         Visibility(
                           visible:PermissionService().canEditPatients ,
                           child: IconButton(
@@ -989,12 +1044,114 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                 ],
               ),
             )
-        
+        ,Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.print, color: AppColors.primary),
+                  onPressed: () => _printPatientDetails(),
+                ),
+              ],
+            ),
           ],
         ),
       );
   }
+  Future<void> _printPatientDetails() async {
+    final patient = patientData!['patient'][0];
+    final roleList = patientData?['role'];
+    final role = (roleList != null && roleList.isNotEmpty) ? roleList[0] : null;
+    final dischargeInfo = patientData!['discharge_info'].isNotEmpty
+        ? patientData!['discharge_info'][0]
+        : null;
+    final visitInfo = patientData!['PatientVisitInfo'].isNotEmpty
+        ? patientData!['PatientVisitInfo'][0]
+        : null;
 
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+            pw.Header(
+            level: 0,
+            child: pw.Text('Patient Details',
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),),
+            pw.SizedBox(height: 20),
+
+            // Patient Basic Info
+            pw.Text('Basic Information',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Divider(),
+            _buildPdfRow('Name', '${patient['first_name']} ${patient['last_name']}'),
+            _buildPdfRow('Gender', _getGenderText(patient['gender'])),
+            _buildPdfRow('PH ID', patient['phid']),
+            _buildPdfRow('Mobile', patient['mobile_no']),
+            _buildPdfRow('WhatsApp Number', patient['mobile_no']),
+            pw.SizedBox(height: 10),
+
+            // Medical History
+            pw.Text('Medical History',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Divider(),
+            _buildPdfRow('History', _getHistoryText()),
+            _buildPdfRow('Diagnosis', _getDisplayText(dischargeInfo?['diagnosis'])),
+            _buildPdfRow('Surgery Name', _getDisplayText(dischargeInfo?['operation_type'])),
+            _buildPdfRow('Chief Complaints', _getDisplayText(visitInfo?['chief_complaints'])),
+            _buildPdfRow('Clinical Diagnosis', _getDisplayText(visitInfo?['clinical_diagnosis'])),
+            pw.SizedBox(height: 10),
+
+            // Additional Info
+            pw.Text('Additional Information',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Divider(),
+            _buildPdfRow('Location', _getDisplayText(dischargeInfo?['location'])),
+            _buildPdfRow('Occupation', _getDisplayText(dischargeInfo?['occupation'])),
+            pw.SizedBox(height: 10),
+
+            // Summary
+            pw.Text('Summary',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Divider(),
+            pw.Text(
+              (patientData!['summary'] != null && patientData!['summary'].isNotEmpty)
+                  ? patientData!['summary'][0]['summary'] ?? 'No summary available'
+                  : 'No summary available',
+            ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (format) => pdf.save(),
+    );
+  }
+
+  pw.Widget _buildPdfRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 120,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(value),
+          ),
+        ],
+      ),
+    );
+  }
   Widget buildInfoBlock(String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -1033,5 +1190,22 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       ),
       child: child,
     );
+  }
+}
+
+
+
+class PatientProvider with ChangeNotifier {
+  bool _needsRefresh = false;
+
+  bool get needsRefresh => _needsRefresh;
+
+  void markForRefresh() {
+    _needsRefresh = true;
+    notifyListeners();
+  }
+
+  void clearRefresh() {
+    _needsRefresh = false;
   }
 }

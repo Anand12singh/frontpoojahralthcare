@@ -104,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen>
           // Store permissions first
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('global_permissions', json.encode(responseData['data']));
-
+print(responseData['data']);
           // Then initialize PermissionService
         //  await PermissionService().initialize();
 

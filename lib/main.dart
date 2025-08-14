@@ -14,6 +14,7 @@ import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DashboardScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PatientDataTabsScreen.dart';
+import 'package:poojaheakthcare/website_code/web_screens/PatientDetailsSidebar.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PatientRegistrationPage.dart';
 import 'package:poojaheakthcare/website_code/web_screens/PermissionManagementScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/RoleManagementScreen.dart';
@@ -28,6 +29,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => UserManagementProvider()),
         ChangeNotifierProvider(create: (_) => RoleManagementProvider()),
         ChangeNotifierProvider(create: (_) => PermissoinManagementProvider()),
+        ChangeNotifierProvider(create: (_) => PatientProvider()),
 
       ],
       child: MyApp(),

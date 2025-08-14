@@ -1,5 +1,6 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
@@ -146,6 +147,9 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                           CustomTextField(
                                             controller: provider.roleController,
                                             hintText: 'Enter Role',
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]'))
+                                            ],
                                             enabled: PermissionService().canAddRoles ||
                                                 (PermissionService().canEditRoles && provider.isEditing),
                                           ),
@@ -180,7 +184,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                     provider.cancelEditing();
                                                   }
                                                 },
-                                                shadowColor: AppColors.primary,
+                                                shadowColor: Colors.transparent,
                                                 title: provider.isEditing ? 'Update' : 'Save',
                                                 backgroundColor: AppColors.secondary,
                                               ),
@@ -195,7 +199,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                               Provider.of<RoleManagementProvider>(context, listen: false)
                                                   .cancelEditing();
                                             },
-                                            shadowColor: AppColors.primary,
+                                            shadowColor: Colors.transparent,
                                             titlecolor: AppColors.red,
                                             title: 'Cancel',
                                             backgroundColor: Colors.white,

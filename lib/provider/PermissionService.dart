@@ -169,56 +169,56 @@ class PermissionService {
   bool get initializationFailed => _initializationFailed;
   // Patient Permissions
   bool get  canAddPatients =>
-      _permissions?.patientList?.items?.any((p) => p.permission == '1') ?? false;
+      _permissions?.patientList?.items.any((p) => p.permission == '1') ?? false;
 
 
   bool get canEditPatients =>
-      _permissions?.patientList?.items?.any((p) => p.permission == '2') ?? false;
+      _permissions?.patientList?.items.any((p) => p.permission == '2') ?? false;
 
   bool get canViewPatients =>
-      _permissions?.patientList?.items?.any((p) => p.permission == '3') ?? false;
+      _permissions?.patientList?.items.any((p) => p.permission == '3') ?? false;
 
   bool get canDeletePatients =>
-      _permissions?.patientList?.items?.any((p) => p.permission == '4') ?? false;
+      _permissions?.patientList?.items.any((p) => p.permission == '4') ?? false;
 
   // User Management - User Permissions
   bool get canAddUsers =>
-      _permissions?.userManagements?.user?.items?.any((p) => p.permission == '1') ?? false;
+      _permissions?.userManagements?.user?.items.any((p) => p.permission == '1') ?? false;
 
   bool get canEditUsers =>
-      _permissions?.userManagements?.user?.items?.any((p) => p.permission == '2') ?? false;
+      _permissions?.userManagements?.user?.items.any((p) => p.permission == '2') ?? false;
 
   bool get canViewUsers =>
-      _permissions?.userManagements?.user?.items?.any((p) => p.permission == '3') ?? false;
+      _permissions?.userManagements?.user?.items.any((p) => p.permission == '3') ?? false;
 
   bool get canDeleteUsers =>
-      _permissions?.userManagements?.user?.items?.any((p) => p.permission == '4') ?? false;
+      _permissions?.userManagements?.user?.items.any((p) => p.permission == '4') ?? false;
 
   // User Management - Roles Permissions
   bool get canAddRoles =>
-      _permissions?.userManagements?.roles?.items?.any((p) => p.permission == '1') ?? false;
+      _permissions?.userManagements?.roles?.items.any((p) => p.permission == '1') ?? false;
 
   bool get canEditRoles =>
-      _permissions?.userManagements?.roles?.items?.any((p) => p.permission == '2') ?? false;
+      _permissions?.userManagements?.roles?.items.any((p) => p.permission == '2') ?? false;
 
   bool get canViewRoles =>
-      _permissions?.userManagements?.roles?.items?.any((p) => p.permission == '3') ?? false;
+      _permissions?.userManagements?.roles?.items.any((p) => p.permission == '3') ?? false;
 
   bool get canDeleteRoles =>
-      _permissions?.userManagements?.roles?.items?.any((p) => p.permission == '4') ?? false;
+      _permissions?.userManagements?.roles?.items.any((p) => p.permission == '4') ?? false;
 
   // User Management - Permissions Permissions
   bool get canAddPermissions =>
-      _permissions?.userManagements?.permissions?.items?.any((p) => p.permission == '1') ?? false;
+      _permissions?.userManagements?.permissions?.items.any((p) => p.permission == '1') ?? false;
 
   bool get canEditPermissions =>
-      _permissions?.userManagements?.permissions?.items?.any((p) => p.permission == '2') ?? false;
+      _permissions?.userManagements?.permissions?.items.any((p) => p.permission == '2') ?? false;
 
   bool get canViewPermissions =>
-      _permissions?.userManagements?.permissions?.items?.any((p) => p.permission == '3') ?? false;
+      _permissions?.userManagements?.permissions?.items.any((p) => p.permission == '3') ?? false;
 
   bool get canDeletePermissions =>
-      _permissions?.userManagements?.permissions?.items?.any((p) => p.permission == '4') ?? false;
+      _permissions?.userManagements?.permissions?.items.any((p) => p.permission == '4') ?? false;
 
   // Status checks
   bool get isInitialized => _isInitialized;

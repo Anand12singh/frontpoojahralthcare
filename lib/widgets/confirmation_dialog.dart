@@ -67,7 +67,7 @@ class ConfirmationDialog extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                  Text(
                   title,
                   style: TextStyle(
                     fontSize: ResponsiveUtils.fontSize(context, 20),

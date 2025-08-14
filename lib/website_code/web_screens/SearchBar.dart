@@ -33,6 +33,7 @@ class _SearchbarState extends State<Searchbar> {
   String _currentTime = '';
   bool isLoading = true;
   late Timer _timer;
+  Timer? _searchDebounce;
   // Dummy page widgets
   final List<Widget> pages = [
     Center(child: Text('Dashboard')),
@@ -59,8 +60,8 @@ class _SearchbarState extends State<Searchbar> {
       return {
         'id': patient['id'] ?? 'N/A',
         'phid': patient['phid'] ?? 'N/A',
-        'name':
-        '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}'.trim(),
+        'name': '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}'
+            .trim(),
         'age': patient['age']?.toString() ?? 'N/A',
         'phone': patient['mobile_no'] ?? 'N/A',
         'lastVisit': _formatLastVisitDate(patient['date'] ?? ''),
@@ -68,9 +69,11 @@ class _SearchbarState extends State<Searchbar> {
       };
     }).toList();
   }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounce?.cancel();
     _timer.cancel();
     super.dispose();
   }
@@ -90,6 +93,7 @@ class _SearchbarState extends State<Searchbar> {
     final date = DateFormat('dd-MM-yyyy').format(dt);
     return "$time | $date";
   }
+
   Future<void> _fetchPatients() async {
     try {
       String? token = await AuthService.getToken();
@@ -103,7 +107,7 @@ class _SearchbarState extends State<Searchbar> {
       final headers = {
         'Accept': 'application/json',
         'Cookie':
-        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
+            'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA',
         'Authorization': 'Bearer $token',
       };
 
@@ -123,8 +127,8 @@ class _SearchbarState extends State<Searchbar> {
         setState(() {
           isLoading = false;
         });
-        showTopRightToast(context,
-            'Failed to load patients: ${response.reasonPhrase}');
+        showTopRightToast(
+            context, 'Failed to load patients: ${response.reasonPhrase}');
       }
     } catch (e) {
       setState(() {
@@ -138,7 +142,7 @@ class _SearchbarState extends State<Searchbar> {
     final now = DateTime.now();
     setState(() {
       _currentTime =
-      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     });
   }
 
@@ -149,25 +153,43 @@ class _SearchbarState extends State<Searchbar> {
   }
 
   void _handleSearch(String query) {
-    if (query.isEmpty) {
+    _searchDebounce?.cancel();
+
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (query.isEmpty) {
+        setState(() {
+          _showSearchResults = false;
+          filteredPatients = [];
+        });
+        return;
+      }
+
+      final result = patients.where((patient) {
+        // Search by name (case insensitive)
+        final nameMatch = (patient['name']?.toString().toLowerCase() ?? '')
+            .contains(query.toLowerCase());
+
+        // Search by PHID (exact match)
+        final phidMatch = (patient['phid']?.toString().toLowerCase() ?? '')
+            .contains(query.toLowerCase());
+
+        // Search by phone number (partial match)
+        final phoneMatch = (patient['phone']?.toString().toLowerCase() ?? '')
+            .contains(query.toLowerCase());
+
+        // Search by ID (exact match)
+        final idMatch = (patient['id']?.toString().toLowerCase() ?? '')
+            .contains(query.toLowerCase());
+
+        return nameMatch || phidMatch || phoneMatch || idMatch;
+      }).toList();
+
       setState(() {
-        _showSearchResults = false;
-        filteredPatients = [];
+        filteredPatients = result;
+        _showSearchResults = true;
       });
-      return;
-    }
-
-    final result = patients
-        .where((patient) => (patient['name']?.toLowerCase() ?? '')
-        .contains(query.toLowerCase()))
-        .toList();
-
-    setState(() {
-      filteredPatients = result;
-      _showSearchResults = true;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +207,7 @@ class _SearchbarState extends State<Searchbar> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                  /*  IconButton(
+                    /*  IconButton(
                       icon: Icon(
                         isSidebarCollapsed
                             ? Icons.keyboard_arrow_right
@@ -203,7 +225,7 @@ class _SearchbarState extends State<Searchbar> {
                             child: CustomTextField(
                               controller: _searchController,
                               onChanged: _handleSearch,
-                              hintText: 'Search',
+                              hintText: 'Search by name, ID, PHID or phone',
                               prefixIcon: Icons.search_rounded,
                             ),
                           ),
@@ -232,7 +254,6 @@ class _SearchbarState extends State<Searchbar> {
                   ],
                 ),
               ),
-
           ],
         ),
         if (_showSearchResults)
@@ -258,53 +279,75 @@ class _SearchbarState extends State<Searchbar> {
                   ),
                   constraints: const BoxConstraints(maxHeight: 300),
                   child: filteredPatients.isEmpty
-                      ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text("No results found"),
-                  )
-                      : ListView.builder(
+                      ? Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.search_off,
+                                  size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text(
+                                "No patients found",
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                "Try searching by name, ID, PHID or phone number",
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
                     shrinkWrap: true,
                     itemCount: filteredPatients.length,
+                    separatorBuilder: (context, index) => Divider(
+                      color: Colors.grey.shade300,
+                      thickness: 1,
+                      height: 1,
+                    ),
                     itemBuilder: (context, index) {
                       final patient = filteredPatients[index];
                       return ListTile(
                         title: Text(
-                          patient['name'] ?? '',
+                          patient['name'] ?? 'No Name',
                           style: TextStyle(
-                            fontSize:
-                            ResponsiveUtils.fontSize(context, 14),
+                            fontSize: ResponsiveUtils.fontSize(context, 16),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        subtitle: Text(
-                          'PHID: ${patient['phid']}',
-                          style: TextStyle(
-                            fontSize:
-                            ResponsiveUtils.fontSize(context, 14),
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('PHID: ${patient['phid'] ?? 'N/A'}'),
+                            Text('Phone: ${patient['phone'] ?? 'N/A'}'),
+                            if (patient['lastVisit'] != null)
+                              Text('Last Visit: ${patient['lastVisit']}'),
+                          ],
                         ),
-                        trailing: Text(
-                          patient['phone'] ?? '',
-                          style: TextStyle(
-                            fontSize:
-                            ResponsiveUtils.fontSize(context, 14),
+                        trailing: Visibility(
+                          visible: patient['lastVisit'] != null,
+                          child: Container(
+                            child: Text('Last Visit: ${patient['lastVisit']}'),
                           ),
                         ),
                         onTap: () {
                           GlobalPatientData.firstName = patient['name'].split(' ')[0];
-                          GlobalPatientData.lastName = patient['name'].split(' ').length > 1
+                          GlobalPatientData.lastName =
+                          patient['name'].split(' ').length > 1
                               ? patient['name'].split(' ')[1]
                               : '';
                           GlobalPatientData.phone = patient['phone'];
-                          GlobalPatientData.patientExist =patient['patientExist'];
+                          GlobalPatientData.patientExist = patient['patientExist'];
 
-
-                          Global.status ="2";
-                          Global.phid =patient['id'].toString();
-                          GlobalPatientData.patientId =patient['phid'] ;
+                          Global.status = "2";
+                          Global.phid = patient['id'].toString();
+                          GlobalPatientData.patientId = patient['phid'];
 
                           print("patient['patient_id']");
                           print(GlobalPatientData.patientId);
-                          print( Global.phid);
+                          print(Global.phid);
 
                           Navigator.pushReplacementNamed(context, '/patientData');
                           _searchController.clear();
@@ -312,7 +355,7 @@ class _SearchbarState extends State<Searchbar> {
                         },
                       );
                     },
-                  ),
+                  )
                 ),
               ),
             ),

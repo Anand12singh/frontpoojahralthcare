@@ -30,6 +30,7 @@ class _SidebarState extends State<Sidebar> {
     super.initState();
    // _initializeData();
   //  _loadSelectedIndex();
+
     _loadPermissionsAndIndex();
   }
   Future<void> _initializeData() async {
@@ -39,6 +40,7 @@ class _SidebarState extends State<Sidebar> {
 
   Future<void> _loadPermissionsAndIndex() async {
     await PermissionService().initialize();
+    _initializeData();
     final index = await AppState.getSelectedPageIndex();
     if (mounted) {
       setState(() {

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:poojaheakthcare/constants/base_url.dart';
 
 enum HTTPMethod { GET, POST, PUT, DELETE }
 
@@ -15,7 +16,8 @@ class ConnectionDetector {
 }
 
 class ConfigManager {
-  static String baseURL = 'https://uatpoojahealthcare.ortdemo.com/api';
+ // static String baseURL = 'https://uatpoojahealthcare.ortdemo.com/api';
+  static String baseURL = '$localurl';
   static String apiVersion = '';
   static Duration timeout = const Duration(seconds: 30);
 
@@ -50,6 +52,8 @@ enum API {
   updateRoleById,
   activeUserById,
   summaryadd,
+  followUpDate,
+  getlocationbypincode,
   savepermissions,
   globalpermission,
   permissionslist,
@@ -87,6 +91,8 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/fogot_password';
         case API.updateUserById:
         return '${ConfigManager.getBaseURL()}/updateUserById';
+      case API.followUpDate:
+        return '${ConfigManager.getBaseURL()}/follow_up_date';
         case API.createRole:
         return '${ConfigManager.getBaseURL()}/createRole';
         case API.deleteRoleById:
@@ -107,6 +113,8 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/get_user_permissons';
         case API.activeUserById:
         return '${ConfigManager.getBaseURL()}/activeUserById';
+        case API.getlocationbypincode:
+        return '${ConfigManager.getBaseURL()}/get_location_by_pincode';
         case API.permissionslist:
         return '${ConfigManager.getBaseURL()}/permissions_list';
         case API.savepermissions:
@@ -134,6 +142,8 @@ class APIManager {
       case API.fogotpassword:
       case API.getuserpermissons:
       case API.savepermissions:
+      case API.getlocationbypincode:
+      case API.followUpDate:
 
       case API.createRole:
       case API.createUser:

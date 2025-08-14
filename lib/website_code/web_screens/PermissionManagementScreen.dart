@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/ResponsiveUtils.dart';
 import '../../models/UserPermission.dart';
+import '../../provider/PermissionService.dart';
 import '../../provider/Permissoin_management_provider.dart';
 import '../../provider/Role_management_provider.dart';
 import '../../utils/colors.dart';
@@ -123,6 +124,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                         onChanged: (val) {
                                           setState(() {
                                             permissionProvider.resetUserSelection();
+                                            permissionProvider.resetPermissionStates();
                                             roleProvider.selectedRoleName = val;
                                             roleProvider.selectedRoleId = roleProvider.roles
                                                 .firstWhere((role) => role.roleName == val)
@@ -171,10 +173,12 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                                         ],
                                         onChanged: permissionProvider.roleUserNames.isNotEmpty
                                             ? (val) {
-                                          permissionProvider.resetPermissionStates();
+
                                           setState(() {
 
-
+                                            permissionProvider.resetPermissionStates();
+                                           // permissionProvider.permissions={};
+                                          //  permissionProvider.permissionStates={};
                                             permissionProvider.selectedUser = val;
                                             final selectedUser = permissionProvider.roleUsers
                                                 .firstWhere((user) => user.name == val);
@@ -227,32 +231,35 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                             ),
                           ),
                         ),
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Animatedbutton(
-                                onPressed: () {
-                                  if (permissionProvider.selectedRoleID == null) {
-                                    showTopRightToast(context, 'Please select Role', backgroundColor: Colors.red);
-                                    return;
-                                  }  if (permissionProvider.selectedUserID == null) {
-                                    showTopRightToast(context, 'Please select User', backgroundColor: Colors.red);
-                                    return;
-                                  }
+                        Visibility(
+                          visible: PermissionService().canEditPermissions,
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Animatedbutton(
+                                  onPressed: () {
+                                    if (permissionProvider.selectedRoleID == null) {
+                                      showTopRightToast(context, 'Please select Role', backgroundColor: Colors.red);
+                                      return;
+                                    }  if (permissionProvider.selectedUserID == null) {
+                                      showTopRightToast(context, 'Please select User', backgroundColor: Colors.red);
+                                      return;
+                                    }
 
-                                  permissionProvider.savepermissions(
-                                      context: context,
-                                      roleID: permissionProvider.selectedRoleID!,
-                                      userID: permissionProvider.selectedUserID!
-                                  );
-                                },
-                                backgroundColor: AppColors.secondary,
-                                shadowColor: AppColors.secondary,
-                                title: 'SUBMIT',
-                              ),
-                            ],
+                                    permissionProvider.savepermissions(
+                                        context: context,
+                                        roleID: permissionProvider.selectedRoleID!,
+                                        userID: permissionProvider.selectedUserID!
+                                    );
+                                  },
+                                  backgroundColor: AppColors.secondary,
+                                  shadowColor: AppColors.secondary,
+                                  title: 'SUBMIT',
+                                ),
+                              ],
+                            ),
                           ),
                         )
                       ],
@@ -364,25 +371,20 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: permissions.map((permission) {
                         return Row(
-                          spacing: 1,
+
                           children: [
                             CustomCheckbox(
                               label: '',
-                              initialValue: () {
-                                final hasPerm = permissionProvider.hasPermission(
-                                    title,
-                                    moduleName,
-                                    permission['access_name']
-                                );
-                                print('🔘 Checkbox initialization - $title → $moduleName → ${permission['access_name']}: $hasPerm');
-                                return hasPerm;
-                              }(),
+
+                              initialValue: permissionProvider.permissionStates[title]?[moduleName]?[permission['access_name']] ?? false,
+
                               onChanged: (value) {
                                 print('🔄 Checkbox changed - $title → $moduleName → ${permission['access_name']}: $value');
                                 permissionProvider.updatePermissionState(
                                     title, moduleName, permission['access_name'], value);
                               },
                             ),
+                            SizedBox(width: 2,),
                             Text(
                               _toCamelCase(      permission['access_name'] ?? ''),
 
@@ -393,7 +395,7 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
 
                               ),
                             ),
-
+                            SizedBox(width: 10,),
                           ],
                         );
                       }).toList(),

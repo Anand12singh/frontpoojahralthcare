@@ -67,7 +67,8 @@ class PermissoinManagementProvider with ChangeNotifier {
   Future<bool> getrolebyid({
     required BuildContext context,
     required int roleID,
-  }) async {
+  }) async
+  {
     isLoading = true;
     notifyListeners();
 
@@ -116,7 +117,7 @@ class PermissoinManagementProvider with ChangeNotifier {
   }) async {
     isLoading = true;
     notifyListeners();
-
+    resetPermissionStates();
     String? token = await AuthService.getToken();
     if (token == null) return false;
 
@@ -173,6 +174,7 @@ class PermissoinManagementProvider with ChangeNotifier {
   }
 
   void resetPermissionStates() {
+
     permissionStates.forEach((groupName, modules) {
       modules.forEach((moduleName, permissions) {
         permissions.forEach((accessName, _) {
@@ -180,6 +182,7 @@ class PermissoinManagementProvider with ChangeNotifier {
         });
       });
     });
+
     _userPermissions.clear();
     notifyListeners();
   }
@@ -212,6 +215,7 @@ class PermissoinManagementProvider with ChangeNotifier {
           final data = json.decode(responseBody);
           if (data['status'] == true) {
             success = true;
+
           }
           showTopRightToast(context, data['message'], backgroundColor: Colors.green);
           notifyListeners();

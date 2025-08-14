@@ -569,16 +569,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 title: Text(patient['name'] ?? '',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),)),
                                 subtitle: Text('PHID: ${patient['phid']}',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),)),
                                 trailing: Text(patient['phone'] ?? '',style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14),),),
-                                onTap: () {
+                                onTap: () async {
                                   GlobalPatientData.firstName = patient['name'].split(' ')[0];
                                   GlobalPatientData.lastName =
                                   patient['name'].split(' ').length > 1 ? patient['name'].split(' ')[1] : '';
                                   GlobalPatientData.phone = patient['phone'];
                                   GlobalPatientData.patientExist = patient['patientExist'];
                                   Global.status = "2";
-                                  Global.phid = patient['id'].toString();
+                                  GlobalPatientData.phid = patient['id'].toString();
                                   GlobalPatientData.patientId = patient['phid'];
-
+                                  await GlobalPatientData.saveToPrefs();
+                                  await GlobalPatientData.loadFromPrefs();
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:poojaheakthcare/screens/patient_info_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:toast/toast.dart';
 
 import '../../constants/ResponsiveUtils.dart';
@@ -20,6 +21,7 @@ import '../../widgets/TimePickerInput.dart';
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
 import 'package:path/path.dart' as path;
+import 'PatientDetailsSidebar.dart';
 import 'Patient_Registration.dart';
 
 class DischargeTabContent extends StatefulWidget {
@@ -92,6 +94,18 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
     PermissionService().initialize();
   }
 
+  void _initializeData() {
+    _fetchDischargeData();
+  }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final patientProvider = Provider.of<PatientProvider>(context, listen: true);
+
+    if (patientProvider.needsRefresh) {
+      patientProvider.clearRefresh();
+      _initializeData();
+    }
+  }
   Future<void> _fetchDischargeData() async {
     setState(() {
       _isLoading = true;
@@ -351,6 +365,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       final responseData = json.decode(responseBody);
 
       if (response.statusCode == 200) {
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        patientProvider.markForRefresh();
         showTopRightToast(
             context,
             responseData['message'] ?? 'Discharge record saved successfully',
@@ -402,91 +418,138 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                 children: [
                    Text('1. Information', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      FormInput(
-                          controller: _consultantController,
-                          label: 'Consultant',
-                          hintlabel: 'Enter consultant name'
-                      ),
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
 
-                      FormInput(
-                          controller: _qualificationsController,
-                          label: 'Qualifications',
-                          hintlabel: 'Enter qualifications'
-                      ),
-                      FormInput(
-                          controller: _indoorRegNoController,
-                          label: 'Indoor Reg No',
-                          hintlabel: 'Enter indoor registration number'
-                      ),
-                      DatePickerInput(
-                        label: 'Admission Date',
-                        hintlabel: 'Admission Date',
-                        initialDate: _admissionDate,
-                        onDateSelected: (date) {
-                          setState(() => _admissionDate = date);
-                        },
-                      ),
-                      TimePickerInput(
-                        label: 'Admission Time',
-                        hintlabel: 'Admission Time',
-                        initialTime: _admissionDate != null
-                            ? TimeOfDay.fromDateTime(_admissionDate!)
-                            : null,
-                        onTimeSelected: (time) {
-                          setState(() {
-                            _admissionDate = DateTime(
-                              (_admissionDate ?? DateTime.now()).year,
-                              (_admissionDate ?? DateTime.now()).month,
-                              (_admissionDate ?? DateTime.now()).day,
-                              time.hour,
-                              time.minute,
-                            );
-                          });
-                        },
-                      ),
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
 
-                      DatePickerInput(
-                        label: 'Discharge Date',
-                        hintlabel: 'Discharge Date',
-                        initialDate: _dischargeDate,
-                        onDateSelected: (date) {
-                          setState(() => _dischargeDate = date);
-                        },
-                      ),
-                      TimePickerInput(
-                        hintlabel:'Discharge Time' ,
-                        label: 'Discharge Time',
-                        initialTime: _dischargeDate != null
-                            ? TimeOfDay.fromDateTime(_dischargeDate!)
-                            : null,
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          FormInput(
+                              controller: _consultantController,
+                              label: 'Consultant',
+                              hintlabel: 'Enter consultant name'
+                          ),
 
-                        onTimeSelected: (time) {
-                          setState(() {
-                            _dischargeDate = DateTime(
-                              (_dischargeDate ?? DateTime.now()).year,
-                              (_dischargeDate ?? DateTime.now()).month,
-                              (_dischargeDate ?? DateTime.now()).day,
-                              time.hour,
-                              time.minute,
-                            );
-                          });
+                          FormInput(
+                              controller: _qualificationsController,
+                              label: 'Qualifications',
+                              hintlabel: 'Enter qualifications'
+                          ),
+                          FormInput(
+                              controller: _indoorRegNoController,
+                              label: 'Indoor Reg No',
+                              hintlabel: 'Enter indoor registration number'
+                          ),
+                          DatePickerInput(
+                            label: 'Admission Date',
+                            hintlabel: 'Admission Date',
+                            initialDate: _admissionDate,
+                            onDateSelected: (date) {
+                              setState(() => _admissionDate = date);
+                            },
+                          ),
+                          TimePickerInput(
+                            label: 'Admission Time',
+                            hintlabel: 'Admission Time',
+                            initialTime: _admissionDate != null
+                                ? TimeOfDay.fromDateTime(_admissionDate!)
+                                : null,
+                            onTimeSelected: (time) {
+                              setState(() {
+                                _admissionDate = DateTime(
+                                  (_admissionDate ?? DateTime.now()).year,
+                                  (_admissionDate ?? DateTime.now()).month,
+                                  (_admissionDate ?? DateTime.now()).day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                              });
+                            },
+                          ),
 
-                        },
-                      ),
-                    ],
+                          DatePickerInput(
+                            label: 'Discharge Date',
+                            hintlabel: 'Discharge Date',
+                            initialDate: _dischargeDate,
+                            onDateSelected: (date) {
+                              setState(() => _dischargeDate = date);
+                            },
+                          ),
+                          TimePickerInput(
+                            hintlabel:'Discharge Time' ,
+                            label: 'Discharge Time',
+                            initialTime: _dischargeDate != null
+                                ? TimeOfDay.fromDateTime(_dischargeDate!)
+                                : null,
+
+                            onTimeSelected: (time) {
+                              setState(() {
+                                _dischargeDate = DateTime(
+                                  (_dischargeDate ?? DateTime.now()).year,
+                                  (_dischargeDate ?? DateTime.now()).month,
+                                  (_dischargeDate ?? DateTime.now()).day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                              });
+
+                            },
+                          ),
+                          FormInput(
+                              controller: _operationTypeController,
+                              label: 'Name Of Surgery',
+                              hintlabel: 'Enter name of Surgery'
+                          ),
+                          FormInput(
+                            controller: _drugAllergyController,
+                            label: 'Any drug allergy reported/Noted',
+                            hintlabel: 'Enter drug allergy details',
+                            useCamelCase: false,
+                          ),
+                          FormInput(
+                            controller: _diagnosisController,
+                            label: 'Diagnosis',
+                            hintlabel: 'Enter diagnosis details',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                            controller: _chiefComplaintsController,
+                            label: 'Chief complaints',
+                            hintlabel: 'Enter chief complaints',
+                            maxlength: 4,
+                          ),
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+
+                      );
+                    }
                   ),
-                  const SizedBox(height: 10),
+           /*       const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
                         child: FormInput(
                             controller: _operationTypeController,
-                            label: 'Surgery Type',
-                            hintlabel: 'Enter surgery type'
+                            label: 'Name Of Surgery',
+                            hintlabel: 'Enter name of Surgery'
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -499,8 +562,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
+                  ),*/
+             /*     const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -521,7 +584,7 @@ maxlength: 4,
                         ),
                       ),
                     ],
-                  ),
+                  ),*/
                 ],
               ),
             ),
@@ -542,76 +605,101 @@ maxlength: 4,
                 children: [
                    Text('2. Past History', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  isMobile ?
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 14,
-                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    // crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.spaceBetween,
+                //  isMobile ?
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
 
-                    children: [
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 4; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 4; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
 
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 14,
+                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        // crossAxisAlignment: WrapCrossAlignment.center,
+                        alignment: WrapAlignment.spaceBetween,
+
                         children: [
-                          CustomCheckbox(
-                            label: 'H/O DM',
-                            initialValue: _hasDM,
-                            onChanged: (value) => setState(() => _hasDM = value),
+
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(
+                                label: 'H/O DM',
+                                initialValue: _hasDM,
+                                onChanged: (value) => setState(() => _hasDM = value),
+                              ),
+                              const SizedBox(height: 8),
+                              if(_hasDM)
+                                FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          if(_hasDM)
-                            FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomCheckbox(label: 'Hypertension'
-                            ,initialValue: _hasHypertension
-                            ,onChanged: (value) {
-                              setState(() {
-                                _hasHypertension=value;
-                              });
-                            },
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(label: 'Hypertension'
+                                ,initialValue: _hasHypertension
+                                ,onChanged: (value) {
+                                  setState(() {
+                                    _hasHypertension=value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              if(_hasHypertension)
+                                FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          if(_hasHypertension)
-                            FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
-                            setState(() {
-                              _hasIHD=value;
-                            });
-                          },),
-                          const SizedBox(height: 8),
-                          if(_hasIHD)
-                            FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                            setState(() {
-                              print("_hasCOPD");
-                              print(_hasCOPD);
-                              _hasCOPD=value;
-                            });
-                          },),
-                          const SizedBox(height: 8),
-                          if(_hasCOPD)
-                            FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
-                        ],
-                      ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                                setState(() {
+                                  _hasIHD=value;
+                                });
+                              },),
+                              const SizedBox(height: 8),
+                              if(_hasIHD)
+                                FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                                setState(() {
+                                  print("_hasCOPD");
+                                  print(_hasCOPD);
+                                  _hasCOPD=value;
+                                });
+                              },),
+                              const SizedBox(height: 8),
+                              if(_hasCOPD)
+                                FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
+                            ],
+                          ),
 
-                    ],
-                  ) :Row(
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+                      );
+                    }
+                  ) /*:
+
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
@@ -713,63 +801,86 @@ maxlength: 4,
                         ),
                       ),
                     ],
-                  )
+                  )*/
               ,
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 12,
-                    children: [
-                      FormInput(
-                          controller: _surgicalHistoryController,
-                          label: 'Surgical History',
-                          hintlabel: 'Enter surgical history',
-maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _personalHistoryController,
-                          label: 'Personal History',
-                          hintlabel: 'Enter personal history',
-                        maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _otherIllnessController,
-                          label: 'Other Illness',
-                          hintlabel: 'Enter other illness details',
-                        maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _presentMedicationController,
-                          label: 'History of Present Medication',
-                          hintlabel: 'Enter current medication details',
-                        maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _familyHistoryController,
-                          label: 'Family History',
-                          hintlabel: 'Enter family history',
-                        maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _onExaminationController,
-                          label: 'On Examination',
-                          hintlabel: 'Enter examination findings',
-                        maxlength: 4,
-                      ),
-                      FormInput(
-                          controller: _treatmentGivenController,
-                          label: 'Treatment given',
-                          hintlabel: 'Enter treatment details',
-                        maxlength: 4,
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
 
-                      ),
-                      FormInput(
-                          controller: _hospitalizationCourseController,
-                          label: 'Course during hospitalization',
-                          hintlabel: 'Enter course details',
-                        maxlength: 4,
-                      ),
-                    ],
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 12,
+                        children: [
+                          FormInput(
+                              controller: _surgicalHistoryController,
+                              label: 'Surgical History',
+                              hintlabel: 'Enter surgical history',
+                      maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _personalHistoryController,
+                              label: 'Personal History',
+                              hintlabel: 'Enter personal history',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _otherIllnessController,
+                              label: 'Other Illness',
+                              hintlabel: 'Enter other illness details',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _presentMedicationController,
+                              label: 'History of Present Medication',
+                              hintlabel: 'Enter current medication details',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _familyHistoryController,
+                              label: 'Family History',
+                              hintlabel: 'Enter family history',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _onExaminationController,
+                              label: 'On Examination',
+                              hintlabel: 'Enter examination findings',
+                            maxlength: 4,
+                          ),
+                          FormInput(
+                              controller: _treatmentGivenController,
+                              label: 'Treatment given',
+                              hintlabel: 'Enter treatment details',
+                            maxlength: 4,
+
+                          ),
+                          FormInput(
+                              controller: _hospitalizationCourseController,
+                              label: 'Course during hospitalization',
+                              hintlabel: 'Enter course details',
+                            maxlength: 4,
+                          ),
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+                      );
+                    }
                   ),
                 ],
               ),
@@ -802,15 +913,46 @@ maxlength: 4,
                     initialFiles: _uploadedFiles['discharge_images'],
                   ),
                   const SizedBox(height: 16),
-                  // Follow Up Date
-                  DatePickerInput(
-                    label: 'Follow Up Date',
-                    hintlabel: 'Follow Up Date',
-                    initialDate: _followUpDate,
-                    onDateSelected: (date) {
-                      setState(() => _followUpDate = date);
-                    },
+
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            DatePickerInput(
+                              label: 'Follow Up Date',
+                              hintlabel: 'Follow Up Date',
+                              initialDate: _followUpDate,
+                              onDateSelected: (date) {
+                                setState(() => _followUpDate = date);
+                              },
+                            ),
+Container(),Container()
+                          ].map((child) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: child,
+                            );
+                          }).toList(),
+                        );
+                      }
                   ),
+                  // Follow Up Date
 
 
                 ],

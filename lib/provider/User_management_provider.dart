@@ -53,10 +53,11 @@ class UserManagementProvider with ChangeNotifier{
       onSuccess: (responseBody) {
         final data = json.decode(responseBody);
 
-        if (data['status'] == true && data['data'].isNotEmpty) {
+        if (data['status'] == true ) {
           final List<dynamic> userList = data['data'];
           _users = userList.map((userJson) => UserModel.fromJson(userJson)).toList();
         } else {
+          _users = [];
           showTopRightToast(context, data['message'] ?? 'Users not found',backgroundColor: Colors.red);
 
         }
@@ -192,7 +193,7 @@ class UserManagementProvider with ChangeNotifier{
           "role": roleId,
           "password": passwordController.text.isNotEmpty
               ? passwordController.text
-              : null,
+              : "",
         },
         onSuccess: (responseBody) {
           final data = json.decode(responseBody);
@@ -205,6 +206,7 @@ class UserManagementProvider with ChangeNotifier{
             showTopRightToast(context, data['message'] ?? 'Failed to update user',backgroundColor: Colors.red);
 
           }
+          clearControllers();
         },
         onFailure: (error) {
           showTopRightToast(context,error,backgroundColor: Colors.red);
@@ -305,6 +307,7 @@ class UserManagementProvider with ChangeNotifier{
                 data['message'] ?? 'User added successfully',
                 backgroundColor: Colors.green,
               );
+              clearControllers();
               Navigator.of(context).pop();
             } else {
               showTopRightToast(context, data['message'] ?? 'Failed to add user',backgroundColor: Colors.red);

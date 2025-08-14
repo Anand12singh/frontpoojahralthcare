@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:poojaheakthcare/services/auth_service.dart';
 import 'package:poojaheakthcare/widgets/AnimatedButton.dart';
+import 'package:provider/provider.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
@@ -25,6 +26,7 @@ import 'package:http/http.dart' as http;
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
 import 'Home_Screen.dart';
+import 'PatientDetailsSidebar.dart';
 class OnboardingForm extends StatefulWidget {
   const OnboardingForm({super.key});
 
@@ -217,9 +219,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
   bool _hasIcterus = false;
   bool _hasOedema = false;
   bool _hasLymphadenopathy = false;
-  DateTime? _followUpDate ; // Initialize with default value
+  DateTime? _followUpDate= DateTime.now(); // Initialize with default value
   DateTime _ConsulationDate = DateTime.now(); // Initialize with default value
-  DateTime? _CTScanDate; // Initialize with default value
+  DateTime? _CTScanDate= DateTime.now(); // Initialize with default value
 
 
   // Other state variables
@@ -231,15 +233,18 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Map<String, dynamic>? _visitData;
   var _documentData;
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return ''; // or return null if your API accepts empty values
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   }
-  String _gender = 'Male';
+  String? _gender; // Make it nullable
+
   DateTime _selectedDate = DateTime.now();
 
   String? _selectedLocationId = '2';
   String _selectedLocationName = '';
 
+  bool _isFetchingLocation = false;
 // Add these to your existing state variables
   String _tempStatus = 'Afebrile'; // 'Febrile' or 'Afebrile'
   String _pallorStatus = 'Nil';    // '+' or 'Nil'
@@ -249,10 +254,11 @@ class _OnboardingFormState extends State<OnboardingForm> {
   String _ensureString(String? value) => value?.trim() ?? '';
   String _ensureNumber(String? value) => value?.trim().isEmpty ?? true ? '0' : value!.trim();
   String _ensureStatus(bool value) => value ? '1' : '0';
-  String _ensureGender(String gender) {
-    return gender == 'Male' ? '1' : gender == 'Female' ? '2' : '3';
+  String _ensureGender(String? gender) {
+    if (gender == 'Male') return '1';
+    if (gender == 'Female') return '2';
+    return ''; // or some default value if required
   }
-
   late Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
     'blood_reports': [],
     'xray_report': [],
@@ -291,6 +297,18 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
 
     _fetchLocations();
+  }
+  void _initializeData() {
+    initState();
+  }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final patientProvider = Provider.of<PatientProvider>(context, listen: true);
+
+    if (patientProvider.needsRefresh) {
+      patientProvider.clearRefresh();
+      _initializeData();
+    }
   }
   Future<void> _submit() async {
     final params = {
@@ -400,7 +418,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     setState(() => _isLoading = true);
 
     try {
-      final requestBody = {'id': Global.phid};
+      final requestBody = {'id': GlobalPatientData.phid};
 
       await APIManager().apiRequest(
         context,
@@ -543,14 +561,25 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _OccupationController.text = _patientData?['occupation']?.toString() ?? '';
     _cityController.text = _patientData?['city']?.toString() ?? '';
     _stateController.text = _patientData?['state']?.toString() ?? '';
-    _pincodeController.text = _patientData?['pincode']?.toString() ?? '';
+// Initialize pincode controller with proper null/zero handling
+    _pincodeController.text = ((_patientData?['pincode'] == null || _patientData?['pincode'] == 0)
+        ? ''
+        : _patientData?['pincode'].toString())!;
     _countryController.text = _patientData?['country']?.toString() ?? '';
 
 
 
     _descriptionController.text =
         _patientData?['description']?.toString() ?? '';
-    _gender = _patientData?['gender'] == 1 ? 'Male' : 'Female';
+
+
+    final genderValue = _patientData?['gender'];
+    _gender = genderValue == 1
+        ? 'Male'
+        : genderValue == 2
+        ? 'Female'
+        : null;
+
 
     _selectedDate = DateTime.parse(
         _patientData?['date']?.toString() ?? DateTime.now().toString());
@@ -896,7 +925,54 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
     super.dispose();
   }
+
+
+  Future<void> _fetchLocationByPincode() async {
+    final pincode = _pincodeController.text.trim();
+    if (pincode.isEmpty || pincode.length != 6) {
+      return; // Only proceed if pincode is valid
+    }
+
+    setState(() {
+      _isFetchingLocation = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('$localurl/get_location_by_pincode'),
+        body: {'pincode': pincode},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == true) {
+          setState(() {
+            _cityController.text = data['city'] ?? '';
+            _stateController.text = data['state'] ?? '';
+            _countryController.text = data['country'] ?? '';
+          });
+        }
+        else
+          {
+            setState(() {
+              print(data['message']);
+              showTopRightToast(context, data['message']??'Invalid Pincode',backgroundColor: Colors.red);
+            });
+
+          }
+      }
+    } catch (e) {
+      // Handle error
+      debugPrint('Error fetching location: $e');
+    } finally {
+      setState(() {
+        _isFetchingLocation = false;
+      });
+    }
+  }
+
   Future<void> _submitForm() async {
+
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
     bool reportsValid = _reportsFormKey.currentState?.validate() ?? false;
@@ -907,10 +983,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
     // }
 
     if (!personalValid || !medicalValid || !reportsValid) {
-      ShowDialogs.showSnackBar(context, 'Please fill all required fields');
+
+      showTopRightToast(context, 'Please fill all required fields',backgroundColor: Colors.red);
       return;
     }
 
+    if (!personalValid || !medicalValid || !reportsValid || _gender == null) {
+      showTopRightToast(context, 'Please Select Gender.',backgroundColor: Colors.red);
+      return;
+    }
     try {
       showDialog(
         context: context,
@@ -1006,8 +1087,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'description': _ensureString(_descriptionController.text),
         'other_location': _ensureString(_otherLocationController.text),
         //add
-        'follow_up_date': _formatDate(_followUpDate!),
-        'date_of_ct_scan': _formatDate(_CTScanDate!),
+        'follow_up_date': _formatDate(_followUpDate),
+        'date_of_ct_scan': _formatDate(_CTScanDate),
 
         'heamoglobin': _ensureString(_hemoglobinController.text),
         'total_leucocyte_count':
@@ -1064,13 +1145,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
         'msic_finding': _ensureString(_miscFindingController.text),
       };
-      fields['patientId'] = Global.phid.toString();
+      fields['patientId'] = GlobalPatientData.phid.toString();
      /* if (Global.status == '2') {
         fields['patientId'] = Global.phid.toString();
       }*/
-
-      request.fields.addAll(fields);
       log('Form Fields: ${jsonEncode(fields)}');
+      request.fields.addAll(fields);
+
       List<String> existingFileIds = [];
 // Inside your _submitForm function
       for (var docType in _uploadedFiles.keys) {
@@ -1116,6 +1197,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(responseBody);
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        patientProvider.markForRefresh();
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -1485,121 +1568,166 @@ class _OnboardingFormState extends State<OnboardingForm> {
                 style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 20), fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children:  [
-                  FormInput(label: 'First Name',hintlabel: "Enter First Name",  controller: _firstNameController,),
-                  FormInput(label: 'Last Name',hintlabel: "Enter Last Name",  controller: _lastNameController,),
-                  FormInput(label: 'Phone Number',hintlabel: "Enter Phone Number", controller: _phoneController,
-         maxcount: 10,
-                    inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-                  ],),
-                  FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,    fillColor: Colors.grey.shade100,
-                    readOnly: true,),
+              LayoutBuilder(
 
-                  FormInput(label: 'Occupation',hintlabel: "Enter Occupation",  controller: _OccupationController,),
-                  FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
-                  FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,),
-                  FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,),
-                  FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
-          maxcount: 6,
-                      inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-                ],),
-                  FormInput(label: 'Country',hintlabel: "Enter Country",controller: _countryController, inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
-                  ]),
-                  FormInput(label: 'Age',hintlabel: "Enter Country",maxcount: 3,controller: _ageController, inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-                  ],),
-                  DropdownInput<String>(
-                    label: 'Gender',
-                    items:  [
-                      DropdownMenuItem(value: 'Male', child: Text('Male',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
-                      DropdownMenuItem(value: 'Female', child: Text('Female',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
+                builder: (context,constraints) {
+                  double screenWidth = constraints.maxWidth;
+                  int itemsPerRow;
 
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _gender = value;
-                        });
-                      }
-                    },
-                    value: _gender,
-                  ),
-                  DatePickerInput(
-                    label: 'Consultation Date',
-                    hintlabel: 'dd-mm-yyyy',
-                    onDateSelected: (date) {
-                      setState(() {
-                        _ConsulationDate = date; // Update the selected date
-                      });
-                    },
-                    initialDate: _ConsulationDate, // Pass the initial date if needed
-                  ),
+                  if (screenWidth < 600) {
+                    itemsPerRow = 1; // mobile
+                  } else if (screenWidth < 1200) {
+                    itemsPerRow = 3; // tablet
+                  } else if (screenWidth < 1500) {
+                    itemsPerRow = 3; // small desktop
+                  } else {
+                    itemsPerRow = 4; // large desktop
+                  }
 
-                  FormInput(label: 'Referral by',hintlabel: "Enter Referral by",controller: _referralController,),
-                  DropdownInput<String>(
-                    label: 'Clinic Location',
-                    items: _locations.map((loc) {
-                      return DropdownMenuItem<String>(
-                        value: loc['id'].toString(),
-                        child: Text(loc['location'].toString(), style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),),
+                  double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                  return Wrap(
+                    spacing: 16,
+
+                    runSpacing: 16,
+                    children:  [
+                      FormInput(label: 'First Name *',hintlabel: "Enter First Name",  controller: _firstNameController,),
+                      FormInput(label: 'Last Name *',hintlabel: "Enter Last Name",  controller: _lastNameController,),
+                      FormInput(label: 'Phone Number *',hintlabel: "Enter Phone Number", controller: _phoneController,
+                           maxcount: 10,
+                        inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                      ],),
+                      FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,    fillColor: Colors.grey.shade100,
+                        readOnly: true,),
+
+                      FormInput(label: 'Occupation',hintlabel: "Enter Occupation",  controller: _OccupationController,),
+                      FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
+                      FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
+                        maxcount: 6,
+                        onChanged: (value) {
+                          if (value.length == 6) {
+                            _fetchLocationByPincode();
+                          } else if (value.length < 6) {
+                            // Clear location fields if pincode is incomplete
+                            setState(() {
+                              _cityController.clear();
+                              _stateController.clear();
+                              _countryController.clear();
+                            });
+                          }
+                        },
+
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                        ],),
+                      FormInput(label: 'City',hintlabel: "Enter City",controller: _cityController,readOnly: true,),
+                      FormInput(label: 'State',hintlabel: "Enter State",controller: _stateController,readOnly: true),
+
+                      FormInput(label: 'Country',hintlabel: "Enter Country",readOnly: true,controller: _countryController, inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
+                      ]),
+                      FormInput(label: 'Age',hintlabel: "Enter Age",maxcount: 3,controller: _ageController, inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
+                      ],),
+                      DropdownInput<String>(
+
+                        label: 'Gender *',
+                        hintText: 'Select Gender',
+
+                        hintStyle: TextStyle(color: AppColors.hinttext,  fontSize:    ResponsiveUtils.fontSize(context, 16)),
+                        items:  [
+                          DropdownMenuItem(value: 'Male', child: Text('Male',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
+                          DropdownMenuItem(value: 'Female', child: Text('Female',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
+                          DropdownMenuItem(value: 'Other', child: Text('Other',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),)),
+
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _gender = value;
+                            });
+                          }
+                        },
+                        value: _gender,
+                      ),
+                      DatePickerInput(
+                        label: 'Consultation Date',
+                        hintlabel: 'dd-mm-yyyy',
+                        onDateSelected: (date) {
+                          setState(() {
+                            _ConsulationDate = date; // Update the selected date
+                          });
+                        },
+                        initialDate: _ConsulationDate, // Pass the initial date if needed
+                      ),
+
+                      FormInput(label: 'Referral by',hintlabel: "Enter Referral by",controller: _referralController,),
+                      DropdownInput<String>(
+                        label: 'Clinic Location',
+                        items: _locations.map((loc) {
+                          return DropdownMenuItem<String>(
+                            value: loc['id'].toString(),
+                            child: Text(loc['location'].toString(), style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedLocationId = value;
+                            // Find the corresponding location name
+                            final selectedLoc = _locations.firstWhere(
+                                  (loc) => loc['id'].toString() == value,
+                              orElse: () => {'id': '2', 'location': 'Unknown'},
+                            );
+                            _selectedLocationName = selectedLoc['location'] ?? 'Unknown';
+                          });
+                        },
+                        value: _selectedLocationId,
+                      ),
+
+
+
+                      if(_selectedLocationName=="Others")
+                      FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
+
+                      FormInput(
+                        label: 'Height (cms)',
+                        hintlabel: "Enter Height (cms)",
+                        controller: _heightController,
+                        maxcount: 4,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                        ],
+                        onChanged: (value) => _calculateBMI(), // Add this line
+                      ),
+                      FormInput(
+                        label: 'Weight (kg)',
+                        hintlabel: "Enter Weight",
+                        maxcount: 4,
+                        controller: _weightController,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                        ],
+                        onChanged: (value) => _calculateBMI(), // Add this line
+                      ),
+                            FormInput(
+
+                              label: 'BMI (kg/m²)',
+                              hintlabel: "Enter BMI",
+                              controller: _bmiController,
+                              fillColor: Colors.grey.shade100,
+                              readOnly: true, // Add this property
+                              useCamelCase: false,
+                            ),
+
+                    ].map((child) {
+                      return SizedBox(
+                        width: itemWidth,
+                        child: child,
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedLocationId = value;
-                        // Find the corresponding location name
-                        final selectedLoc = _locations.firstWhere(
-                              (loc) => loc['id'].toString() == value,
-                          orElse: () => {'id': '2', 'location': 'Unknown'},
-                        );
-                        _selectedLocationName = selectedLoc['location'] ?? 'Unknown';
-                      });
-                    },
-                    value: _selectedLocationId,
-                  ),
 
-
-
-                  if(_selectedLocationName=="Others")
-                  FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
-
-                  FormInput(
-                    label: 'Height (cms)',
-                    hintlabel: "Enter Height (cms)",
-                    controller: _heightController,
-                    maxcount: 4,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                    ],
-                    onChanged: (value) => _calculateBMI(), // Add this line
-                  ),
-                  FormInput(
-                    label: 'Weight (kg)',
-                    hintlabel: "Enter Weight",
-                    maxcount: 4,
-                    controller: _weightController,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                    ],
-                    onChanged: (value) => _calculateBMI(), // Add this line
-                  ),
-          FormInput(
-
-            label: 'BMI (kg/m²)',
-            hintlabel: "Enter BMI",
-            controller: _bmiController,
-            fillColor: Colors.grey.shade100,
-            readOnly: true, // Add this property
-            useCamelCase: false,
-          ),
-
-                ],
+                  );
+                }
               ),
               const SizedBox(height: 20),
               _buildFormNavigationButtons(isFirstStep: true),
@@ -1614,600 +1742,773 @@ class _OnboardingFormState extends State<OnboardingForm> {
     final isMobile = ResponsiveUtils.isMobile(context);
     return Form(
       key: _medicalInfoFormKey,
-      child: Container(
-          width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.Offwhitebackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.Containerbackground),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-
-              // 1. Chief Complaints
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Text("1. Chief Complaints",
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
-
-                    const SizedBox(height: 8),
-                    Container(
-
-                        width: double.infinity,
-                        child: FormInput(label: 'Chief Complaints',maxlength: 5,controller: _complaintsController,)),
-
-                  ],
-                ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+      
+      
+            // 1. Chief Complaints
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
               ),
-
-              const SizedBox(height: 20),
-
-              // 2. History
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Text("2. History",
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
-                    const SizedBox(height: 8),
-                 isMobile ?Wrap(
-                   spacing: 16,
-                   runSpacing: 14,
-                   // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   // crossAxisAlignment: WrapCrossAlignment.center,
-                   alignment: WrapAlignment.spaceBetween,
-
-                   children: [
-
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         CustomCheckbox(
-                           label: 'H/O DM',
-                           initialValue: _hasDM,
-                           onChanged: (value) => setState(() => _hasDM = value),
-                         ),
-                         const SizedBox(height: 8),
-                         if(_hasDM)
-                           FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
-                       ],
-                     ),
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         CustomCheckbox(label: 'Hypertension'
-                           ,initialValue: _hasHypertension
-                           ,onChanged: (value) {
-                             setState(() {
-                               _hasHypertension=value;
-                             });
-                           },
-                         ),
-                         const SizedBox(height: 8),
-                         if(_hasHypertension)
-                           FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
-                       ],
-                     ),
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
-                           setState(() {
-                             _hasIHD=value;
-                           });
-                         },),
-                         const SizedBox(height: 8),
-                         if(_hasIHD)
-                           FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
-                       ],
-                     ),
-                     Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                           setState(() {
-                             print("_hasCOPD");
-                             print(_hasCOPD);
-                             _hasCOPD=value;
-                           });
-                         },),
-                         const SizedBox(height: 8),
-                         if(_hasCOPD)
-                           FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
-                       ],
-                     ),
-
-                   ],
-                 ): Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomCheckbox(
-                              label: 'H/O DM',
-                              initialValue: _hasDM,
-                              onChanged: (value) => setState(() => _hasDM = value),
-
-                            ),
-                            const SizedBox(height: 8),
-                            if (_hasDM)
-                              FormInput(
-                                label: 'Since when',
-                                maxlength: 1,
-                                controller: _SincewhenController,
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomCheckbox(
-                              label: 'Hypertension',
-                              initialValue: _hasHypertension,
-                              onChanged: (value) {
-                                setState(() {
-                                  _hasHypertension = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            if (_hasHypertension)
-                              FormInput(
-                                label: 'Since when',
-                                maxlength: 1,
-                                controller: _hypertensionSinceController,
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomCheckbox(
-                              label: 'IHD',
-                              initialValue: _hasIHD,
-                              onChanged: (value) {
-                                setState(() {
-                                  _hasIHD = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            if (_hasIHD)
-                              FormInput(
-                                label: 'IHD Description',
-                                maxlength: 1,
-                                controller: _ihdDescriptionController,
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomCheckbox(
-                              label: 'COPD',
-                              initialValue: _hasCOPD,
-                              onChanged: (value) {
-                                setState(() {
-                                  _hasCOPD = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            if (_hasCOPD)
-                              FormInput(
-                                label: 'COPD Description',
-                                maxlength: 1,
-                                controller: _copdDescriptionController,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text("1. Chief Complaints",
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
+      
                   const SizedBox(height: 8),
-
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children:  [
-                        FormInput(label: 'Any Other Illness',maxlength: 5,controller: _otherIllnessController,),
-                        FormInput(label: 'Past Surgical History',maxlength: 5,controller: _surgicalHistoryController,),
-                        FormInput(label: 'H/O Drug Allergy',maxlength: 5,controller: _drugAllergyController,useCamelCase: false,),
-                      ],
-                    ),
-
-                  ],
-
-                ),
+                  Container(
+      
+                      width: double.infinity,
+                      child: FormInput(label: 'Chief Complaints',maxlength: 5,controller: _complaintsController,)),
+      
+                ],
               ),
+            ),
+      
+            const SizedBox(height: 20),
+      
+            // 2. History
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text("2. History",
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
+                  const SizedBox(height: 8),
+              // isMobile ?
 
-              const SizedBox(height: 20),
+               LayoutBuilder(
+                   builder: (context,constraints) {
+                     double screenWidth = constraints.maxWidth;
+                     int itemsPerRow;
 
-              // 3. General Examination
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                     if (screenWidth < 600) {
+                       itemsPerRow = 1; // mobile
+                     } else if (screenWidth < 1200) {
+                       itemsPerRow = 4; // tablet
+                     } else if (screenWidth < 1500) {
+                       itemsPerRow = 4; // small desktop
+                     } else {
+                       itemsPerRow = 4; // large desktop
+                     }
 
-                  children: [
-                     Text("3. General Examination",
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
+                     double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                   return Wrap(
+                     spacing: 16,
+                     runSpacing: 14,
+                     // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     // crossAxisAlignment: WrapCrossAlignment.center,
+                     alignment: WrapAlignment.spaceBetween,
 
-                        Container(
-                          width: 275,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Temp",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary)),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  CustomRadioButton<String>(
-                                    value: 'Febrile',
-                                    groupValue: _tempStatus,
-                                    onChanged: (value) {
-                                      setState(() => _tempStatus = value!);
-                                    },
-                                    label: 'Febrile',
-                                  ),
-                                  SizedBox(width: 8),
-                                  CustomRadioButton<String>(
-                                    value: 'Afebrile',
-                                    groupValue: _tempStatus,
-                                    onChanged: (value) {
-                                      _tempController.text="0";
-                                      setState(() => _tempStatus = value!);
-                                    },
-                                    label: 'Afebrile',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                     children: [
 
-                        if(_tempStatus=='Febrile')
-                         FormInput(label: 'Temperature',controller: _tempController,maxcount: 4,   inputFormatters: [
-                           FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                         ],),
-                         FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5, useCamelCase: false,  inputFormatters: [
-                         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-      ],),
-
-
-                         Container(
-                           width:  isMobile ? ResponsiveUtils.scaleWidth(context, 200):ResponsiveUtils.scaleWidth(context, 308),
-                           child: Row(
-                             spacing: 8,
-                             children: [
-                               SizedBox(
-                                   width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
-                                   child: FormInput(label: 'BP (MM/Hg)',hintlabel: 'Systolic',controller: _bpSystolicController,useCamelCase: false,)),
-                               Text("/",style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 26)),),
-                               SizedBox(
-                                   width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 140),
-                                   child: FormInput(label: '',hintlabel: 'Diastolic',controller: _bpDiastolicController,)),
-                             ],
+                       Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           CustomCheckbox(
+                             label: 'H/O DM',
+                             initialValue: _hasDM,
+                             onChanged: (value) => setState(() => _hasDM = value),
                            ),
-                         ),
-                       // const DropdownInput(label: 'Pallor'),
-                        // Pallor
-                        Container(
-                          width: ResponsiveUtils.scaleWidth(context, 275),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Pallor",
-                                  style:  TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  CustomRadioButton<String>(
-                                    value: '+',
-                                    groupValue: _pallorStatus,
-                                    onChanged: (value) {
-                                      setState(() => _pallorStatus = value!);
-                                    },
-                                    label: '+',
-                                  ),
-                                  SizedBox(width: 4),
-                                  SizedBox(width: 4),
-                                  CustomRadioButton<String>(
-                                    value: 'Nil',
-                                    groupValue: _pallorStatus,
-                                    onChanged: (value) {
-                                      setState(() => _pallorStatus = value!);
-                                    },
-                                    label: 'Nil',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                           const SizedBox(height: 8),
+                           if(_hasDM)
+                             FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
+                         ],
+                       ),
+                       Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           CustomCheckbox(label: 'Hypertension'
+                             ,initialValue: _hasHypertension
+                             ,onChanged: (value) {
+                               setState(() {
+                                 _hasHypertension=value;
+                               });
+                             },
+                           ),
+                           const SizedBox(height: 8),
+                           if(_hasHypertension)
+                             FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
+                         ],
+                       ),
+                       Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
+                             setState(() {
+                               _hasIHD=value;
+                             });
+                           },),
+                           const SizedBox(height: 8),
+                           if(_hasIHD)
+                             FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
+                         ],
+                       ),
+                       Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
+                             setState(() {
+                               print("_hasCOPD");
+                               print(_hasCOPD);
+                               _hasCOPD=value;
+                             });
+                           },),
+                           const SizedBox(height: 8),
+                           if(_hasCOPD)
+                             FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
+                         ],
+                       ),
 
-          // Icterus
-                        Container(
-                          width: 275,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Icterus",
-                                  style:   TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  CustomRadioButton<String>(
-                                    value: '+',
-                                    groupValue: _icterusStatus,
-                                    onChanged: (value) {
-                                      setState(() => _icterusStatus = value!);
-                                    },
-                                    label: '+',
-                                  ),
-                                  SizedBox(width: 4),
-                                  SizedBox(width: 4),
-                                  CustomRadioButton<String>(
-                                    value: 'Nil',
-                                    groupValue: _icterusStatus,
-                                    onChanged: (value) {
-                                      setState(() => _icterusStatus = value!);
-                                    },
-                                    label: 'Nil',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-
-                        Container(
-                          width: 275,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Lymphadenopathy",
-                                  style:   TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
-
-                              SizedBox(height: 8,),
-
-                              Row(
-                                children: [
-                                  CustomRadioButton<String>(
-                                    value: '+',
-                                    groupValue: _lymphadenopathyStatus,
-                                    onChanged: (value) {
-                                      setState(() => _lymphadenopathyStatus = value!);
-                                    },
-                                    label: '+',
-                                  ),
-                                  SizedBox(width: 4,),
-
-                                  SizedBox(width: 4,),
-                                  CustomRadioButton<String>(
-                                    value: 'Nil',
-                                    groupValue: _lymphadenopathyStatus,
-                                    onChanged: (value) {
-                                      setState(() => _lymphadenopathyStatus = value!);
-                                    },
-                                    label: 'Nil',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                     Container(
-                          width: 275,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Oedema",
-                                  style:  TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
-
-                              SizedBox(height: 8,),
-
-                              Row(
-                                children: [
-                                  CustomRadioButton<String>(
-                                    value: '+',
-                                    groupValue: _oedemaStatus,
-                                    onChanged: (value) {
-                                      setState(() => _oedemaStatus = value!);
-                                    },
-                                    label: '+',
-                                  ),
-                                  SizedBox(width: 4,),
-
-                                  SizedBox(width: 4,),
-                                  CustomRadioButton<String>(
-                                    value: 'Nil',
-                                    groupValue: _oedemaStatus,
-                                    onChanged: (value) {
-                                      setState(() => _oedemaStatus = value!);
-                                    },
-                                    label: 'Nil',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                         SizedBox(
-                            width: double.infinity,
-                            child:  FormInput(label: 'H/O Present Medication',controller: _currentMedicationController,useCamelCase: false,)),
-                      ],
-                    ),
-
-                  ],
-                ),
-              ),
-
-
-              const SizedBox(height: 20),
-
-              // 4. Systemic Examination
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
+                     ].map((child) {
+                       return SizedBox(
+                         width: itemWidth,
+                         child: child,
+                       );
+                     }).toList(),
+                   );
+                 }
+               ),/*:
+               Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     Text("4. Systemic Examination",
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children:  [
-                        FormInput(label: 'RS (Respiratory System)',controller: _rsController,useCamelCase: false,),
-                        FormInput(label: 'CVS (Cardio Vascular System)',controller: _cvsController,useCamelCase: false,),
-                        FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,useCamelCase: false,),
-                        FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,useCamelCase: false,),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child:    DocumentUploadWidget(
-                            docType: 'pa_abdomen_image', // This should match one of your map keys
-                            label: "P/A Per Abdomen",
-
-                            onFilesSelected: (files) {
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(
+                            label: 'H/O DM',
+                            initialValue: _hasDM,
+                            onChanged: (value) => setState(() => _hasDM = value),
+      
+                          ),
+                          const SizedBox(height: 8),
+                          if (_hasDM)
+                            FormInput(
+                              label: 'Since when',
+                              maxlength: 1,
+                              controller: _SincewhenController,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(
+                            label: 'Hypertension',
+                            initialValue: _hasHypertension,
+                            onChanged: (value) {
                               setState(() {
-                                _uploadedFiles['pa_abdomen_image'] = files;
+                                _hasHypertension = value;
                               });
                             },
-                            initialFiles: _uploadedFiles['pa_abdomen_image'],
+                          ),
+                          const SizedBox(height: 8),
+                          if (_hasHypertension)
+                            FormInput(
+                              label: 'Since when',
+                              maxlength: 1,
+                              controller: _hypertensionSinceController,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(
+                            label: 'IHD',
+                            initialValue: _hasIHD,
+                            onChanged: (value) {
+                              setState(() {
+                                _hasIHD = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          if (_hasIHD)
+                            FormInput(
+                              label: 'IHD Description',
+                              maxlength: 1,
+                              controller: _ihdDescriptionController,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomCheckbox(
+                            label: 'COPD',
+                            initialValue: _hasCOPD,
+                            onChanged: (value) {
+                              setState(() {
+                                _hasCOPD = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          if (_hasCOPD)
+                            FormInput(
+                              label: 'COPD Description',
+                              maxlength: 1,
+                              controller: _copdDescriptionController,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+      */
+      
+                const SizedBox(height: 8),
+      
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children:  [
+                          FormInput(label: 'Any Other Illness',maxlength: 5,controller: _otherIllnessController,),
+                          FormInput(label: 'Past Surgical History',maxlength: 5,controller: _surgicalHistoryController,),
+                          FormInput(label: 'H/O Drug Allergy',maxlength: 5,controller: _drugAllergyController,useCamelCase: false,),
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+                      );
+                    }
+                  ),
+      
+                ],
+      
+              ),
+            ),
+      
+            const SizedBox(height: 20),
+      
+            // 3. General Examination
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+      
+                children: [
+                   Text("3. General Examination",
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 4; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 4; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+
+                            children: [
+
+                              Container(
+                                width: 275,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("Temp",
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        CustomRadioButton<String>(
+                                          value: 'Febrile',
+                                          groupValue: _tempStatus,
+                                          onChanged: (value) {
+                                            setState(() => _tempStatus = value!);
+                                          },
+                                          label: 'Febrile',
+                                        ),
+                                        SizedBox(width: 8),
+                                        CustomRadioButton<String>(
+                                          value: 'Afebrile',
+                                          groupValue: _tempStatus,
+                                          onChanged: (value) {
+                                            _tempController.text="0";
+                                            setState(() => _tempStatus = value!);
+                                          },
+                                          label: 'Afebrile',
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              if(_tempStatus=='Febrile')
+                                FormInput(label: 'Temperature',controller: _tempController,maxcount: 4,   inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                ],),
+                              FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5, useCamelCase: false,  inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                              ],),
+
+
+                              Container(
+                                width:  isMobile ? ResponsiveUtils.scaleWidth(context, 200):ResponsiveUtils.scaleWidth(context, 308),
+                                child: Row(
+                                  spacing: 8,
+                                  children: [
+                                    SizedBox(
+                                        width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 100),
+                                        child: FormInput(label: 'BP (MM/Hg)',hintlabel: 'Systolic',controller: _bpSystolicController,useCamelCase: false,)),
+                                    Text("/",style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 26)),),
+                                    SizedBox(
+                                        width: isMobile? ResponsiveUtils.scaleWidth(context, 70):ResponsiveUtils.scaleWidth(context, 100),
+                                        child: FormInput(label: '',hintlabel: 'Diastolic',controller: _bpDiastolicController,)),
+                                  ],
+                                ),
+                              ),
+                              // const DropdownInput(label: 'Pallor'),
+                              // Pallor
+
+                            ].map((child) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: child,
+                            );
+                          }).toList(),
+                        );
+                      }
+                  ),
+
+SizedBox(height: 16,),
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 4; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 4; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Pallor",
+                                    style:  TextStyle(
+                                        fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    CustomRadioButton<String>(
+                                      value: '+',
+                                      groupValue: _pallorStatus,
+                                      onChanged: (value) {
+                                        setState(() => _pallorStatus = value!);
+                                      },
+                                      label: '+',
+                                    ),
+                                    SizedBox(width: 4),
+                                    SizedBox(width: 4),
+                                    CustomRadioButton<String>(
+                                      value: 'Nil',
+                                      groupValue: _pallorStatus,
+                                      onChanged: (value) {
+                                        setState(() => _pallorStatus = value!);
+                                      },
+                                      label: 'Nil',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            // Icterus
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Icterus",
+                                    style:   TextStyle(
+                                        fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    CustomRadioButton<String>(
+                                      value: '+',
+                                      groupValue: _icterusStatus,
+                                      onChanged: (value) {
+                                        setState(() => _icterusStatus = value!);
+                                      },
+                                      label: '+',
+                                    ),
+                                    SizedBox(width: 4),
+                                    SizedBox(width: 4),
+                                    CustomRadioButton<String>(
+                                      value: 'Nil',
+                                      groupValue: _icterusStatus,
+                                      onChanged: (value) {
+                                        setState(() => _icterusStatus = value!);
+                                      },
+                                      label: 'Nil',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Lymphadenopathy",
+                                    style:   TextStyle(
+                                        fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
+
+                                SizedBox(height: 8,),
+
+                                Row(
+                                  children: [
+                                    CustomRadioButton<String>(
+                                      value: '+',
+                                      groupValue: _lymphadenopathyStatus,
+                                      onChanged: (value) {
+                                        setState(() => _lymphadenopathyStatus = value!);
+                                      },
+                                      label: '+',
+                                    ),
+                                    SizedBox(width: 4,),
+
+                                    SizedBox(width: 4,),
+                                    CustomRadioButton<String>(
+                                      value: 'Nil',
+                                      groupValue: _lymphadenopathyStatus,
+                                      onChanged: (value) {
+                                        setState(() => _lymphadenopathyStatus = value!);
+                                      },
+                                      label: 'Nil',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Oedema",
+                                    style:  TextStyle(
+                                        fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
+
+                                SizedBox(height: 8,),
+
+                                Row(
+                                  children: [
+                                    CustomRadioButton<String>(
+                                      value: '+',
+                                      groupValue: _oedemaStatus,
+                                      onChanged: (value) {
+                                        setState(() => _oedemaStatus = value!);
+                                      },
+                                      label: '+',
+                                    ),
+                                    SizedBox(width: 4,),
+
+                                    SizedBox(width: 4,),
+                                    CustomRadioButton<String>(
+                                      value: 'Nil',
+                                      groupValue: _oedemaStatus,
+                                      onChanged: (value) {
+                                        setState(() => _oedemaStatus = value!);
+                                      },
+                                      label: 'Nil',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                          ].map((child) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: child,
+                            );
+                          }).toList(),
+                        );
+                      }
+                  ),
+                  SizedBox(height: 16,),
+                  SizedBox(
+                      width: double.infinity,
+                      child:  FormInput(label: 'H/O Present Medication',controller: _currentMedicationController,useCamelCase: false,)),
+
+                ],
+              ),
+            ),
+      
+      
+            const SizedBox(height: 20),
+      
+            // 4. Systemic Examination
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text("4. Systemic Examination",
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children:  [
+                      LayoutBuilder(
+                      builder: (context,constraints) {
+            double screenWidth = constraints.maxWidth;
+            int itemsPerRow;
+
+            if (screenWidth < 600) {
+            itemsPerRow = 1; // mobile
+            } else if (screenWidth < 1200) {
+            itemsPerRow = 3; // tablet
+            } else if (screenWidth < 1500) {
+            itemsPerRow = 3; // small desktop
+            } else {
+            itemsPerRow = 4; // large desktop
+            }
+
+            double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+
+                          return Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: [
+                              FormInput(label: 'RS (Respiratory System)',controller: _rsController,useCamelCase: false,),
+                              FormInput(label: 'CVS (Cardio Vascular System)',controller: _cvsController,useCamelCase: false,),
+                              FormInput(label: 'CNS (Central Nervous System)',controller: _cnsController,useCamelCase: false,),
+                              FormInput(label: 'P/A Per Abdomen',controller: _paAbdomenController,useCamelCase: false,),
+
+                            ].map((child) {
+                              return SizedBox(
+                                width: itemWidth,
+                                child: child,
+                              );
+                            }).toList(),
+                          );
+                        }
+                      ),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child:    DocumentUploadWidget(
+                          docType: 'pa_abdomen_image', // This should match one of your map keys
+                          label: "P/A Per Abdomen",
+
+                          onFilesSelected: (files) {
+                            setState(() {
+                              _uploadedFiles['pa_abdomen_image'] = files;
+                            });
+                          },
+                          initialFiles: _uploadedFiles['pa_abdomen_image'],
+                        ),),
+                      LayoutBuilder(
+                          builder: (context,constraints) {
+                            double screenWidth = constraints.maxWidth;
+                            int itemsPerRow;
+
+                            if (screenWidth < 600) {
+                              itemsPerRow = 1; // mobile
+                            } else if (screenWidth < 1200) {
+                              itemsPerRow = 3; // tablet
+                            } else if (screenWidth < 1500) {
+                              itemsPerRow = 3; // small desktop
+                            } else {
+                              itemsPerRow = 4; // large desktop
+                            }
+
+                            double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+
+                            return Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              children: [
+                                FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
+                                FormInput(label: 'P/R Rectum Notes',controller: _prRectumController,),
+                                Container()
+                              ].map((child) {
+                                return SizedBox(
+                                  width: itemWidth,
+                                  child: child,
+                                );
+                              }).toList(),
+                            );
+                          }
+                      ),
+
+                      SizedBox(
+                          width: double.infinity,
+                          child:  FormInput(label: 'Local Examination',maxlength: 2,controller: _localExamController,)),
+
+                      SizedBox(
+                          width: double.infinity,
+                          child:    DocumentUploadWidget(
+                            docType: 'ct_scan_report', // This should match one of your map keys
+                            label: "Media History",
+                            onFilesSelected: (files) {
+                              setState(() {
+                                _uploadedFiles['ct_scan_report'] = files;
+                              });
+                            },
+                            initialFiles: _uploadedFiles['ct_scan_report'],
                           ),),
-                        FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
-                        FormInput(label: 'P/R Rectum Notes',controller: _prRectumController,),
-                        SizedBox(
-                            width: double.infinity,
-                            child:  FormInput(label: 'Local Examination',maxlength: 2,controller: _localExamController,)),
-
-                        SizedBox(
-                            width: double.infinity,
-                            child:    DocumentUploadWidget(
-                              docType: 'ct_scan_report', // This should match one of your map keys
-                              label: "Media History",
-                              onFilesSelected: (files) {
-                                setState(() {
-                                  _uploadedFiles['ct_scan_report'] = files;
-                                });
-                              },
-                              initialFiles: _uploadedFiles['ct_scan_report'],
-                            ),),
-                      ],
-                    ),
-
-                  ],
-                ),
+                    ],
+                  ),
+      
+                ],
               ),
-
-
-              const SizedBox(height: 20),
-
-              // 5. Diagnosis & Plan
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Text("5. Diagnosis & Plan",
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children:  [
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Clinical Diagnosis',controller: _diagnosisController,)),
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Comorbidities',controller: _comorbiditiesController,)),
-                        SizedBox(
-
-                            width: double.infinity,
-                            child: FormInput(label: 'Plan',controller: _planController,)),
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Advice',controller: _adviseController,)),
-                      ],
-                    ),
-                  ],
-                ),
+            ),
+      
+      
+            const SizedBox(height: 20),
+      
+            // 5. Diagnosis & Plan
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
               ),
-              const SizedBox(height: 20),
-              _buildFormNavigationButtons(),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text("5. Diagnosis & Plan",
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children:  [
+                          SizedBox(
+                              width: double.infinity,
+                              child: FormInput(label: 'Clinical Diagnosis',controller: _diagnosisController,)),
+                          SizedBox(
+                              width: double.infinity,
+                              child: FormInput(label: 'Comorbidities',controller: _comorbiditiesController,)),
+                          SizedBox(
+
+                              width: double.infinity,
+                              child: FormInput(label: 'Plan',controller: _planController,)),
+                          SizedBox(
+                              width: double.infinity,
+                              child: FormInput(label: 'Advice',controller: _adviseController,)),
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+
+                      );
+                    }
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildFormNavigationButtons(),
+          ],
         ),
       ),
     );
@@ -2308,364 +2609,307 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Widget _buildAdditionalInfoForm() {
     return Form(
       key: _reportsFormKey,
-      child: Container(
-        width: double.infinity, padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.Offwhitebackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.Containerbackground),
-        ),
-
-        child: SingleChildScrollView(
-          child: Column(
-            spacing: 10,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Text(
-                      '1. Reports',
-                      style: TextStyle(fontSize:    ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
-                    ),
-                    SizedBox(height: 20,),
-                    Row(children: [
-                      Text(
-                        'Blood Report',
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.backgroundcolor,
-                          thickness: 1,
-                        ),
-                      ),
-                    ],),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children:  [
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
-                        FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
-                        FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
-                        FormInput(label: 'ESR',controller: _esrController,useCamelCase: false),
-                        FormInput(label: 'Platelets',controller: _plateletsController,),
-                        FormInput(label: 'Urine Routine',controller:_urineRoutineController),
-                        FormInput(label: 'Urine Culture',controller:_urineCultureController),
-                        FormInput(label: 'BUN',controller:_bunController,useCamelCase: false,),
-                        FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
-                        FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
-                        FormInput(label: 'LFT',controller:_lftController,useCamelCase: false),
-                        FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController,useCamelCase: false),
-                        FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
-                        FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
-                        FormInput(label: 'HBA1C',controller:_hBA1CController,useCamelCase: false),
-                        FormInput(label: 'HBSAG',controller:_hBSAGController,useCamelCase: false),
-                        FormInput(label: 'HIV',controller:_hivController,useCamelCase: false),
-                        FormInput(label: 'HCV',controller:_hcvController,useCamelCase: false),
-                        FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
-                        FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
-                        FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController,useCamelCase: false),
-                        FormInput(label: 'MISC',controller:_miscController,useCamelCase: false),
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
-
-                      ],
-                    ),
-                    SizedBox(height: 20,),
-                    Row(children: [
-                      Text(
-                        'X-Ray Report',
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.backgroundcolor,
-                          thickness: 1,
-                        ),
-                      ),
-                    ],),
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller:_xRayFindingController)),
-                    SizedBox(height: 10,),
-                    Row(
-
-                      children: [
-                      Text(
-                        'CT Scan Report',
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                        Expanded(
-                          child: Divider(
-                            color: AppColors.backgroundcolor,
-                            thickness: 1,
-                          ),
-                        ),
-                    ],),
-                    SizedBox(height: 10,),
-
-                    DocumentUploadWidget(
-                      docType: 'ct_scan_report', // This should match one of your map keys
-                      label: "CT Scan Report",
-                      onFilesSelected: (files) {
-                        setState(() {
-                          _uploadedFiles['ct_scan_report'] = files;
-                        });
-                      },
-                      initialFiles: _uploadedFiles['ct_scan_report'],
-                    ),
-                 /*   Row(
-                      spacing: 10,
-                      children: [
-
-                        FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
-
-                        Expanded(
-
-                            child: FormInput(label: 'Media History',)),
-                      ],
-                    ),*/
-                    SizedBox(height: 10,),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                       // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
-                        DatePickerInput(
-                          label: 'Date',
-                          hintlabel: 'Date',
-                          onDateSelected: (date) {
-                            setState(() {
-                              _CTScanDate = date; // Update the selected date
-                            });
-                          },
-                          initialDate: _CTScanDate, // Pass the initial date if needed
-                        ),
-                        SizedBox(
-                            width: double.infinity,
-                            child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
-                      ],
-                    ),
-
-                    SizedBox(height: 10,),
-
-                    Row(children: [
-                      Text(
-                        'MRI Report',
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.backgroundcolor,
-                          thickness: 1,
-                        ),
-                      ),
-                    ],),
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _mriFindingController,)),
-                    SizedBox(height: 10,),
-                    Row(children: [
-                      Text(
-                        'PET Scan Report',
-                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                      ),
-                      Expanded(
-                        child: Divider(
-                          color: AppColors.backgroundcolor,
-                          thickness: 1,
-                        ),
-                      ),
-                    ],),
-                    SizedBox(height: 10,),
-
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
-                    SizedBox(height: 10,),
-                    Row(
-
-                      children: [
-                        Text(
-                          'ECG Report',
-                          style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: AppColors.backgroundcolor,
-                            thickness: 1,
-                          ),
-                        ),
-                      ],),
-                    SizedBox(height: 10,),
-                    DocumentUploadWidget(
-                      docType: 'ecg_report', // This should match one of your map keys
-                      label: "Upload ECG Reports",
-                      onFilesSelected: (files) {
-                        setState(() {
-                          _uploadedFiles['ecg_report'] = files;
-                        });
-                      },
-                      initialFiles: _uploadedFiles['ecg_report'],
-                    ),
-
-                    SizedBox(height: 10,),
-                    SizedBox(
+      child: SingleChildScrollView(
+        child: Column(
+          spacing: 10,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
               width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
-                    SizedBox(height: 10,),
-
-                    Row(
-
-                      children: [
-                        Text(
-                          '2D ECHO Report',
-                          style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: AppColors.backgroundcolor,
-                            thickness: 1,
-                          ),
-                        ),
-                      ],),
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller:_a2dFindingController)),
-                 /*   SizedBox(height: 10,),
-                    Row(
-
-                      children: [
-                        Text(
-                          'Echocardiogram Report',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            margin: const EdgeInsets.only(left: 8), // Add some spacing
-                            color: AppColors.backgroundcolor,
-                          ),
-                        ),
-                      ],),
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
-                    SizedBox(height: 10,),
-                    Row(
-
-                      children: [
-                        Text(
-                          'PFT Report',
-                          style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: AppColors.backgroundcolor,
-                            thickness: 1,
-                          ),
-                        ),
-                      ],),
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _pftFindingController,)),
-                    SizedBox(height: 10),
-
-                    DocumentUploadWidget(
-                      docType: 'misc_report', // This should match one of your map keys
-                      label: "Upload MISC",
-                      onFilesSelected: (files) {
-                        setState(() {
-                          _uploadedFiles['misc_report'] = files;
-                        });
-                      },
-                      initialFiles: _uploadedFiles['misc_report'],
-                    ),
-
-                    SizedBox(height: 10,),
-                    SizedBox(
-                        width: double.infinity,
-                        child: FormInput(label: 'Findings',controller: _miscFindingController,)),
-                    SizedBox(height: 10,),
-
-                  ],
-                ),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
               ),
-              Container( width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                 Text(
-                  '2. Doctor Notes',
-                  style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 20,),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
+                   Text(
+                    '1. Reports',
+                    style: TextStyle(fontSize:    ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(children: [
+                    Text(
+                      'Blood Report',
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.backgroundcolor,
+                        thickness: 1,
+                      ),
+                    ),
+                  ],),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Laboratory',controller: _laboratoryController,)),
+                  const SizedBox(height: 10),
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
 
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
 
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children:  [
+
+                          FormInput(label: 'Hemoglobin',controller: _hemoglobinController,),
+                          FormInput(label: 'Total leucocyte count',controller: _totalLeucocyteCountController,),
+                          FormInput(label: 'ESR',controller: _esrController,useCamelCase: false),
+                          FormInput(label: 'Platelets',controller: _plateletsController,),
+                          FormInput(label: 'Urine Routine',controller:_urineRoutineController),
+                          FormInput(label: 'Urine Culture',controller:_urineCultureController),
+                          FormInput(label: 'BUN',controller:_bunController,useCamelCase: false,),
+                          FormInput(label: 'Serum Creatinine',controller:_serumCreatinineController),
+                          FormInput(label: 'Serum Electrolytes',controller:_serumElectrolytesController),
+                          FormInput(label: 'LFT',controller:_lftController,useCamelCase: false),
+                          FormInput(label: 'Prothrombin Time / INR',controller:_prothrombinTimController,useCamelCase: false),
+                          FormInput(label: 'Blood Sugar Fasting',controller:_bloodSugarFastingController),
+                          FormInput(label: 'Blood Sugar Post Prandial',controller:_bloodSugarPostPrandialController),
+                          FormInput(label: 'HBA1C',controller:_hBA1CController,useCamelCase: false),
+                          FormInput(label: 'HBSAG',controller:_hBSAGController,useCamelCase: false),
+                          FormInput(label: 'HIV',controller:_hivController,useCamelCase: false),
+                          FormInput(label: 'HCV',controller:_hcvController,useCamelCase: false),
+                          FormInput(label: 'Thyroid Function Test T3',controller:_thyroidFunctionT3TestController),
+                          FormInput(label: 'Thyroid Function Test T4',controller:_thyroidFunctionT4TestController),
+                          FormInput(label: 'Thyroid Function Test TSH',controller:_thyroidFunctionTSHTestController,useCamelCase: false),
+                          FormInput(label: 'MISC',controller:_miscController,useCamelCase: false),
+                          SizedBox(
+                              width: double.infinity,
+                              child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
+
+                        ].map((child) {
+                          return SizedBox(
+                            width: itemWidth,
+                            child: child,
+                          );
+                        }).toList(),
+                      );
+                    }
+                  ),
+                  SizedBox(height: 20,),
+                  Row(children: [
+                    Text(
+                      'X-Ray Report',
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.backgroundcolor,
+                        thickness: 1,
+                      ),
+                    ),
+                  ],),
                   SizedBox(height: 10,),
-                  DatePickerInput(
-                    label: 'Flollow up date',
-                    hintlabel: 'Flollow up date',
-                    onDateSelected: (date) {
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller:_xRayFindingController)),
+                  SizedBox(height: 10,),
+                  Row(
+
+                    children: [
+                    Text(
+                      'CT Scan Report',
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                  ],),
+                  SizedBox(height: 10,),
+
+                  DocumentUploadWidget(
+                    docType: 'ct_scan_report', // This should match one of your map keys
+                    label: "CT Scan Report",
+                    onFilesSelected: (files) {
                       setState(() {
-                        _followUpDate = date; // Update the selected date
+                        _uploadedFiles['ct_scan_report'] = files;
                       });
                     },
-                    initialDate: _followUpDate, // Pass the initial date if needed
+                    initialFiles: _uploadedFiles['ct_scan_report'],
                   ),
-                //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
-              ],),
-              ),
-              Container( width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.Offwhitebackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.Containerbackground),
-                ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                 Text(
-                  '3. Misc',
-                  style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 20,),
-                SizedBox(
-                    width: double.infinity,
-                    child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
+               /*   Row(
+                    spacing: 10,
+                    children: [
+
+                      FormInput(label: 'CT Scan',hintlabel: "Upload CT Scan Reports",controller:_ctScanFindingsController),
+
+                      Expanded(
+
+                          child: FormInput(label: 'Media History',)),
+                    ],
+                  ),*/
+                  SizedBox(height: 10,),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                     // FormInput(label: 'Date',hintlabel: "dd-mm-yyyy",),
+                      DatePickerInput(
+                        label: 'Date',
+                        hintlabel: 'Date',
+                        onDateSelected: (date) {
+                          setState(() {
+                            _CTScanDate = date; // Update the selected date
+                          });
+                        },
+                        initialDate: _CTScanDate, // Pass the initial date if needed
+                      ),
+                      SizedBox(
+                          width: double.infinity,
+                          child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
+                    ],
+                  ),
 
                   SizedBox(height: 10,),
+
+                /*  Row(children: [
+                    Text(
+                      'MRI Report',
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.backgroundcolor,
+                        thickness: 1,
+                      ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _mriFindingController,)),
+                  SizedBox(height: 10,),
+                  Row(children: [
+                    Text(
+                      'PET Scan Report',
+                      style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: AppColors.backgroundcolor,
+                        thickness: 1,
+                      ),
+                    ),
+                  ],),
+                  SizedBox(height: 10,),
+
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
+                  SizedBox(height: 10,),*/
+                  Row(
+
+                    children: [
+                      Text(
+                        'ECG Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+            /*      SizedBox(height: 10,),
+                  DocumentUploadWidget(
+                    docType: 'ecg_report', // This should match one of your map keys
+                    label: "Upload ECG Reports",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['ecg_report'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['ecg_report'],
+                  ),
+*/
+                  SizedBox(height: 10,),
+                  SizedBox(
+            width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
+                  SizedBox(height: 10,),
+
+                  Row(
+
+                    children: [
+                      Text(
+                        '2D ECHO Report',
+                        style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),
+                  SizedBox(height: 10,),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller:_a2dFindingController)),
+               /*   SizedBox(height: 10,),
+                  Row(
+
+                    children: [
+                      Text(
+                        'Echocardiogram Report',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(left: 8), // Add some spacing
+                          color: AppColors.backgroundcolor,
+                        ),
+                      ),
+                    ],),
+                  SizedBox(height: 10,),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
+             /*     SizedBox(height: 10,),
+                  Row(
+
+                    children: [
+                      Text(
+                        'PFT Report',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),*/
+                  SizedBox(height: 10,),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),
+                  SizedBox(height: 10),
+
                   DocumentUploadWidget(
                     docType: 'misc_report', // This should match one of your map keys
-                    label: "MISC Upload",
+                    label: "Upload MISC",
                     onFilesSelected: (files) {
                       setState(() {
                         _uploadedFiles['misc_report'] = files;
@@ -2674,12 +2918,85 @@ class _OnboardingFormState extends State<OnboardingForm> {
                     initialFiles: _uploadedFiles['misc_report'],
                   ),
 
-              ],),
+                  SizedBox(height: 10,),
+                  SizedBox(
+                      width: double.infinity,
+                      child: FormInput(label: 'Findings',controller: _miscFindingController,)),
+                  SizedBox(height: 10,),
+
+                ],
               ),
-              const SizedBox(height: 20),
-              _buildFormNavigationButtons(isLastStep: true),
-            ],
-          ),
+            ),
+            Container( width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+               Text(
+                '2. Doctor Notes',
+                style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 20,),
+              SizedBox(
+                  width: double.infinity,
+                  child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
+
+
+                SizedBox(height: 10,),
+                DatePickerInput(
+                  label: 'Flollow up date',
+                  hintlabel: 'Flollow up date',
+                  onDateSelected: (date) {
+                    setState(() {
+                      _followUpDate = date; // Update the selected date
+                    });
+                  },
+                  initialDate: _followUpDate, // Pass the initial date if needed
+                ),
+              //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
+            ],),
+            ),
+            Container( width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+               Text(
+                '3. Misc',
+                style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 20,),
+              SizedBox(
+                  width: double.infinity,
+                  child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
+
+                SizedBox(height: 10,),
+                DocumentUploadWidget(
+                  docType: 'misc_report', // This should match one of your map keys
+                  label: "MISC Upload",
+                  onFilesSelected: (files) {
+                    setState(() {
+                      _uploadedFiles['misc_report'] = files;
+                    });
+                  },
+                  initialFiles: _uploadedFiles['misc_report'],
+                ),
+
+            ],),
+            ),
+            const SizedBox(height: 20),
+            _buildFormNavigationButtons(isLastStep: true),
+          ],
         ),
       ),
     );
@@ -2738,12 +3055,14 @@ class FormInput extends StatelessWidget {
       fieldWidth = screenWidth * 0.45;
     } else if (screenWidth == 1440) {
       fieldWidth = 250;
+    } else if (screenWidth >= 1300 && screenWidth <= 1370) {
+      fieldWidth = screenWidth * 0.14; // 233px at 1366px width
     } else {
       fieldWidth = 275;
     }
 
     return SizedBox(
-      width: fieldWidth,
+     width: fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -179,7 +179,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                       ),
                                     ),
                                     Visibility(
-                                      visible:true ,//PermissionService().canAddUsers ,
+                                      visible:PermissionService().canAddUsers ,
                                       child: Center(
                                         child: Container(
                                           margin: EdgeInsets.only(
@@ -296,20 +296,23 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                                     16))),
                                                       ],
                                                     )),
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                        "STATUS",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            color: AppColors
-                                                                .primary,
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                16)))),
+                                                Visibility(
+                                                  visible:PermissionService().canEditUsers ,
+                                                  child: Expanded(
+                                                      flex: 2,
+                                                      child: Text(
+                                                          "STATUS",
+                                                          style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight
+                                                                  .bold,
+                                                              color: AppColors
+                                                                  .primary,
+                                                              fontSize: ResponsiveUtils
+                                                                  .fontSize(
+                                                                  context,
+                                                                  16)))),
+                                                ),
                                                 Expanded(
                                                     flex: 2,
                                                     child: Text(
@@ -392,19 +395,22 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                               style: TextStyle(
                                                                   fontSize:
                                                                   ResponsiveUtils.fontSize(context, 14)))),
-                                                      Expanded(
-                                                        flex: 2,
-                                                        child: _buildToggle(
-                                                          context: context,
-                                                          value: user.status == 1, // Convert to boolean (1 = true, 0 = false)
-                                                          onChanged: (newValue) async {
-                                                            await Provider.of<UserManagementProvider>(context, listen: false)
-                                                                .updateUserStatus(
-                                                                context,
-                                                                user.id,
-                                                                newValue ? 1 : 0 // Convert back to 1/0
-                                                            );
-                                                          },
+                                                      Visibility(
+                                                        visible:PermissionService().canEditUsers ,
+                                                        child: Expanded(
+                                                          flex: 2,
+                                                          child: _buildToggle(
+                                                            context: context,
+                                                            value: user.status == 1, // Convert to boolean (1 = true, 0 = false)
+                                                            onChanged: (newValue) async {
+                                                              await Provider.of<UserManagementProvider>(context, listen: false)
+                                                                  .updateUserStatus(
+                                                                  context,
+                                                                  user.id,
+                                                                  newValue ? 1 : 0 // Convert back to 1/0
+                                                              );
+                                                            },
+                                                          ),
                                                         ),
                                                       ),
                                                       Expanded(
@@ -580,12 +586,35 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
     required BuildContext context,
     bool isLoading = false,
   }) {
-    return  Row(
+    return Row(
       children: [
         Switch(
           value: value,
-          onChanged: isLoading ? null : onChanged,
-          activeColor:Colors.green ,
+          onChanged: isLoading ? null : (newValue) async {
+            // Check permission first
+            if (!PermissionService().canEditUsers) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("No permission to change status")),
+              );
+              return;
+            }
+
+            bool confirm = false;
+            await ConfirmationDialog.show(
+              context: context,
+              title: 'Confirm Status Change',
+              message: 'Are you sure?',
+              confirmText: 'Confirm',
+              confirmColor: AppColors.secondary,
+              onConfirm: () => confirm = true,
+              onCancel: () => confirm = false,
+            );
+
+            if (confirm) {
+              onChanged(newValue);
+            }
+          },
+          activeColor: Colors.green,
           activeTrackColor: Colors.green.shade100,
           inactiveThumbColor: Colors.grey[300],
           inactiveTrackColor: Colors.grey[400],
@@ -634,83 +663,5 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       );
     }
     return buttons;
-  }
-}
-class StatusWidget extends StatelessWidget {
-  final int status;
-  final Function(int) onChanged;
-
-  const StatusWidget({
-    super.key,
-    required this.status,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: status == 1 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: status == 1 ? Colors.green : Colors.red,
-          width: 1,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: status,
-          icon: const Icon(Icons.arrow_drop_down, size: 20),
-          iconSize: 16,
-          elevation: 0,
-          style: TextStyle(
-            fontSize: ResponsiveUtils.fontSize(context, 14),
-            color: status == 1 ? Colors.green : Colors.red,
-          ),
-          onChanged: (int? newValue) {
-            if (newValue != null) {
-              onChanged(newValue);
-            }
-          },
-          items: [
-            DropdownMenuItem<int>(
-              value: 1,
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Active'),
-                ],
-              ),
-            ),
-            DropdownMenuItem<int>(
-              value: 0,
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Deactivate'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

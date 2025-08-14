@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -15,7 +16,9 @@ import '../utils/colors.dart';
 import 'VideoPlayerWidget.dart';
 import 'dart:html' as html; // For web-specific functionality
 import 'dart:typed_data'; // For Uint8List
-import 'package:universal_html/html.dart' as universal_html; // Alternative if needed
+import 'package:universal_html/html.dart' as universal_html;
+
+import 'confirmation_dialog.dart'; // Alternative if needed
 class DocumentUploadWidget extends StatefulWidget {
   final String docType;
   final String label;
@@ -98,12 +101,14 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     }
   }
 
+/*
   void _removeFile(int index) {
     setState(() {
       _selectedFiles.removeAt(index);
     });
     widget.onFilesSelected(_selectedFiles);
   }
+*/
 
   String _formatSize(dynamic size) {
     if (size is int) {
@@ -115,7 +120,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
   void _showFilePreview(int index) {
     final file = _selectedFiles[index];
-    final filePath = file['path'] ?? '';
+    final filePath = file['file_path'] ?? '';
     final fileType = (file['type'] ?? '').toLowerCase();
     final isNetwork = file['isExisting'] ?? false;
 
@@ -123,6 +128,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     final fullPath = isNetwork && widget.baseUrl != null
         ? '${widget.baseUrl}$filePath'
         : filePath;
+
+    print("filePath");
+    print(file);
+    print(filePath);
 
     _showPreviewDialog(context, file, isNetwork: isNetwork);
   }
@@ -196,102 +205,294 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   Widget _buildFileVideoPlayer(String filePath) {
     return VideoPlayerWidget(filePath: filePath);
   }
-
   void _showPreviewDialog(BuildContext context, Map<String, dynamic> file,
       {bool isNetwork = false}) {
     final filePath = file['path'] ?? '';
     final fileType = (file['type'] ?? '').toLowerCase();
     final fileBytes = file['bytes'];
+    final fileName = file['name'] ?? 'file';
 
     final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
     final videoTypes = {'mp4', 'mov', 'avi'};
+    final pdfTypes = {'pdf'};
+    final documentTypes = {'doc', 'docx'};
     final fileExtension = fileType.toLowerCase();
 
     if (imageTypes.contains(fileExtension)) {
-      showDialog(
-        context: context,
-        builder: (context) => Dialog(
-          insetPadding: const EdgeInsets.all(20),
-          child: Stack(
-            children: [
-              InteractiveViewer(
+      _showImagePreview(context, file, isNetwork);
+    } else if (videoTypes.contains(fileExtension)) {
+      _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
+    } else if (pdfTypes.contains(fileExtension)) {
+      _showPdfPreview(context, file, isNetwork: isNetwork);
+    } else if (documentTypes.contains(fileExtension)) {
+      _showDocumentPreview(context, fileName);
+    } else {
+      _showGenericPreview(context, fileName, fileExtension);
+    }
+  }
+  void _showImagePreview(BuildContext context, Map<String, dynamic> file, bool isNetwork) {
+    final filePath = file['file_path'] ?? file['path'] ?? '';
+    final fileBytes = file['bytes'];
+    final fileName = file['name'] ?? 'Image';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Container(
+              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
+              child: InteractiveViewer(
                 panEnabled: true,
                 minScale: 0.5,
                 maxScale: 3.0,
-                child: isNetwork
-                    ? Image.network(
-                  filePath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Text(
-                          'Failed to load image\n${error.toString()}'),
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                )
-                    : (kIsWeb
-                    ? Image.memory(
-                  fileBytes,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Text('Failed to load image'),
-                    );
-                  },
-                )
-                    : Image.file(
-                  File(filePath),
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Text('Failed to load image'),
-                    );
-                  },
-                )),
+                child: _buildImagePreview(file, isNetwork),
               ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      child: IconButton(
-                        icon: const Icon(Icons.download, color: Colors.white),
-                        onPressed: () => _downloadFile(
-                            isNetwork ? filePath : filePath, fileExtension, isNetwork),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    CircleAvatar(
-                      backgroundColor: Colors.red,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            _buildPreviewActionButtons(context, filePath, 'image', isNetwork),
+          ],
         ),
-      );
-    } else if (videoTypes.contains(fileExtension)) {
-      _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(Map<String, dynamic> file, bool isNetwork) {
+    final filePath = file['file_path'] ?? file['path'] ?? '';
+    final fileBytes = file['bytes'];
+    final fileName = file['name'] ?? 'Image';
+
+    try {
+      if (isNetwork) {
+        // For network images, ensure the URL is properly formatted
+        String imageUrl = filePath;
+
+        // Add base URL if needed
+        if (widget.baseUrl != null && !filePath.startsWith('http')) {
+          imageUrl = '${widget.baseUrl}$filePath';
+        }
+
+        // Clean up any double slashes in the URL
+       // imageUrl = imageUrl.replaceAll('//', '/').replaceAll(':/', '://');
+print("imageUrl");
+print(imageUrl);
+        return Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Network image error: $error');
+            return _buildImageErrorWidget(fileName, 'Failed to load network image');
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+        );
+      } else if (kIsWeb) {
+        if (fileBytes != null && fileBytes is Uint8List) {
+          return Image.memory(
+            fileBytes,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildImageErrorWidget(fileName, 'Failed to load image bytes');
+            },
+          );
+        }
+        return _buildImageErrorWidget(fileName, 'No image data available');
+      } else {
+        return Image.file(
+          File(filePath),
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildImageErrorWidget(fileName, 'Failed to load local file');
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('Image preview error: $e');
+      return _buildImageErrorWidget(fileName, e.toString());
     }
+  }
+  Widget _buildImageErrorWidget(String fileName, String error) {
+    print( error.toString());
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 50),
+          const SizedBox(height: 10),
+          Text(
+            'Failed to load image',
+            style: const TextStyle(fontSize: 16, color: Colors.red),
+          ),
+          Text(
+            fileName,
+            style: const TextStyle(fontSize: 14),
+          ),
+          if (error.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Error: $error',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showPdfPreview(BuildContext context, Map<String, dynamic> file, {bool isNetwork = false}) {
+    final filePath = file['path'] ?? '';
+    final fileName = file['name'] ?? 'PDF Document';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800,minWidth: 400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.picture_as_pdf, size: 80, color: Colors.red),
+                  const SizedBox(height: 20),
+                  Text(
+                    fileName,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => _downloadFile(filePath, 'pdf', isNetwork),
+                    child: const Text('Download PDF'),
+                  ),
+                ],
+              ),
+            ),
+            _buildPreviewActionButtons(context, filePath, 'pdf', isNetwork),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDocumentPreview(BuildContext context, String fileName) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.description, size: 80, color: Colors.blue),
+                  const SizedBox(height: 20),
+                  Text(
+                    fileName,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Document preview not available'),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => launchUrl(Uri.parse('https://docs.google.com/viewer?url=YOUR_FILE_URL')),
+                    child: const Text('View in Google Docs'),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGenericPreview(BuildContext context, String fileName, String fileType) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.insert_drive_file, size: 80, color: Colors.grey),
+                  const SizedBox(height: 20),
+                  Text(
+                    fileName,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('$fileType file preview not available'),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewActionButtons(BuildContext context, String filePath, String? fileType, bool isNetwork) {
+    return Positioned(
+      top: 10,
+      right: 10,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.blue,
+            child: IconButton(
+              icon: const Icon(Icons.download, color: Colors.white),
+              onPressed: () => _downloadFile(filePath, fileType ?? '', isNetwork),
+            ),
+          ),
+          const SizedBox(width: 10),
+          CircleAvatar(
+            backgroundColor: Colors.red,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
 
@@ -421,315 +622,202 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     }
   }*/
 
+  Future<void> _removeFile(int index) async {
+    final file = _selectedFiles[index];
+    final fileName = file['name'] ?? 'file';
+
+    // Create a Completer to handle the dialog result
+    final completer = Completer<bool>();
+
+    // Show your existing confirmation dialog
+    ConfirmationDialog.show(
+      context: context,
+      title: 'Confirm Removal',
+      message: 'Are you sure you want to remove $fileName?',
+      confirmText: 'Remove',
+      confirmColor: AppColors.secondary,
+      onConfirm: () => completer.complete(true),  // User confirmed
+      onCancel: () => completer.complete(false),  // User canceled
+    );
+
+    // Wait for the user's decision
+    bool confirm = await completer.future;
+
+    if (confirm) {
+      setState(() {
+        _selectedFiles.removeAt(index);
+      });
+      widget.onFilesSelected(_selectedFiles);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveUtils.isMobile(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isMobile?
-        Wrap(
-         spacing: 16,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 600;
+            final itemCount = isSmallScreen ? 1 : 2;
+            final spacing = 16.0;
+            final totalPadding = spacing * (itemCount - 1);
+            final itemWidth = (constraints.maxWidth - totalPadding) / itemCount;
 
-          children: [
-            // Upload Document Field
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return Wrap(
+              spacing: spacing,
               children: [
-                Text(
-                  widget.label,
-                  style:  TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      fontSize: ResponsiveUtils.fontSize(context, 14)
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _pickFiles,
-                  child: Container(
-                    height: 50,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.textSecondary.withOpacity(0.3),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.attach_file, color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 18),),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Tap to upload documents",
-                          style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
+                // Upload Document Field
+                SizedBox(
+                  width: itemWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                          fontSize: ResponsiveUtils.fontSize(context, 14),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(width: 14),
-
-            // Uploaded Files Display
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Uploaded Files',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      fontSize: ResponsiveUtils.fontSize(context, 14)
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _selectedFiles.isEmpty
-                      ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      "No files selected",
-                      style: TextStyle(color: Colors.grey[700],fontSize:  ResponsiveUtils.fontSize(context, 14),),
-                    ),
-                  )
-                      : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _selectedFiles.length,
-                    itemBuilder: (context, index) {
-                      final file = _selectedFiles[index];
-                      return GestureDetector(
-                        onTap: () => _showFilePreview(index),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _pickFiles,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 2,
-                            vertical: 4,
-                          ),
-                          margin: const EdgeInsets.only(bottom: 2),
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(8),
-                            // border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(
+                              color: AppColors.textSecondary.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                _getFileIcon(file['type']),
-                                size: 16,
-                                color: _getFileIconColor(file['type']),
+                                Icons.attach_file,
+                                color: Colors.grey,
+                                size: ResponsiveUtils.fontSize(context, 18),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      file['name'],
-                                      style: const TextStyle(
-
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    /*  Text(
-                                      _formatSize(file['size']),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),*/
-                                  ],
+                              Text(
+                                "Tap to upload documents",
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: ResponsiveUtils.fontSize(context, 14),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.red,
-                                  size: 16,
-                                ),
-                                onPressed: () => _removeFile(index),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Uploaded Files Display
+                SizedBox(
+                  width: itemWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Uploaded Files',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                          fontSize: ResponsiveUtils.fontSize(context, 14),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          border: Border.all(
+                            color: AppColors.textSecondary.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _selectedFiles.isEmpty
+                            ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            "No files selected",
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: ResponsiveUtils.fontSize(context, 14),
+                            ),
+                          ),
+                        )
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _selectedFiles.length,
+                          itemBuilder: (context, index) {
+                            final file = _selectedFiles[index];
+                            return GestureDetector(
+                              onTap: () => _showFilePreview(index),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 4,
+                                ),
+                                margin: const EdgeInsets.only(bottom: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getFileIcon(file['type']),
+                                      size: 16,
+                                      color: _getFileIconColor(file['type']),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            file['name'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.red,
+                                        size: 16,
+                                      ),
+                                      onPressed: () => _removeFile(index),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ],
-        ):
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Upload Document Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.label,
-                    style:  TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                        fontSize: ResponsiveUtils.fontSize(context, 14)
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _pickFiles,
-                    child: Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: AppColors.textSecondary.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.attach_file, color: Colors.grey,size:  ResponsiveUtils.fontSize(context, 18),),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Tap To Upload Documents",
-                            style: TextStyle(color: Colors.grey[700]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 14),
-
-            // Uploaded Files Display
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Uploaded Files',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                        fontSize: ResponsiveUtils.fontSize(context, 14)
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      border: Border.all(
-                        color: AppColors.textSecondary.withOpacity(0.3),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: _selectedFiles.isEmpty
-                        ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        "No Files Selected",
-                        style: TextStyle(color: Colors.grey[700]),
-                      ),
-                    )
-                        : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _selectedFiles.length,
-                      itemBuilder: (context, index) {
-                        final file = _selectedFiles[index];
-                        return GestureDetector(
-                          onTap: () => _showFilePreview(index),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 4,
-                            ),
-                            margin: const EdgeInsets.only(bottom: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(8),
-                              // border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getFileIcon(file['type']),
-                                  size: 16,
-                                  color: _getFileIconColor(file['type']),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        file['name'],
-                                        style: const TextStyle(
-
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      /*  Text(
-                                        _formatSize(file['size']),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),*/
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.red,
-                                    size: 16,
-                                  ),
-                                  onPressed: () => _removeFile(index),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ],
     );

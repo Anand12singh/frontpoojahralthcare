@@ -134,9 +134,9 @@ void dispose() {
                         const SizedBox(height: 6),
                         CustomTextField(
                           controller: provider.nameController,
-                          hintText: 'Enter name',
+                          hintText: 'Enter user name',
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                            FilteringTextInputFormatter.allow(RegExp(r'[a-z]')),
                           ],
                         ),
 
@@ -185,7 +185,7 @@ void dispose() {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Password *",
+                        Text("Password",
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -264,22 +264,14 @@ void dispose() {
                           return;
                         }
 
-                        if (password.length < 6) {
+                        if (password.length < 6 || !RegExp(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])').hasMatch(password)) {
                           showTopRightToast(
                             context,
-                            'Password must be at least 6 characters',
-                            backgroundColor: Colors.red,
-                          );
-                          return;
-                        }
-
-                        final passwordPattern =
-                            r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$';
-
-                        if (!RegExp(passwordPattern).hasMatch(password)) {
-                          showTopRightToast(
-                            context,
-                            'Password must include at least 1 uppercase letter, 1 number, and 1 special character',
+                            'Password must:\n'
+                                '- Be at least 6 characters long\n'
+                                '- Include 1 uppercase letter\n'
+                                '- Include 1 number\n'
+                                '- Include 1 special character',
                             backgroundColor: Colors.red,
                           );
                           return;
@@ -291,36 +283,31 @@ void dispose() {
                         );
                       } else {
 
-                        if (password.isEmpty) {
+                      /*  if (password.isEmpty) {
                           showTopRightToast(
                             context,
                             'Password cannot be empty',
                             backgroundColor: Colors.red,
                           );
                           return;
-                        }
+                        }*/
 
-                        if (password.length < 6) {
-                          showTopRightToast(
-                            context,
-                            'Password must be at least 6 characters',
-                            backgroundColor: Colors.red,
-                          );
-                          return;
-                        }
+                        if (password.isNotEmpty) {
+                          if (password.length < 6 || !RegExp(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])').hasMatch(password)) {
+                            showTopRightToast(
+                              context,
+                              'Password must:\n'
+                                  '- Be at least 6 characters long\n'
+                                  '- Include 1 uppercase letter\n'
+                                  '- Include 1 number\n'
+                                  '- Include 1 special character',
+                              backgroundColor: Colors.red,
+                            );
+                            return;
+                          }
+                          // Update existing user
 
-                        final passwordPattern =
-                            r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$';
-
-                        if (!RegExp(passwordPattern).hasMatch(password)) {
-                          showTopRightToast(
-                            context,
-                            'Password must include at least 1 uppercase letter, 1 number, and 1 special character',
-                            backgroundColor: Colors.red,
-                          );
-                          return;
                         }
-                        // Update existing user
                         provider.updateUser(
                           context: context,
                           userId: widget.user!.id,

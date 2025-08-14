@@ -27,6 +27,22 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _loadPatientData(); // Load SharedPreferences
+  }
+
+
+  Future<void> _loadPatientData() async {
+    await GlobalPatientData.loadFromPrefs();
+
+    if (GlobalPatientData.patientId == null) {
+      // Handle null case (e.g., redirect or show message)
+      debugPrint("patientId is null after loading prefs");
+      return;
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -38,6 +54,8 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
 
   @override
   Widget build(BuildContext context) {
+
+
     final isMobile = ResponsiveUtils.isMobile(context);
 
     return Scaffold(

@@ -80,6 +80,8 @@ class CustomTextField extends StatefulWidget {
   final Duration? obscureTextToggleDelay;
   final List<TextInputFormatter>? inputFormatters;
   final bool useCamelCase;
+  final bool multiline; // New property to enable multiline
+
   const CustomTextField({
     Key? key,
     this.controller,
@@ -153,6 +155,7 @@ class CustomTextField extends StatefulWidget {
     this.obscureTextAutoToggle = false,
     this.obscureTextToggleDelay,
     this.useCamelCase = true,
+    this.multiline = false, // Default to false
   }) : super(key: key);
 
   @override
@@ -164,6 +167,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   late bool _obscureText;
   Timer? _obscureTextToggleTimer;
   late bool _isHovered;
+  int? _dynamicMaxLines; // Tracks adjusted maxLines
 
   @override
   void initState() {
@@ -172,9 +176,28 @@ class _CustomTextFieldState extends State<CustomTextField> {
         widget.controller ?? TextEditingController(text: widget.initialValue);
     _obscureText = widget.obscureText;
     _isHovered = false;
+    _dynamicMaxLines = widget.maxLines; // Initialize with widget's maxLines
 
     if (widget.obscureTextAutoToggle && widget.obscureTextToggleDelay != null) {
       _startObscureTextToggleTimer();
+    }
+
+    // Listen for text changes to adjust maxLines
+    _controller.addListener(_adjustMaxLines);
+  }
+
+  void _adjustMaxLines() {
+    if (!widget.multiline || widget.maxLines == null) return;
+
+    final lineCount = '\n'.allMatches(_controller.text).length + 1;
+    if (lineCount > _dynamicMaxLines!) {
+      setState(() {
+        _dynamicMaxLines = lineCount; // Expand to match content
+      });
+    } else if (lineCount < widget.maxLines!) {
+      setState(() {
+        _dynamicMaxLines = widget.maxLines; // Reset to original
+      });
     }
   }
 
@@ -201,7 +224,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
     }
     return baseBorder;
   }
-
 
   @override
   void didUpdateWidget(CustomTextField oldWidget) {
@@ -283,38 +305,39 @@ class _CustomTextFieldState extends State<CustomTextField> {
     final effectiveLabelStyle = widget.labelStyle ??
         TextStyle(
           color: AppColors.textPrimary,
-          fontSize:  ResponsiveUtils.fontSize(context, 16)
+          fontSize: ResponsiveUtils.fontSize(context, 16),
         );
 
     final effectiveHintStyle = widget.hintStyle ??
         TextStyle(
           color: AppColors.hinttext,
-          fontSize:    ResponsiveUtils.fontSize(context, 16)
+          fontSize: ResponsiveUtils.fontSize(context, 16),
         );
 
     final effectiveStyle = widget.style ??
         TextStyle(
           color: AppColors.textPrimary,
-          fontSize: ResponsiveUtils.fontSize(context, 16)
+          fontSize: ResponsiveUtils.fontSize(context, 16),
         );
 
     final effectiveSuffixIcon = widget.obscureText
         ? IconButton(
-            icon: Icon(
-              _obscureText
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-              color: AppColors.primary.withOpacity(0.8),
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureText = !_obscureText;
-              });
-            },
-          )
+      icon: Icon(
+        _obscureText
+            ? Icons.visibility_outlined
+            : Icons.visibility_off_outlined,
+        color: AppColors.primary.withOpacity(0.8),
+      ),
+      onPressed: () {
+        setState(() {
+          _obscureText = !_obscureText;
+        });
+      },
+    )
         : widget.suffixIcon;
-    String? _toCamelCase(String text) {
-      if (text.isEmpty) return text;
+
+    String? _toCamelCase(String? text) {
+      if (text == null || text.isEmpty) return text;
 
       return text
           .split(' ')
@@ -324,6 +347,16 @@ class _CustomTextFieldState extends State<CustomTextField> {
           : '')
           .join(' ');
     }
+
+    // Determine keyboard type and text input action based on multiline flag
+    final effectiveKeyboardType = widget.multiline
+        ? TextInputType.multiline
+        : widget.keyboardType;
+
+    final effectiveTextInputAction = widget.multiline
+        ? TextInputAction.newline
+        : widget.textInputAction ?? TextInputAction.done;
+
     return MouseRegion(
       onEnter: (_) {
         setState(() {
@@ -341,15 +374,16 @@ class _CustomTextFieldState extends State<CustomTextField> {
         obscureText: _obscureText,
         readOnly: widget.readOnly,
         enabled: widget.enabled,
-        keyboardType: widget.keyboardType,
-        inputFormatters: widget.inputFormatters,
-        textInputAction: widget.textInputAction,
+        //keyboardType: effectiveKeyboardType,
+//        textInputAction: effectiveTextInputAction,
         textCapitalization: widget.textCapitalization,
         style: effectiveStyle,
         textAlign: widget.textAlign,
         textAlignVertical: widget.textAlignVertical ?? TextAlignVertical.center,
         autofocus: widget.autofocus,
-        maxLines: widget.maxLines,
+        maxLines: _dynamicMaxLines, // Use dynamic value
+        keyboardType: widget.multiline ? TextInputType.multiline : widget.keyboardType,
+        textInputAction: widget.multiline ? TextInputAction.newline : widget.textInputAction,
         minLines: widget.minLines,
         maxLength: widget.maxLength,
         expands: widget.expands,
@@ -358,7 +392,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
         enableSuggestions: widget.enableSuggestions,
         decoration: InputDecoration(
           labelText: widget.label,
-          hintText:widget.useCamelCase ?  _toCamelCase(widget.hintText!):widget.hintText!,
+          hintText: widget.useCamelCase
+              ? _toCamelCase(widget.hintText)
+              : widget.hintText,
           helperText: widget.helperText,
           errorText: widget.errorText,
           labelStyle: effectiveLabelStyle,
@@ -380,7 +416,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           isDense: widget.isDense,
           isCollapsed: widget.isCollapsed,
           border: _buildBorder(effectiveBorder),
-        hoverColor: Colors.white,
+          hoverColor: Colors.white,
           enabledBorder: _buildBorder(effectiveEnabledBorder),
           focusedBorder: effectiveFocusedBorder,
           errorBorder: effectiveErrorBorder,
@@ -421,8 +457,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
         selectionHeightStyle: widget.selectionHeightStyle,
         selectionWidthStyle: widget.selectionWidthStyle,
         strutStyle: widget.strutStyle,
+        inputFormatters: widget.inputFormatters,
       ),
     );
-
   }
 }

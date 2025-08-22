@@ -25,10 +25,11 @@ class DatePickerInput extends StatefulWidget {
   @override
   _DatePickerInputState createState() => _DatePickerInputState();
 }
-
 class _DatePickerInputState extends State<DatePickerInput> {
   late TextEditingController _controller;
   DateTime? _selectedDate;
+  late DateTime _displayDate; // Track current displayed month
+  late DateRangePickerController _datePickerController;
 
   @override
   void initState() {
@@ -37,21 +38,9 @@ class _DatePickerInputState extends State<DatePickerInput> {
     _controller = TextEditingController(
       text: _selectedDate != null ? _formatDate(_selectedDate!) : '',
     );
-  }
-
-  @override
-  void didUpdateWidget(DatePickerInput oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialDate != oldWidget.initialDate) {
-      _selectedDate = widget.initialDate;
-      _controller.text = _selectedDate != null ? _formatDate(_selectedDate!) : '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    _displayDate = _selectedDate ?? DateTime.now();
+    _datePickerController = DateRangePickerController();
+    _datePickerController.displayDate = _displayDate;
   }
 
   String _formatDate(DateTime date) {
@@ -63,62 +52,108 @@ class _DatePickerInputState extends State<DatePickerInput> {
 
     DateTime? pickedDate;
 
-    await await showDialog(
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 700,
-              height: 450,
-              child: SfDateRangePicker(
-                headerStyle: DateRangePickerHeaderStyle(
-                  textAlign: TextAlign.center,
-                  textStyle: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: ResponsiveUtils.fontSize(context, 20),
-                    color: AppColors.primary,
+        return StatefulBuilder( // ✅ To manage local state inside dialog
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 700,
+                  height: 500,
+                  child: Column(
+                    children: [
+                      // ✅ Custom Calendar Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        color: AppColors.primary.withOpacity(0.1),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            IconButton(
+                              icon:  Text("<<",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _displayDate =
+                                      DateTime(_displayDate.year - 1, _displayDate.month);
+                                  _datePickerController.displayDate = _displayDate;
+                                });
+                              },
+                            ),
+                            IconButton(
+                              icon: const Text("<",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _displayDate =
+                                      DateTime(_displayDate.year, _displayDate.month - 1);
+                                  _datePickerController.displayDate = _displayDate;
+                                });
+                              },
+                            ),
+                            Text(
+                              DateFormat('MMMM yyyy').format(_displayDate),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            IconButton(
+                              icon: const Text(">",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _displayDate =
+                                      DateTime(_displayDate.year, _displayDate.month + 1);
+                                  _datePickerController.displayDate = _displayDate;
+                                });
+                              },
+                            ),
+                            IconButton(
+                              icon:  Text(">>",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              onPressed: () {
+                                setDialogState(() {
+                                  _displayDate =
+                                      DateTime(_displayDate.year + 1, _displayDate.month);
+                                  _datePickerController.displayDate = _displayDate;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ✅ Calendar with custom navigation
+                      Expanded(
+                        child: SfDateRangePicker(
+                          headerHeight: 0, // Hide default header
+                          selectionMode: DateRangePickerSelectionMode.single,
+                          initialSelectedDate: _selectedDate ?? DateTime.now(),
+                          showActionButtons: true,
+                          controller: _datePickerController, // ✅ Persistent controller
+                          selectionColor: AppColors.secondary,
+                          todayHighlightColor: AppColors.primary,
+                          onSelectionChanged:
+                              (DateRangePickerSelectionChangedArgs args) {
+                            pickedDate = args.value as DateTime?;
+                          },
+                          onSubmit: (Object? val) {
+                            Navigator.of(context).pop();
+                          },
+                          onCancel: () {
+                            pickedDate = null;
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                selectionColor: AppColors.secondary,
-                selectionMode: DateRangePickerSelectionMode.single,
-                initialSelectedDate: _selectedDate ?? DateTime.now(),
-                showActionButtons: true,
-                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
-                  pickedDate = args.value as DateTime?;
-                },
-                selectionTextStyle: TextStyle(color: Colors.white),
-                todayHighlightColor: AppColors.primary,
-
-                // ✅ Customize week title color and style
-                monthViewSettings: DateRangePickerMonthViewSettings(
-                  viewHeaderStyle: DateRangePickerViewHeaderStyle(
-                    textStyle: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: ResponsiveUtils.fontSize(context, 14),
-                    ),
-                  ),
-                ),
-
-                onSubmit: (Object? val) {
-                  Navigator.of(context).pop();
-                },
-                onCancel: () {
-                  pickedDate = null;
-                  Navigator.of(context).pop();
-                },
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
-
 
     if (pickedDate != null && pickedDate != _selectedDate) {
       setState(() {
@@ -228,9 +263,14 @@ class _DatePickerInputState extends State<DatePickerInput> {
                   bottom: 0,
                   child: GestureDetector(
                     onTap: () => _selectDate(context),
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Icon(Icons.calendar_month_outlined,color: AppColors.primary,size: 20,),
+                    child: Tooltip(
+                      message: 'Tap to select Date.',
+                      decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Icon(Icons.calendar_month_outlined,color: AppColors.primary,size: 20,),
+                      ),
                     ),
                   ))
             ],

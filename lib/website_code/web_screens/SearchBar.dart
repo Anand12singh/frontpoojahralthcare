@@ -332,7 +332,7 @@ class _SearchbarState extends State<Searchbar> {
                             child: Text('Last Visit: ${patient['lastVisit']}'),
                           ),
                         ),
-                        onTap: () {
+                        onTap: () async {
                           GlobalPatientData.firstName = patient['name'].split(' ')[0];
                           GlobalPatientData.lastName =
                           patient['name'].split(' ').length > 1
@@ -343,12 +343,14 @@ class _SearchbarState extends State<Searchbar> {
 
                           Global.status = "2";
                           Global.phid = patient['id'].toString();
+                          GlobalPatientData.phid =patient['id'].toString();
                           GlobalPatientData.patientId = patient['phid'];
 
                           print("patient['patient_id']");
                           print(GlobalPatientData.patientId);
                           print(Global.phid);
-
+                          await GlobalPatientData.saveToPrefs();
+                          await GlobalPatientData.loadFromPrefs();
                           Navigator.pushReplacementNamed(context, '/patientData');
                           _searchController.clear();
                           _handleSearch('');

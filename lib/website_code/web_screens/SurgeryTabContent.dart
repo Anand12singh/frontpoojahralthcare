@@ -626,7 +626,7 @@ print(request.fields);
                     Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
                     SizedBox(width: fieldSpacing),
 
-                    Expanded(child: _buildFormInput('Procedure', _procedureController, maxLines: 4)),
+                    Expanded(child: _buildFormInput('Procedure', _procedureController, maxLines: 3)),
                   ],
                 ),
               ] else ...[
@@ -640,6 +640,7 @@ print(request.fields);
                   ],
                 ),
               ],
+              SizedBox(height: fieldSpacing),
               _buildFormInput('Implants used, if any', _implantsController, maxLines: 3),
               SizedBox(height: fieldSpacing),
               _buildFormInput('Complications, if any', _complicationsController, maxLines: 3),
@@ -716,8 +717,11 @@ print(request.fields);
         Text(_toCamelCase(label), style:  TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary,fontSize: ResponsiveUtils.fontSize(context, 14))),
         const SizedBox(height: 4),
         CustomTextField(
+
           controller: controller,
           maxLines: maxLines,
+multiline: true,
+
           hintText: 'Enter $label',
         ),
       ],

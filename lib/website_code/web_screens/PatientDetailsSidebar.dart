@@ -951,6 +951,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
                         CustomTextField(
                           controller: summaryController,
                           hintText: 'Summary',
+                          multiline: true,
                           maxLines: 2,
                         ),
                         /*     SizedBox(height: 8),
@@ -1047,9 +1048,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         ,Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  icon: Icon(Icons.print, color: AppColors.primary),
-                  onPressed: () => _printPatientDetails(),
+                Tooltip(
+                  decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+                  message: 'Tap to print Patient Summary',
+                  child: IconButton(
+                    icon: Icon(Icons.print, color: AppColors.primary),
+                    onPressed: () => _printPatientDetails(),
+                  ),
                 ),
               ],
             ),

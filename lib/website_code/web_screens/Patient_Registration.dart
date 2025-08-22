@@ -223,6 +223,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
   DateTime _ConsulationDate = DateTime.now(); // Initialize with default value
   DateTime? _CTScanDate= DateTime.now(); // Initialize with default value
 
+  Map<String, List<String>> miscReportTagging = {};
+
+// Add these with your other controllers
+  final List<TextEditingController> _medNameControllers = [];
+  final List<TextEditingController> _medDosageControllers = [];
+  final List<TextEditingController> _medFrequencyControllers = [];
+  final List<TextEditingController> _medDurationControllers = [];
+  List<dynamic> _medicationIds = []; // can hold int or ""
 
   // Other state variables
   bool _isLoadingLocations = false;
@@ -271,13 +279,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
     'pr_rectum_image': [],
     'doctor_note_image': [],
   };
+  List<Map<String, dynamic>> medications = [];
   @override
 
   void initState() {
     super.initState();
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
-    _phIdController.text = 'PH-${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
+    _addMedicationRow();
+    _phIdController.text = '${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
     _phoneController.text = GlobalPatientData.phone ?? '';
@@ -434,7 +444,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
             setState(() {
               _patientData = responseData['patient'] is List
+                  ? (responseData['patient'].isNotEmpty
                   ? responseData['patient'][0]
+                  : {})
                   : responseData['patient'] ?? {};
 
               _visitData = responseData['PatientVisitInfo'] is List
@@ -443,7 +455,12 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   : {})
                   : responseData['PatientVisitInfo'] ?? {};
 
-              _documentData = responseData['PatientDocumentInfo'] ?? {};
+              _documentData = responseData['PatientDocumentInfo'] ?? [];
+
+              // Safely map DoctorNotesInfo
+              final doctorNotesInfo =
+                  responseData['DoctorNotesInfo'] as List<dynamic>? ?? [];
+              _mapDoctorNotes(doctorNotesInfo);
 
               log('_documentData $_documentData');
               log('_patientData $_patientData');
@@ -475,6 +492,26 @@ class _OnboardingFormState extends State<OnboardingForm> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+
+  void _mapDoctorNotes(List<dynamic> doctorNotesInfo) {
+    _medNameControllers.clear();
+    _medDosageControllers.clear();
+    _medFrequencyControllers.clear();
+    _medDurationControllers.clear();
+    _medicationIds.clear();
+
+    for (var note in doctorNotesInfo) {
+      _medNameControllers.add(TextEditingController(text: note['name_of_medication'] ?? ''));
+      _medDosageControllers.add(TextEditingController(text: note['dosage'] ?? ''));
+      _medFrequencyControllers.add(TextEditingController(text: note['frequency'] ?? ''));
+      _medDurationControllers.add(TextEditingController(text: note['duration'] ?? ''));
+
+      _medicationIds.add(note['id'] ?? ""); // if missing, fallback to empty
+    }
+
+    setState(() {});
   }
 
 /*  Future<void> _fetchPatientData() async {
@@ -556,7 +593,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         _patientData?['alternative_no']?.toString() ?? '';
     _occupationController.text =
         _patientData?['occupation']?.toString() ?? '';
-    _phIdController.text = 'PH-${_patientData?['phid']?.toString() ?? ''}';
+    _phIdController.text = '${_patientData?['phid']?.toString() ?? ''}';
     _addressController.text = _patientData?['address']?.toString() ?? '';
     _OccupationController.text = _patientData?['occupation']?.toString() ?? '';
     _cityController.text = _patientData?['city']?.toString() ?? '';
@@ -581,11 +618,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
         : null;
 
 
-    _selectedDate = DateTime.parse(
-        _patientData?['date']?.toString() ?? DateTime.now().toString());
+    _selectedDate = DateTime.tryParse(
+        _patientData?['registration_date']?.toString() ?? '')
+        ?? DateTime.now();
 
-    _ConsulationDate = DateTime.parse(
-        _patientData?['date']?.toString() ?? DateTime.now().toString());
+    _ConsulationDate = DateTime.tryParse(
+        _patientData?['consultation_date']?.toString() ?? '')
+        ?? DateTime.now();
 
 
 
@@ -835,9 +874,62 @@ class _OnboardingFormState extends State<OnboardingForm> {
     }
   }
 
+  Future<void> _onFileSelected(String fileName) async {
+    final TextEditingController _tagController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add Tag for MISC Document"),
+          content: CustomTextField(
+            controller: _tagController,
+            hintText: "Enter tag name",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // cancel
+              },
+              child: const Text("Cancel"),
+            ),
+            Animatedbutton(
+              onPressed: () {
+                final tag = _tagController.text.trim();
+                if (tag.isNotEmpty) {
+                  setState(() {
+                    miscReportTagging[fileName] = [tag];
+                    print("miscReportTagging");
+                    print(miscReportTagging);
+                  });
+                }
+                Navigator.pop(context);
+              },shadowColor: Colors.transparent,
+              backgroundColor: AppColors.secondary,
+
+              title: "Save",
+
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
+    for (var controller in _medNameControllers) {
+      controller.dispose();
+    }
+    for (var controller in _medDosageControllers) {
+      controller.dispose();
+    }
+    for (var controller in _medFrequencyControllers) {
+      controller.dispose();
+    }
+    for (var controller in _medDurationControllers) {
+      controller.dispose();
+    }
     // Dispose all controllers
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -971,6 +1063,41 @@ class _OnboardingFormState extends State<OnboardingForm> {
     }
   }
 
+  void _addMedicationRow() {
+    setState(() {
+      _medNameControllers.add(TextEditingController());
+      _medDosageControllers.add(TextEditingController());
+      _medFrequencyControllers.add(TextEditingController());
+      _medDurationControllers.add(TextEditingController());
+
+      _medicationIds.add(""); // new rows get empty string
+    });
+  }
+  List<Map<String, dynamic>> getMedicationPayload() {
+    List<Map<String, dynamic>> medications = [];
+
+    for (int i = 0; i < _medNameControllers.length; i++) {
+      medications.add({
+        "id": _medicationIds[i] == null ? "" : _medicationIds[i], // ensure empty instead of null
+        "name_of_medication": _medNameControllers[i].text,
+        "dosage": _medDosageControllers[i].text,
+        "frequency": _medFrequencyControllers[i].text,
+        "duration": _medDurationControllers[i].text,
+      });
+    }
+
+    return medications;
+  }
+
+
+  void _removeMedicationRow(int index) {
+    setState(() {
+      _medNameControllers.removeAt(index).dispose();
+      _medDosageControllers.removeAt(index).dispose();
+      _medFrequencyControllers.removeAt(index).dispose();
+      _medDurationControllers.removeAt(index).dispose();
+    });
+  }
   Future<void> _submitForm() async {
 
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
@@ -1001,7 +1128,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
            color: AppColors.primary,
         )),
       );
+      String _formatMiscReportTagging(Map<String, List<String>> tagging) {
+        if (tagging.isEmpty) return '{}';
 
+        final entries = tagging.entries.map((entry) =>
+        '"${entry.key}":${jsonEncode(entry.value)}'
+        ).join(',');
+
+        return '{$entries}';
+      }
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
         Navigator.of(context).pop();
@@ -1021,7 +1156,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
       });
       log('_doctorNotesController.text ${_doctorNotesController.text}');
       log('token $token');
-
+      for (int i = 0; i < _medNameControllers.length; i++) {
+        medications.add({
+          "sr_no": i + 1,
+          "name_of_medication": _medNameControllers[i].text,
+          "dosage": _medDosageControllers[i].text,
+          "frequency": _medFrequencyControllers[i].text,
+          "duration": _medDurationControllers[i].text,
+        });
+      }
       // ✅ Add Form Fields
       Map<String, String> fields = {
         'first_name': _ensureString(_firstNameController.text),
@@ -1144,7 +1287,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'msic_laboratory': _ensureString(_miscLaboratoryController.text),
         'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
         'msic_finding': _ensureString(_miscFindingController.text),
+        "miscReportTagging": _formatMiscReportTagging(miscReportTagging),
+       // "medications": medications.toString(),
       };
+
+
+
+      fields['medications'] = jsonEncode(getMedicationPayload());
       fields['patientId'] = GlobalPatientData.phid.toString();
      /* if (Global.status == '2') {
         fields['patientId'] = Global.phid.toString();
@@ -1179,6 +1328,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
           }
         }
       }
+      //For Treatment Prescribed Tab
+    /*  for (int i = 0; i < _medNameControllers.length; i++) {
+        medications.add({
+          'name': _medNameControllers[i].text,
+          'dosage': _medDosageControllers[i].text,
+          'frequency': _medFrequencyControllers[i].text,
+          'duration': _medDurationControllers[i].text,
+        });
+      }
+      fields['medications'] = jsonEncode(medications);*/
       if (existingFileIds.isNotEmpty) {
         request.fields['existing_file'] = existingFileIds.join(',');
       }
@@ -1702,14 +1861,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
                       FormInput(
                         label: 'Weight (kg)',
                         hintlabel: "Enter Weight",
-                        maxcount: 4,
+                        maxcount: 6, // increase if decimals allowed
                         controller: _weightController,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                         ],
-                        onChanged: (value) => _calculateBMI(), // Add this line
+                        onChanged: (value) => _calculateBMI(),
                       ),
-                            FormInput(
+
+                      FormInput(
 
                               label: 'BMI (kg/m²)',
                               hintlabel: "Enter BMI",
@@ -1792,98 +1952,77 @@ class _OnboardingFormState extends State<OnboardingForm> {
                   const SizedBox(height: 8),
               // isMobile ?
 
-               LayoutBuilder(
-                   builder: (context,constraints) {
-                     double screenWidth = constraints.maxWidth;
-                     int itemsPerRow;
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    double screenWidth = constraints.maxWidth;
+                    int itemsPerRow;
 
-                     if (screenWidth < 600) {
-                       itemsPerRow = 1; // mobile
-                     } else if (screenWidth < 1200) {
-                       itemsPerRow = 4; // tablet
-                     } else if (screenWidth < 1500) {
-                       itemsPerRow = 4; // small desktop
-                     } else {
-                       itemsPerRow = 4; // large desktop
-                     }
+                    if (screenWidth < 600) {
+                      itemsPerRow = 1; // mobile
+                    } else if (screenWidth < 1200) {
+                      itemsPerRow = 2; // tablet
+                    } else if (screenWidth < 1500) {
+                      itemsPerRow = 2; // small desktop
+                    } else {
+                      itemsPerRow = 2; // large desktop
+                    }
 
-                     double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
-                   return Wrap(
-                     spacing: 16,
-                     runSpacing: 14,
-                     // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     // crossAxisAlignment: WrapCrossAlignment.center,
-                     alignment: WrapAlignment.spaceBetween,
+                    double itemWidth = (screenWidth / itemsPerRow) - 16;
 
-                     children: [
+                    return Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        HistoryYesNoField(
+                          label: "H/O DM",
+                          value: _hasDM,
+                          onChanged: (val) => setState(() => _hasDM = val),
+                          extraField: FormInput(
+                            label: 'Since when',
+                            maxlength: 1,
+                            controller: _SincewhenController,
+                          ),
+                        ),
+                        HistoryYesNoField(
+                          label: "Hypertension",
+                          value: _hasHypertension,
+                          onChanged: (val) => setState(() => _hasHypertension = val),
+                          extraField: FormInput(
+                            label: 'Since when',
+                            maxlength: 1,
+                            controller: _hypertensionSinceController,
+                          ),
+                        ),
+                        HistoryYesNoField(
+                          label: "IHD",
+                          value: _hasIHD,
+                          onChanged: (val) => setState(() => _hasIHD = val),
+                          extraField: FormInput(
+                            label: 'IHD Description',
+                            maxlength: 1,
+                            controller: _ihdDescriptionController,
+                          ),
+                        ),
+                        HistoryYesNoField(
+                          label: "COPD",
+                          value: _hasCOPD,
+                          onChanged: (val) => setState(() => _hasCOPD = val),
+                          extraField: FormInput(
+                            label: 'COPD Description',
+                            maxlength: 1,
+                            controller: _copdDescriptionController,
+                          ),
+                        ),
+                      ].map((child) {
+                        return SizedBox(width: itemWidth, child: child);
+                      }).toList(),
+                    );
+                  },
+                ),
 
-                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           CustomCheckbox(
-                             label: 'H/O DM',
-                             initialValue: _hasDM,
-                             onChanged: (value) => setState(() => _hasDM = value),
-                           ),
-                           const SizedBox(height: 8),
-                           if(_hasDM)
-                             FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
-                         ],
-                       ),
-                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           CustomCheckbox(label: 'Hypertension'
-                             ,initialValue: _hasHypertension
-                             ,onChanged: (value) {
-                               setState(() {
-                                 _hasHypertension=value;
-                               });
-                             },
-                           ),
-                           const SizedBox(height: 8),
-                           if(_hasHypertension)
-                             FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
-                         ],
-                       ),
-                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
-                             setState(() {
-                               _hasIHD=value;
-                             });
-                           },),
-                           const SizedBox(height: 8),
-                           if(_hasIHD)
-                             FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
-                         ],
-                       ),
-                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                             setState(() {
-                               print("_hasCOPD");
-                               print(_hasCOPD);
-                               _hasCOPD=value;
-                             });
-                           },),
-                           const SizedBox(height: 8),
-                           if(_hasCOPD)
-                             FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
-                         ],
-                       ),
 
-                     ].map((child) {
-                       return SizedBox(
-                         width: itemWidth,
-                         child: child,
-                       );
-                     }).toList(),
-                   );
-                 }
-               ),/*:
+                /*:
                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2406,7 +2545,7 @@ SizedBox(height: 16,),
                               spacing: 16,
                               runSpacing: 16,
                               children: [
-                                FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
+                              //  FormInput(label: 'P/A Abdomen Notes',controller: _paAbdomenController,),
                                 FormInput(label: 'P/R Rectum Notes',controller: _prRectumController,),
                                 Container()
                               ].map((child) {
@@ -2901,18 +3040,22 @@ SizedBox(height: 16,),
                         ),
                       ),
                     ],),*/
-                  SizedBox(height: 10,),
+             /*     SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),
+                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),*/
                   SizedBox(height: 10),
 
                   DocumentUploadWidget(
                     docType: 'misc_report', // This should match one of your map keys
                     label: "Upload MISC",
-                    onFilesSelected: (files) {
+                    onFilesSelected: (files) async {
+
+
+
                       setState(() {
                         _uploadedFiles['misc_report'] = files;
+
                       });
                     },
                     initialFiles: _uploadedFiles['misc_report'],
@@ -2927,39 +3070,234 @@ SizedBox(height: 16,),
                 ],
               ),
             ),
-            Container( width: double.infinity,
+            Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.Offwhitebackground,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.Containerbackground),
               ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-               Text(
-                '2. Doctor Notes',
-                style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '2. Doctor Notes',
+                    style: TextStyle(
+                        fontSize: ResponsiveUtils.fontSize(context, 18),
+                        fontWeight: FontWeight.w800
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FormInput(
+                      label: 'Diagnosis',
+                      hintlabel: "Text",
+                      maxlength: 5,
+                      controller: _doctorNotesController,
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+
+
+                  // Medication Table
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Treatment Prescribed',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                              fontSize: ResponsiveUtils.fontSize(context, 14),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _addMedicationRow,
+                            icon: Icon(Icons.add_box_rounded, size: 24, color: AppColors.secondary),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.secondary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(color: AppColors.secondary),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                          )
+
+                        ],
+                      ),
+                      SizedBox(height: 10),
+
+                      // Excel-like Table
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Column(
+                          children: [
+                            // Table Header
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                border: Border(
+                                  bottom: BorderSide(color: Colors.grey.shade300),
+                                ),
+                              ),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  children: [
+                                    _buildHeaderCell('Sr No', 60),
+                                    Expanded(
+                                      flex: 3,
+                                      child: _buildHeaderCell('Name of Medication'),
+                                    ),
+                                    Expanded(
+                                      flex: 1,
+                                      child: _buildHeaderCell('Dosage'),
+                                    ),
+                                    Expanded(
+                                      flex: 1,
+                                      child: _buildHeaderCell('Frequency'),
+                                    ),
+                                    Expanded(
+                                      flex: 1,
+                                      child: _buildHeaderCell('Duration'),
+                                    ),
+                                    //_buildHeaderCell('Action', 80),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Table Rows
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: _medNameControllers.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                                    border: Border(
+                                      bottom: BorderSide(
+
+                                          color: index == _medNameControllers.length - 1
+                                              ? Colors.transparent
+                                              : Colors.grey.shade300
+                                      ),
+                                    ),
+                                  ),
+                                  child: IntrinsicHeight(
+                                    child: Row(
+                                      children: [
+                                        _buildCell(
+                                            Center(child: Text('${index + 1}')),
+                                            width: 60
+                                         ),
+                                        Expanded(
+                                          flex: 3,
+                                          child: _buildCell(
+                                            TextFormField(
+                                              controller: _medNameControllers[index],
+                                              decoration: InputDecoration(
+                                                hintText: 'Enter medication',
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: _buildCell(
+                                            TextFormField(
+                                              controller: _medDosageControllers[index],
+                                              decoration: InputDecoration(
+                                                hintText: 'Dosage',
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: _buildCell(
+                                            TextFormField(
+                                              controller: _medFrequencyControllers[index],
+                                              decoration: InputDecoration(
+                                                hintText: 'Frequency',
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: _buildCell(
+                                            TextFormField(
+                                              controller: _medDurationControllers[index],
+                                              decoration: InputDecoration(
+                                                hintText: 'Duration',
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    /*    _buildCell(
+                                            Center(
+                                              child: IconButton(
+                                                icon: Icon(Icons.delete,
+                                                    color: _medNameControllers.length > 1
+                                                        ? Colors.red
+                                                        : Colors.grey),
+                                                onPressed: _medNameControllers.length > 1
+                                                    ? () => _removeMedicationRow(index)
+                                                    : null,
+                                              ),
+                                            ),
+                                            width: 80
+                                        ),*/
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+
+
+                    ],
+                  ),
+
+
+
+                  SizedBox(height: 20),
+                  DatePickerInput(
+                    label: 'Follow up date',
+                    hintlabel: 'Follow up date',
+                    onDateSelected: (date) {
+                      setState(() {
+                        _followUpDate = date;
+                      });
+                    },
+                    initialDate: _followUpDate,
+                  ),
+                ],
               ),
-              SizedBox(height: 20,),
-              SizedBox(
-                  width: double.infinity,
-                  child: FormInput(label: 'Diagnosis',hintlabel: "Text",maxlength: 5,controller: _doctorNotesController,)),
-
-
-                SizedBox(height: 10,),
-                DatePickerInput(
-                  label: 'Flollow up date',
-                  hintlabel: 'Flollow up date',
-                  onDateSelected: (date) {
-                    setState(() {
-                      _followUpDate = date; // Update the selected date
-                    });
-                  },
-                  initialDate: _followUpDate, // Pass the initial date if needed
-                ),
-              //  FormInput(label: 'Follow up date',hintlabel: "dd-mm-yyyy",),
-            ],),
             ),
             Container( width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -2982,17 +3320,27 @@ SizedBox(height: 16,),
 
                 SizedBox(height: 10,),
                 DocumentUploadWidget(
-                  docType: 'misc_report', // This should match one of your map keys
+                  docType: 'misc_report',
                   label: "MISC Upload",
                   onFilesSelected: (files) {
                     setState(() {
                       _uploadedFiles['misc_report'] = files;
+                      print("_uploadedFiles['misc_report']");
+                      print(_uploadedFiles['misc_report']);
+
+                      if (files.isNotEmpty) {
+                        final fileMap = files.first; // files is a List<Map<String, dynamic>>
+                        final fileName = fileMap['name']; // extract name from the map
+                        if (fileName != null) {
+                          _onFileSelected(fileName);
+                        }
+                      }
                     });
                   },
                   initialFiles: _uploadedFiles['misc_report'],
                 ),
 
-            ],),
+              ],),
             ),
             const SizedBox(height: 20),
             _buildFormNavigationButtons(isLastStep: true),
@@ -3003,6 +3351,30 @@ SizedBox(height: 16,),
   }
 }
 
+Widget _buildHeaderCell(String text, [double? width]) {
+  return Container(
+    width: width,
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    decoration: BoxDecoration(
+      border: Border(right: BorderSide(color: Colors.grey.shade300)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
+Widget _buildCell(Widget child, {double? width}) {
+  return Container(
+    width: width,
+    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+    decoration: BoxDecoration(
+      border: Border(right: BorderSide(color: Colors.grey.shade300)),
+    ),
+    child: child,
+  );
+}
 class FormInput extends StatelessWidget {
   final String label;
   final String hintlabel;
@@ -3043,6 +3415,8 @@ class FormInput extends StatelessWidget {
         .join(' ');
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -3079,6 +3453,7 @@ class FormInput extends StatelessWidget {
             fillColor: fillColor,
             enabled: !readOnly,
             maxLines: maxlength,
+            multiline: true,
             maxLength: maxcount,
             controller: controller ?? TextEditingController(),
             hintText: hintlabel,
@@ -3098,4 +3473,77 @@ class FormInput extends StatelessWidget {
 
 
 
+
+class HistoryYesNoField extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final Widget? extraField;
+
+  const HistoryYesNoField({
+    Key? key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.extraField,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                "$label :",
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+
+            // Radio buttons
+            Expanded(
+              flex: 2,
+              child: Row(
+                children: [
+                  Radio<bool>(
+                    value: true,
+                    groupValue: value,
+                    activeColor: AppColors.secondary, // ✅ custom color
+                    onChanged: (val) => onChanged(val!),
+                  ),
+                  const Text("Yes"),
+                  Radio<bool>(
+                    value: false,
+                    groupValue: value,
+                    activeColor: Colors.red, // ✅ custom color
+                    onChanged: (val) => onChanged(val!),
+                  ),
+                  const Text("No"),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // Extra field (enabled only if "No")
+            if (extraField != null)
+              Expanded(
+                flex: 3,
+                child: AbsorbPointer(
+                  absorbing: !value, // ✅ disables when value == true ("Yes")
+                  child: Opacity(
+                    opacity: !value ? 0.4 : 1.0, // ✅ faded if disabled
+                    child: extraField,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 

@@ -10,6 +10,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
@@ -17,7 +18,8 @@ import 'VideoPlayerWidget.dart';
 import 'dart:html' as html; // For web-specific functionality
 import 'dart:typed_data'; // For Uint8List
 import 'package:universal_html/html.dart' as universal_html;
-
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
 class DocumentUploadWidget extends StatefulWidget {
   final String docType;
@@ -44,6 +46,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
   @override
   void initState() {
+
     super.initState();
     _selectedFiles = widget.initialFiles?.where((file) => file['isExisting'] ?? false).toList() ?? [];
   }
@@ -93,7 +96,8 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         setState(() {
           _selectedFiles.addAll(newFiles);
         });
-
+print("_selectedFiles");
+print(_selectedFiles);
         widget.onFilesSelected(_selectedFiles);
       }
     } catch (e) {
@@ -158,7 +162,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircleAvatar(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.secondary,
                     child: IconButton(
                       icon: const Icon(Icons.download, color: Colors.white),
                       onPressed: () => _downloadFile(filePath, 'mp4', isNetwork),
@@ -216,13 +220,18 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     final videoTypes = {'mp4', 'mov', 'avi'};
     final pdfTypes = {'pdf'};
     final documentTypes = {'doc', 'docx'};
+    print('file:$file');
+    print('isNetwork:$isNetwork');
     final fileExtension = fileType.toLowerCase();
+    print("fileExtension");
+    print(fileExtension);
 
     if (imageTypes.contains(fileExtension)) {
       _showImagePreview(context, file, isNetwork);
     } else if (videoTypes.contains(fileExtension)) {
       _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
     } else if (pdfTypes.contains(fileExtension)) {
+      print('pdf file');
       _showPdfPreview(context, file, isNetwork: isNetwork);
     } else if (documentTypes.contains(fileExtension)) {
       _showDocumentPreview(context, fileName);
@@ -351,8 +360,15 @@ print(imageUrl);
   }
 
   void _showPdfPreview(BuildContext context, Map<String, dynamic> file, {bool isNetwork = false}) {
-    final filePath = file['path'] ?? '';
+    final filePath = file['file_path'] ?? file['path'] ?? '';
     final fileName = file['name'] ?? 'PDF Document';
+    final fileBytes = file['bytes'];
+
+    // Add baseUrl for network if needed
+    String pdfUrl = filePath;
+    if (isNetwork && widget.baseUrl != null && !filePath.startsWith('http')) {
+      pdfUrl = '${widget.baseUrl}$filePath';
+    }
 
     showDialog(
       context: context,
@@ -361,32 +377,112 @@ print(imageUrl);
         child: Stack(
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800,minWidth: 400),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.picture_as_pdf, size: 80, color: Colors.red),
-                  const SizedBox(height: 20),
-                  Text(
-                    fileName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => _downloadFile(filePath, 'pdf', isNetwork),
-                    child: const Text('Download PDF'),
-                  ),
-                ],
+              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
+              child: Builder(
+                builder: (_) {
+                  if (isNetwork) {
+                    // Network PDF - use iframe with proper URL
+                    return PdfIframe(pdfUrl: pdfUrl);
+                  } else {
+                    // Local PDF - handle both web and mobile
+                    if (kIsWeb) {
+                      // For web, ensure we have proper bytes
+                      if (fileBytes != null && fileBytes is Uint8List) {
+                        return _buildWebPdfPreview(fileBytes, fileName);
+                      } else {
+                        return _buildPdfErrorWidget('No PDF data available for web preview');
+                      }
+                    } else {
+                      // For mobile, use SfPdfViewer with bytes
+                      try {
+                        if (fileBytes != null && fileBytes is Uint8List) {
+                          return SfPdfViewer.memory(
+                            fileBytes,
+                            canShowScrollHead: true,
+                            canShowScrollStatus: true,
+                          );
+                        } else if (filePath.isNotEmpty) {
+                          // Fallback to file path if bytes not available
+                          return SfPdfViewer.file(
+                            File(filePath),
+                            canShowScrollHead: true,
+                            canShowScrollStatus: true,
+                          );
+                        } else {
+                          return _buildPdfErrorWidget('No PDF data available');
+                        }
+                      } catch (e) {
+                        debugPrint('PDF viewer error: $e');
+                        return _buildPdfErrorWidget('Failed to load PDF: $e');
+                      }
+                    }
+                  }
+                },
               ),
             ),
-            _buildPreviewActionButtons(context, filePath, 'pdf', isNetwork),
+            Positioned(
+              top: 0,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+  Widget _buildWebPdfPreview(Uint8List fileBytes, String fileName) {
+    try {
+      // Convert bytes to base64
+      final base64String = base64Encode(fileBytes);
+      final dataUrl = 'data:application/pdf;base64,$base64String';
 
+      // Create a unique viewType
+      final viewType = 'pdf_${fileName.hashCode}';
+
+      // Register iframe view
+      // ignore: undefined_prefixed_name
+      ui.platformViewRegistry.registerViewFactory(
+        viewType,
+            (int viewId) => html.IFrameElement()
+          ..src = dataUrl
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.border = 'none'
+          ..setAttribute('type', 'application/pdf'),
+      );
+
+      return HtmlElementView(
+        viewType: viewType,
+      );
+    } catch (e) {
+      debugPrint('Web PDF preview error: $e');
+      return _buildPdfErrorWidget('Failed to load PDF: $e');
+    }
+  }
+  Widget _buildPdfErrorWidget(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 50),
+          const SizedBox(height: 10),
+          const Text(
+            'Failed to load PDF',
+            style: TextStyle(fontSize: 16, color: Colors.red),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            error,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
   void _showDocumentPreview(BuildContext context, String fileName) {
     showDialog(
       context: context,
@@ -475,19 +571,27 @@ print(imageUrl);
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.blue,
-            child: IconButton(
-              icon: const Icon(Icons.download, color: Colors.white),
-              onPressed: () => _downloadFile(filePath, fileType ?? '', isNetwork),
+          Tooltip(
+            decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+message: 'Download',
+            child: CircleAvatar(
+              backgroundColor: AppColors.secondary,
+              child: IconButton(
+                icon: const Icon(Icons.download, color: Colors.white),
+                onPressed: () => _downloadFile(filePath, fileType ?? '', isNetwork),
+              ),
             ),
           ),
           const SizedBox(width: 10),
-          CircleAvatar(
-            backgroundColor: Colors.red,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
+          Tooltip(
+            decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+            message: 'Close',
+            child: CircleAvatar(
+              backgroundColor: Colors.red,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
           ),
         ],
@@ -684,32 +788,36 @@ print(imageUrl);
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: _pickFiles,
-                        child: Container(
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.textSecondary.withOpacity(0.3),
-                              width: 1.5,
+                        child: Tooltip(
+                          message:'Tap to upload documents',
+                          decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+                          child: Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AppColors.textSecondary.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.attach_file,
-                                color: Colors.grey,
-                                size: ResponsiveUtils.fontSize(context, 18),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Tap to upload documents",
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: ResponsiveUtils.fontSize(context, 14),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.attach_file,
+                                  color: Colors.grey,
+                                  size: ResponsiveUtils.fontSize(context, 18),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Tap to upload documents",
+                                  style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontSize: ResponsiveUtils.fontSize(context, 14),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -797,13 +905,30 @@ print(imageUrl);
                                         ],
                                       ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: Colors.red,
+                                    Tooltip(
+                                      message: 'Preview file',
+                                      decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+
+                                      child: Icon(
+                                        Icons.remove_red_eye,
+                                        color: AppColors.secondary,
                                         size: 16,
                                       ),
-                                      onPressed: () => _removeFile(index),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    // Remove icon with tooltip
+                                    Tooltip(
+                                      message: 'Remove file',
+                                      decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.red,
+                                          size: 16,
+                                        ),
+                                        onPressed: () => _removeFile(index),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -843,3 +968,57 @@ print(imageUrl);
 
 }
 
+
+class PdfIframe extends StatelessWidget {
+  final String pdfUrl;
+  final Color headerColor;
+
+  const PdfIframe({
+    Key? key,
+    required this.pdfUrl,
+    this.headerColor =  AppColors.secondary, // Default green
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final viewType = 'pdf_${pdfUrl.hashCode}';
+
+    // Convert color to hex for CSS
+    final hexColor = '#${headerColor.value.toRadixString(16).substring(2)}';
+
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(
+      viewType,
+          (int viewId) {
+        final container = html.DivElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.display = 'flex'
+          ..style.flexDirection = 'column';
+
+        // Create custom header
+        final header = html.DivElement()
+          ..style.backgroundColor = hexColor
+          ..style.padding = '10px'
+          ..style.color = 'white'
+          ..style.fontWeight = 'bold'
+          ..innerText = 'PDF Document';
+
+        // Create iframe
+        final iframe = html.IFrameElement()
+          ..src = pdfUrl
+          ..style.flex = '1'
+          ..style.border = 'none';
+
+        container.append(header);
+        container.append(iframe);
+
+        return container;
+      },
+    );
+
+    return HtmlElementView(
+      viewType: viewType,
+    );
+  }
+}

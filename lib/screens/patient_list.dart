@@ -43,7 +43,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
   String _search = '';
   String? _sortBy;
 
-  String _sortOrder = 'asc';
+  String _sortOrder = 'desc';
 
   List<int> _rowsPerPageOptions = [10, 20, 50, 100, 0]; // 0 will represent "ALL"
 
@@ -85,7 +85,8 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
         "sortBy": _sortBy ?? "",
         "sortOrder": _sortOrder,
       });
-
+      print("body");
+      print(body);
       final response = await http.post(
         Uri.parse('$localurl/get_allpatients'), // your endpoint
         headers: headers,
@@ -93,6 +94,7 @@ class _RecentPatientsListScreenState extends State<RecentPatientsListScreen> {
       );
 print("response.body");
 print(response.body);
+print(response.request);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         setState(() {

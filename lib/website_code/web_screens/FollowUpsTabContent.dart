@@ -708,7 +708,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                         }
                     ),
 
-
+                    const SizedBox(height: 12),
                     DocumentUploadWidget(
                       label: "Upload Documents",
                       docType: "treatment_image",

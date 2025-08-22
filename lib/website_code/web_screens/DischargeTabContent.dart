@@ -607,97 +607,75 @@ maxlength: 4,
                   const SizedBox(height: 16),
                 //  isMobile ?
                   LayoutBuilder(
-                      builder: (context,constraints) {
-                        double screenWidth = constraints.maxWidth;
-                        int itemsPerRow;
+                    builder: (context, constraints) {
+                      double screenWidth = constraints.maxWidth;
+                      int itemsPerRow;
 
-                        if (screenWidth < 600) {
-                          itemsPerRow = 1; // mobile
-                        } else if (screenWidth < 1200) {
-                          itemsPerRow = 4; // tablet
-                        } else if (screenWidth < 1500) {
-                          itemsPerRow = 4; // small desktop
-                        } else {
-                          itemsPerRow = 4; // large desktop
-                        }
+                      if (screenWidth < 600) {
+                        itemsPerRow = 1; // mobile
+                      } else if (screenWidth < 1200) {
+                        itemsPerRow = 2; // tablet
+                      } else if (screenWidth < 1500) {
+                        itemsPerRow = 2; // small desktop
+                      } else {
+                        itemsPerRow = 2; // large desktop
+                      }
 
-                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                      double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+
                       return Wrap(
                         spacing: 16,
-                        runSpacing: 14,
-                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        // crossAxisAlignment: WrapCrossAlignment.center,
-                        alignment: WrapAlignment.spaceBetween,
-
+                        runSpacing: 16,
+                        alignment: WrapAlignment.start,
                         children: [
-
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(
-                                label: 'H/O DM',
-                                initialValue: _hasDM,
-                                onChanged: (value) => setState(() => _hasDM = value),
-                              ),
-                              const SizedBox(height: 8),
-                              if(_hasDM)
-                                FormInput(label: 'Since when',maxlength: 1,controller: _SincewhenController,),
-                            ],
+                          HistoryYesNoField(
+                            label: "H/O DM",
+                            value: _hasDM,
+                            onChanged: (val) => setState(() => _hasDM = val),
+                            extraField: FormInput(
+                              label: 'Since when',
+                              maxlength: 1,
+                              controller: _SincewhenController,
+                            ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(label: 'Hypertension'
-                                ,initialValue: _hasHypertension
-                                ,onChanged: (value) {
-                                  setState(() {
-                                    _hasHypertension=value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              if(_hasHypertension)
-                                FormInput(label: 'Since when',maxlength: 1,controller: _hypertensionSinceController,),
-                            ],
+                          HistoryYesNoField(
+                            label: "Hypertension",
+                            value: _hasHypertension,
+                            onChanged: (val) => setState(() => _hasHypertension = val),
+                            extraField: FormInput(
+                              label: 'Since when',
+                              maxlength: 1,
+                              controller: _hypertensionSinceController,
+                            ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(label: 'IHD',initialValue: _hasIHD  ,onChanged: (value) {
-                                setState(() {
-                                  _hasIHD=value;
-                                });
-                              },),
-                              const SizedBox(height: 8),
-                              if(_hasIHD)
-                                FormInput(label: 'IHD Description',maxlength: 1,controller: _ihdDescriptionController,),
-                            ],
+                          HistoryYesNoField(
+                            label: "IHD",
+                            value: _hasIHD,
+                            onChanged: (val) => setState(() => _hasIHD = val),
+                            extraField: FormInput(
+                              label: 'IHD Description',
+                              maxlength: 1,
+                              controller: _ihdDescriptionController,
+                            ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomCheckbox(label: 'COPD'  ,initialValue: _hasCOPD,onChanged: (value) {
-                                setState(() {
-                                  print("_hasCOPD");
-                                  print(_hasCOPD);
-                                  _hasCOPD=value;
-                                });
-                              },),
-                              const SizedBox(height: 8),
-                              if(_hasCOPD)
-                                FormInput(label: 'COPD Description',maxlength: 1,controller: _copdDescriptionController,),
-                            ],
+                          HistoryYesNoField(
+                            label: "COPD",
+                            value: _hasCOPD,
+                            onChanged: (val) => setState(() => _hasCOPD = val),
+                            extraField: FormInput(
+                              label: 'COPD Description',
+                              maxlength: 1,
+                              controller: _copdDescriptionController,
+                            ),
                           ),
-
                         ].map((child) {
-                          return SizedBox(
-                            width: itemWidth,
-                            child: child,
-                          );
+                          return SizedBox(width: itemWidth, child: child);
                         }).toList(),
                       );
-                    }
-                  ) /*:
+                    },
+                  )
+
+                  /*:
 
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -886,7 +864,7 @@ maxlength: 4,
               ),
             ),
 
-            const SizedBox(height: 32),
+          /*  const SizedBox(height: 32),
 
             // 3. Upload Documents
             Container(
@@ -957,7 +935,7 @@ Container(),Container()
 
                 ],
               ),
-            ),
+            ),*/
 
            // const SizedBox(height: 32),
 

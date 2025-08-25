@@ -37,12 +37,20 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
     "investigation_image": [],
     "treatment_image": [],
   };
-
+  List<Map<String, dynamic>> _medications = [];
+// Add these with your other controllers
+  final List<TextEditingController> _medNameControllers = [];
+  final List<TextEditingController> _medDosageControllers = [];
+  final List<TextEditingController> _medFrequencyControllers = [];
+  final List<TextEditingController> _medDurationControllers = [];
+  List<dynamic> _medicationIds = []; // can hold int or ""
   @override
   void initState() {
     super.initState();
     _fetchFollowUpData();
     WidgetsFlutterBinding.ensureInitialized();
+    _addMedicationRow(count: 2);
+
     PermissionService().initialize();
   }
 
@@ -169,6 +177,26 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
         _isLoading = false;
       });
     }
+  }
+  void _addMedicationRow({int count = 1}){
+    for (int i = 0; i < count; i++) {
+      setState(() {
+        _medNameControllers.add(TextEditingController());
+        _medDosageControllers.add(TextEditingController());
+        _medFrequencyControllers.add(TextEditingController());
+        _medDurationControllers.add(TextEditingController());
+
+        _medicationIds.add(""); // new rows get empty string
+      });
+    }
+  }
+  void _removeMedicationRow(int index) {
+    setState(() {
+      _medNameControllers.removeAt(index).dispose();
+      _medDosageControllers.removeAt(index).dispose();
+      _medFrequencyControllers.removeAt(index).dispose();
+      _medDurationControllers.removeAt(index).dispose();
+    });
   }
   void _addFollowUp() {
     if (_isAddingFollowUp) {
@@ -719,6 +747,216 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       },
                       initialFiles: entry.value.uploadedFiles['treatment_image']!,
                     ),
+
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.Offwhitebackground,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.Containerbackground),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+
+
+
+                          // Medication Table
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Treatment Prescribed',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                                    ),
+                                  ),
+                                  Tooltip(
+                                    message: 'Tap to Add Row',
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () => _addMedicationRow(),
+                                      icon: Icon(Icons.add_box_rounded, size: 26, color: AppColors.secondary),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: AppColors.secondary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          side: BorderSide(color: AppColors.secondary),
+                                        ),
+                                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      ),
+                                    ),
+                                  )
+
+                                ],
+                              ),
+                              SizedBox(height: 10),
+
+                              // Excel-like Table
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Table Header
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        border: Border(
+                                          bottom: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                      ),
+                                      child: IntrinsicHeight(
+                                        child: Row(
+                                          children: [
+                                            _buildHeaderCell('Sr No', 60),
+                                            Expanded(
+                                              flex: 3,
+                                              child: _buildHeaderCell('Name of Medication'),
+                                            ),
+                                            Expanded(
+                                              flex: 1,
+                                              child: _buildHeaderCell('Dosage'),
+                                            ),
+                                            Expanded(
+                                              flex: 1,
+                                              child: _buildHeaderCell('Frequency'),
+                                            ),
+                                            Expanded(
+                                              flex: 1,
+                                              child: _buildHeaderCell('Duration'),
+                                            ),
+                                            _buildHeaderCell('Action', 80),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Table Rows
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      itemCount: _medNameControllers.length,
+                                      itemBuilder: (context, index) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                                            border: Border(
+                                              bottom: BorderSide(
+
+                                                  color: index == _medNameControllers.length - 1
+                                                      ? Colors.transparent
+                                                      : Colors.grey.shade300
+                                              ),
+                                            ),
+                                          ),
+                                          child: IntrinsicHeight(
+                                            child: Row(
+                                              children: [
+                                                _buildCell(
+                                                    Center(child: Text('${index + 1}')),
+                                                    width: 60
+                                                ),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: _buildCell(
+                                                    TextFormField(
+                                                      controller: _medNameControllers[index],
+                                                      decoration: InputDecoration(
+                                                        hintText: 'Enter medication',
+                                                        border: InputBorder.none,
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: _buildCell(
+                                                    TextFormField(
+                                                      controller: _medDosageControllers[index],
+                                                      decoration: InputDecoration(
+                                                        hintText: 'Dosage',
+                                                        border: InputBorder.none,
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: _buildCell(
+                                                    TextFormField(
+                                                      controller: _medFrequencyControllers[index],
+                                                      decoration: InputDecoration(
+                                                        hintText: 'Frequency',
+                                                        border: InputBorder.none,
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: _buildCell(
+                                                    TextFormField(
+                                                      controller: _medDurationControllers[index],
+                                                      decoration: InputDecoration(
+                                                        hintText: 'Duration',
+                                                        border: InputBorder.none,
+                                                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                _buildCell(
+                                                    Center(
+                                                      child: IconButton(
+                                                        icon: Icon(Icons.delete,
+                                                            color: _medNameControllers.length > 1
+                                                                ? Colors.red
+                                                                : Colors.grey),
+                                                        onPressed: _medNameControllers.length > 1
+                                                            ? () => _removeMedicationRow(index)
+                                                            : null,
+                                                      ),
+                                                    ),
+                                                    width: 80
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+
+
+                            ],
+                          ),
+
+
+
+
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(width: 16),
                  /*   if (_hasInitialData && entry.value.id != null) ...[
                       const SizedBox(height: 8),
@@ -790,6 +1028,30 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   }
 }
 
+Widget _buildHeaderCell(String text, [double? width]) {
+  return Container(
+    width: width,
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    decoration: BoxDecoration(
+      border: Border(right: BorderSide(color: Colors.grey.shade300)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
+Widget _buildCell(Widget child, {double? width}) {
+  return Container(
+    width: width,
+    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+    decoration: BoxDecoration(
+      border: Border(right: BorderSide(color: Colors.grey.shade300)),
+    ),
+    child: child,
+  );
+}
 class FollowUpEntry {
   int? id;
   DateTime? date;

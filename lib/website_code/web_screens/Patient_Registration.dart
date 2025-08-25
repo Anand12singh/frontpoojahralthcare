@@ -20,6 +20,7 @@ import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DatePickerInput.dart';
 import '../../widgets/DocumentUploadWidget.dart';
 import '../../widgets/DropdownInput.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:http/http.dart' as http;
 
@@ -248,7 +249,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
   String? _gender; // Make it nullable
 
   DateTime _selectedDate = DateTime.now();
-
+  List<Map<String, dynamic>> _deletedMedications = [];
   String? _selectedLocationId = '2';
   String _selectedLocationName = '';
 
@@ -286,7 +287,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
     super.initState();
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
-    _addMedicationRow();
+
+    _addMedicationRow(count: 2);
+
     _phIdController.text = '${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
@@ -842,33 +845,62 @@ class _OnboardingFormState extends State<OnboardingForm> {
       print("Before populating _uploadedFiles:");
       print(_uploadedFiles);
 
-      if (_documentData != null && _documentData is Map) {
-        _documentData.forEach((docTypeId, files) {
-          try {
-            final typeId = int.tryParse(docTypeId.toString());
-            if (typeId == null) return;
-            final docType = _docTypeMapping[typeId];
-            if (docType == null || files is! List) return;
+    // In _populateFormFields method, update the file mapping section:
+    // In _populateFormFields method, update the file mapping section:
+    if (_documentData != null && _documentData is Map) {
+      _documentData.forEach((docTypeId, files) {
+        try {
+          final typeId = int.tryParse(docTypeId.toString());
+          if (typeId == null) return;
+          final docType = _docTypeMapping[typeId];
+          if (docType == null || files is! List) return;
 
-            _uploadedFiles[docType] = files.map<Map<String, dynamic>>((file) {
-              return {
-                'id': file['id'],
-                'path': file['media_url'],
-                'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
-                'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
-                'size': 'N/A',
-                'isExisting': true,
-              };
-            }).toList();
+          _uploadedFiles[docType] = files.map<Map<String, dynamic>>((file) {
+            // Parse tagging information
+            List<String> tags = [];
+            try {
+              if (file['tagging'] != null && file['tagging'].isNotEmpty) {
+                String taggingStr = file['tagging'].toString();
 
-            print("After populating ${docType}:");
-            print(_uploadedFiles[docType]);
+                // Handle different possible formats
+                if (taggingStr.startsWith('"') && taggingStr.endsWith('"')) {
+                  // Remove extra quotes: "[\"tag1\",\"tag2\"]" -> [\"tag1\",\"tag2\"]
+                  taggingStr = taggingStr.substring(1, taggingStr.length - 1);
+                }
 
-          } catch (e) {
-            log('error $e');
-          }
-        });
-      }
+                // Replace escaped quotes with regular quotes
+                taggingStr = taggingStr.replaceAll(r'\"', '"');
+
+                // Now parse the JSON
+                final parsedTags = jsonDecode(taggingStr);
+                if (parsedTags is List) {
+                  tags = List<String>.from(parsedTags);
+                }
+              }
+            } catch (e) {
+              debugPrint('Error parsing tags: $e');
+              debugPrint('Raw tagging string: ${file['tagging']}');
+            }
+
+            return {
+              'id': file['id'],
+              'path': file['media_url'],
+              'name': path.basename(file['media_url']?.toString() ?? 'unknown'),
+              'type': path.extension(file['media_url']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
+              'size': 'N/A',
+              'isExisting': true,
+              'tags': tags, // Add tags to the file data
+            };
+          }).toList();
+
+          print("After populating ${docType}:");
+          print(_uploadedFiles[docType]);
+
+        } catch (e) {
+          log('error $e');
+        }
+      });
+    }
     } catch (e) {
       debugPrint('Error populating form fields: $e');
     }
@@ -877,45 +909,60 @@ class _OnboardingFormState extends State<OnboardingForm> {
   Future<void> _onFileSelected(String fileName) async {
     final TextEditingController _tagController = TextEditingController();
 
+    // Check if file already has a tag to avoid re-tagging
+    if (miscReportTagging.containsKey(fileName) && miscReportTagging[fileName]!.isNotEmpty) {
+      return; // File already tagged, skip
+    }
+
     await showDialog(
+
       context: context,
       builder: (context) {
         return AlertDialog(
+
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text("Add Tag for MISC Document"),
           content: CustomTextField(
             controller: _tagController,
             hintText: "Enter tag name",
           ),
+          actionsAlignment:MainAxisAlignment.spaceEvenly ,
           actions: [
-            TextButton(
+
+            Animatedbutton(
               onPressed: () {
-                Navigator.pop(context); // cancel
+
+                Navigator.pop(context);
               },
-              child: const Text("Cancel"),
+              shadowColor: Colors.transparent,
+              backgroundColor: Colors.white,
+              borderColor: AppColors.red,
+              titlecolor: AppColors.red,
+              title: "Cancel",
             ),
+
             Animatedbutton(
               onPressed: () {
                 final tag = _tagController.text.trim();
                 if (tag.isNotEmpty) {
                   setState(() {
                     miscReportTagging[fileName] = [tag];
-                    print("miscReportTagging");
-                    print(miscReportTagging);
+                    print("Added tag '$tag' for file: $fileName");
                   });
                 }
                 Navigator.pop(context);
-              },shadowColor: Colors.transparent,
+              },
+              shadowColor: Colors.transparent,
               backgroundColor: AppColors.secondary,
-
               title: "Save",
-
             ),
           ],
         );
       },
     );
   }
-
   @override
   void dispose() {
     for (var controller in _medNameControllers) {
@@ -1063,41 +1110,60 @@ class _OnboardingFormState extends State<OnboardingForm> {
     }
   }
 
-  void _addMedicationRow() {
-    setState(() {
-      _medNameControllers.add(TextEditingController());
-      _medDosageControllers.add(TextEditingController());
-      _medFrequencyControllers.add(TextEditingController());
-      _medDurationControllers.add(TextEditingController());
+  void _addMedicationRow({int count = 1}){
+    for (int i = 0; i < count; i++) {
+      setState(() {
+        _medNameControllers.add(TextEditingController());
+        _medDosageControllers.add(TextEditingController());
+        _medFrequencyControllers.add(TextEditingController());
+        _medDurationControllers.add(TextEditingController());
 
-      _medicationIds.add(""); // new rows get empty string
-    });
+        _medicationIds.add(""); // new rows get empty string
+      });
+    }
   }
   List<Map<String, dynamic>> getMedicationPayload() {
     List<Map<String, dynamic>> medications = [];
 
+    // Add active medications
     for (int i = 0; i < _medNameControllers.length; i++) {
       medications.add({
-        "id": _medicationIds[i] == null ? "" : _medicationIds[i], // ensure empty instead of null
+        "id": _medicationIds[i] == null ? "" : _medicationIds[i],
         "name_of_medication": _medNameControllers[i].text,
         "dosage": _medDosageControllers[i].text,
         "frequency": _medFrequencyControllers[i].text,
         "duration": _medDurationControllers[i].text,
+        "status": 1,
       });
     }
+
+    // Add deleted medications
+    medications.addAll(_deletedMedications);
 
     return medications;
   }
 
 
+
   void _removeMedicationRow(int index) {
     setState(() {
+      // If it's an existing medication, add to deleted list
+      if (_medicationIds[index] != null && _medicationIds[index].toString().isNotEmpty) {
+        _deletedMedications.add({
+          "id": _medicationIds[index],
+          "status": 0
+        });
+      }
+
+      // Remove from active list
       _medNameControllers.removeAt(index).dispose();
       _medDosageControllers.removeAt(index).dispose();
       _medFrequencyControllers.removeAt(index).dispose();
       _medDurationControllers.removeAt(index).dispose();
+      _medicationIds.removeAt(index);
     });
   }
+
   Future<void> _submitForm() async {
 
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
@@ -1131,11 +1197,14 @@ class _OnboardingFormState extends State<OnboardingForm> {
       String _formatMiscReportTagging(Map<String, List<String>> tagging) {
         if (tagging.isEmpty) return '{}';
 
-        final entries = tagging.entries.map((entry) =>
-        '"${entry.key}":${jsonEncode(entry.value)}'
-        ).join(',');
+        // Filter out only entries for newly uploaded files
+        final newEntries = tagging.entries.where((entry) {
+          final fileName = entry.key;
+          return _uploadedFiles['misc_report']?.any((file) =>
+          file['name'] == fileName && !file['isExisting']) ?? false;
+        }).map((entry) => '"${entry.key}":${jsonEncode(entry.value)}').join(',');
 
-        return '{$entries}';
+        return '{$newEntries}';
       }
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
@@ -1287,7 +1356,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'msic_laboratory': _ensureString(_miscLaboratoryController.text),
         'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
         'msic_finding': _ensureString(_miscFindingController.text),
-        "miscReportTagging": _formatMiscReportTagging(miscReportTagging),
+        "misc_report_tagging": _formatMiscReportTagging(miscReportTagging),
        // "medications": medications.toString(),
       };
 
@@ -1303,27 +1372,46 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
       List<String> existingFileIds = [];
 // Inside your _submitForm function
+      // Inside your _submitForm function, when processing files:
       for (var docType in _uploadedFiles.keys) {
         final fieldName = _mapDocTypeToField(docType);
         if (fieldName == null) continue;
 
         for (var file in _uploadedFiles[docType]!) {
-          if (!file['isExisting']) { // Only upload new files
+          if (!file['isExisting']) {
+            // For new files, check if they have tags
+            final fileName = file['name'];
+            final tags = miscReportTagging[fileName] ?? [];
+
             if (kIsWeb && file['bytes'] != null) {
-              request.files.add(http.MultipartFile.fromBytes(
+              var multipartFile = http.MultipartFile.fromBytes(
                 fieldName,
                 file['bytes']!,
                 filename: file['name'],
-              ));
+              );
+
+              // Add tags as additional field if this is a MISC report
+              if (docType == 'misc_report' && tags.isNotEmpty) {
+                request.fields['${fieldName}_${fileName}_tags'] = tags.join(',');
+              }
+
+              request.files.add(multipartFile);
             } else if (!kIsWeb && file['path'] != null) {
-              request.files.add(await http.MultipartFile.fromPath(
+              var multipartFile = await http.MultipartFile.fromPath(
                 fieldName,
                 file['path']!,
                 filename: file['name'],
-              ));
+              );
+
+              // Add tags as additional field if this is a MISC report
+              if (docType == 'misc_report' && tags.isNotEmpty) {
+                request.fields['${fieldName}_${fileName}_tags'] = tags.join(',');
+              }
+
+              request.files.add(multipartFile);
             }
           } else {
-            // For existing files, you might want to send their IDs
+            // For existing files, preserve their tags
             existingFileIds.add(file['id'].toString());
           }
         }
@@ -3046,7 +3134,7 @@ SizedBox(height: 16,),
                       child: FormInput(label: 'Findings',controller: _pftFindingController,)),*/
                   SizedBox(height: 10),
 
-                  DocumentUploadWidget(
+                 /* DocumentUploadWidget(
                     docType: 'misc_report', // This should match one of your map keys
                     label: "Upload MISC",
                     onFilesSelected: (files) async {
@@ -3065,7 +3153,7 @@ SizedBox(height: 16,),
                   SizedBox(
                       width: double.infinity,
                       child: FormInput(label: 'Findings',controller: _miscFindingController,)),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10,),*/
 
                 ],
               ),
@@ -3118,16 +3206,23 @@ SizedBox(height: 16,),
                               fontSize: ResponsiveUtils.fontSize(context, 14),
                             ),
                           ),
-                          IconButton(
-                            onPressed: _addMedicationRow,
-                            icon: Icon(Icons.add_box_rounded, size: 24, color: AppColors.secondary),
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.secondary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: AppColors.secondary),
+                          Tooltip(
+                            message: 'Tap to Add Row',
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              onPressed: () => _addMedicationRow(),
+                              icon: Icon(Icons.add_box_rounded, size: 26, color: AppColors.secondary),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.secondary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide(color: AppColors.secondary),
+                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               ),
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
                           )
 
@@ -3171,7 +3266,7 @@ SizedBox(height: 16,),
                                       flex: 1,
                                       child: _buildHeaderCell('Duration'),
                                     ),
-                                    //_buildHeaderCell('Action', 80),
+                                    _buildHeaderCell('Action', 80),
                                   ],
                                 ),
                               ),
@@ -3254,20 +3349,34 @@ SizedBox(height: 16,),
                                             ),
                                           ),
                                         ),
-                                    /*    _buildCell(
+                                        _buildCell(
                                             Center(
-                                              child: IconButton(
-                                                icon: Icon(Icons.delete,
-                                                    color: _medNameControllers.length > 1
-                                                        ? Colors.red
-                                                        : Colors.grey),
-                                                onPressed: _medNameControllers.length > 1
-                                                    ? () => _removeMedicationRow(index)
-                                                    : null,
+                                              child: Row(
+                                                children: [
+                                                  IconButton(
+                                                    icon: Icon(Icons.edit_outlined,
+                                                        color: _medNameControllers.length > 1
+                                                            ? Colors.red
+                                                            : Colors.grey),
+                                                    onPressed: _medNameControllers.length > 1
+                                                        ? () => _removeMedicationRow(index)
+                                                        : null,
+                                                  ),
+
+                                                  IconButton(
+                                                    icon: Icon(Icons.delete,
+                                                        color: _medNameControllers.length > 1
+                                                            ? Colors.red
+                                                            : Colors.grey),
+                                                    onPressed: _medNameControllers.length > 1
+                                                        ? () => _removeMedicationRow(index)
+                                                        : null,
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                             width: 80
-                                        ),*/
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -3323,21 +3432,21 @@ SizedBox(height: 16,),
                   docType: 'misc_report',
                   label: "MISC Upload",
                   onFilesSelected: (files) {
-                    setState(() {
+                    setState(() async {
                       _uploadedFiles['misc_report'] = files;
                       print("_uploadedFiles['misc_report']");
                       print(_uploadedFiles['misc_report']);
 
-                      if (files.isNotEmpty) {
-                        final fileMap = files.first; // files is a List<Map<String, dynamic>>
-                        final fileName = fileMap['name']; // extract name from the map
-                        if (fileName != null) {
-                          _onFileSelected(fileName);
+                      for (var file in files) {
+                        final fileName = file['name'];
+                        if (fileName != null && !file['isExisting']) {
+                          await _onFileSelected(fileName);
                         }
                       }
                     });
                   },
                   initialFiles: _uploadedFiles['misc_report'],
+                  miscReportTagging: miscReportTagging,
                 ),
 
               ],),

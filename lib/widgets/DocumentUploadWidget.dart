@@ -17,7 +17,7 @@ import '../utils/colors.dart';
 import 'VideoPlayerWidget.dart';
 import 'dart:html' as html; // For web-specific functionality
 import 'dart:typed_data'; // For Uint8List
-import 'package:universal_html/html.dart' as universal_html;
+
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
@@ -26,20 +26,23 @@ class DocumentUploadWidget extends StatefulWidget {
   final String label;
   final Function(List<Map<String, dynamic>>) onFilesSelected;
   final List<Map<String, dynamic>>? initialFiles;
-  final String? baseUrl; // Add base URL for network files
+  final String? baseUrl;
+  final Map<String, List<String>>? miscReportTagging; // add this param
 
   const DocumentUploadWidget({
-    super.key,
+    Key? key,
     required this.docType,
     required this.label,
     required this.onFilesSelected,
     this.initialFiles,
     this.baseUrl,
-  });
+    this.miscReportTagging, // require tagging to be passed
+  }) : super(key: key);
 
   @override
   State<DocumentUploadWidget> createState() => _DocumentUploadWidgetState();
 }
+
 
 class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   List<Map<String, dynamic>> _selectedFiles = [];
@@ -869,8 +872,17 @@ message: 'Download',
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _selectedFiles.length,
+                          // In the DocumentUploadWidget's build method, update the file list item:
                           itemBuilder: (context, index) {
                             final file = _selectedFiles[index];
+
+                            final fileName = file['name'] ?? '';
+                            final apiTags = file['tags'] as List? ?? [];
+                            final localTags = widget.docType == 'misc_report' ? widget.miscReportTagging![fileName] ?? [] : [];
+                            final tags = apiTags.isNotEmpty ? apiTags : localTags;
+
+                            print("tags");
+                            print(tags);
                             return GestureDetector(
                               onTap: () => _showFilePreview(index),
                               child: Container(
@@ -883,52 +895,97 @@ message: 'Download',
                                   color: AppColors.primaryLight,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      _getFileIcon(file['type']),
-                                      size: 16,
-                                      color: _getFileIconColor(file['type']),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            file['name'],
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Tooltip(
-                                      message: 'Preview file',
-                                      decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
-
-                                      child: Icon(
-                                        Icons.remove_red_eye,
-                                        color: AppColors.secondary,
-                                        size: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    // Remove icon with tooltip
-                                    Tooltip(
-                                      message: 'Remove file',
-                                      decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
-
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          Icons.close,
-                                          color: Colors.red,
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          _getFileIcon(file['type']),
                                           size: 16,
+                                          color: _getFileIconColor(file['type']),
                                         ),
-                                        onPressed: () => _removeFile(index),
-                                      ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                file['name'],
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              // Display tags if they exist
+
+
+                                            ],
+                                          ),
+                                        ),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [  if (tags.isNotEmpty)
+                                            Wrap(
+                                              spacing: 4,
+                                              children: tags.map((tag) {
+                                                return Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: AppColors.secondary,
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    tag,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: AppColors.secondary,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+SizedBox(width: 10,),
+                                            Tooltip(
+                                              message: 'Preview file',
+                                              decoration: BoxDecoration(
+                                                color: AppColors.secondary,
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Icon(
+                                                Icons.remove_red_eye,
+                                                color: AppColors.secondary,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        // Remove icon with tooltip
+                                        Tooltip(
+                                          message: 'Remove file',
+                                          decoration: BoxDecoration(
+                                            color: AppColors.secondary,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.red,
+                                              size: 16,
+                                            ),
+                                            onPressed: () => _removeFile(index),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

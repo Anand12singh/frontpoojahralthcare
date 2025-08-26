@@ -2918,7 +2918,7 @@ SizedBox(height: 16,),
                           FormInput(label: 'MISC',controller:_miscController,useCamelCase: false),
                           SizedBox(
                               width: double.infinity,
-                              child: FormInput(label: 'Findings',controller: _bloodReportFindingsController,)),
+                              child: FormInput(label: 'Findings',controller: _bloodReportFindingsController, maxlength: 2,)),
 
                         ].map((child) {
                           return SizedBox(
@@ -2945,7 +2945,7 @@ SizedBox(height: 16,),
                   SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings',controller:_xRayFindingController)),
+                      child: FormInput(label: 'Findings',controller:_xRayFindingController,maxlength: 2,)),
                   SizedBox(height: 10,),
                   Row(
 
@@ -3002,7 +3002,7 @@ SizedBox(height: 16,),
                       ),
                       SizedBox(
                           width: double.infinity,
-                          child: FormInput(label: 'Findings',controller: _ctscanFindingController,)),
+                          child: FormInput(label: 'Findings',controller: _ctscanFindingController,maxlength: 2,)),
                     ],
                   ),
 
@@ -3072,7 +3072,7 @@ SizedBox(height: 16,),
                   SizedBox(height: 10,),
                   SizedBox(
             width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _ecgFindingController,)),
+                      child: FormInput(label: 'Findings',controller: _ecgFindingController,maxlength: 2,)),
                   SizedBox(height: 10,),
 
                   Row(
@@ -3092,7 +3092,7 @@ SizedBox(height: 16,),
                   SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings',controller:_a2dFindingController)),
+                      child: FormInput(label: 'Findings',controller:_a2dFindingController,maxlength: 2,)),
                /*   SizedBox(height: 10,),
                   Row(
 
@@ -3351,28 +3351,14 @@ SizedBox(height: 16,),
                                         ),
                                         _buildCell(
                                             Center(
-                                              child: Row(
-                                                children: [
-                                                  IconButton(
-                                                    icon: Icon(Icons.edit_outlined,
-                                                        color: _medNameControllers.length > 1
-                                                            ? Colors.red
-                                                            : Colors.grey),
-                                                    onPressed: _medNameControllers.length > 1
-                                                        ? () => _removeMedicationRow(index)
-                                                        : null,
-                                                  ),
-
-                                                  IconButton(
-                                                    icon: Icon(Icons.delete,
-                                                        color: _medNameControllers.length > 1
-                                                            ? Colors.red
-                                                            : Colors.grey),
-                                                    onPressed: _medNameControllers.length > 1
-                                                        ? () => _removeMedicationRow(index)
-                                                        : null,
-                                                  ),
-                                                ],
+                                              child: IconButton(
+                                                icon: Icon(Icons.delete,
+                                                    color: _medNameControllers.length > 1
+                                                        ? Colors.red
+                                                        : Colors.grey),
+                                                onPressed: _medNameControllers.length > 1
+                                                    ? () => _removeMedicationRow(index)
+                                                    : null,
                                               ),
                                             ),
                                             width: 80

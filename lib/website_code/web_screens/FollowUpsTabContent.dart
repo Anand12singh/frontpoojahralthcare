@@ -17,6 +17,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/show_dialog.dart';
 import '../../constants/base_url.dart';
 import 'package:path/path.dart' as path;
+
 class FollowUpsTabContent extends StatefulWidget {
   final String patientId;
 
@@ -33,24 +34,12 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   bool _hasInitialData = false;
   List<bool> isEditingList = [];
   bool _isAddingFollowUp = false;
-  final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    "investigation_image": [],
-    "treatment_image": [],
-  };
-  List<Map<String, dynamic>> _medications = [];
-// Add these with your other controllers
-  final List<TextEditingController> _medNameControllers = [];
-  final List<TextEditingController> _medDosageControllers = [];
-  final List<TextEditingController> _medFrequencyControllers = [];
-  final List<TextEditingController> _medDurationControllers = [];
-  List<dynamic> _medicationIds = []; // can hold int or ""
+
   @override
   void initState() {
     super.initState();
     _fetchFollowUpData();
     WidgetsFlutterBinding.ensureInitialized();
-    _addMedicationRow(count: 2);
-
     PermissionService().initialize();
   }
 
@@ -152,6 +141,32 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
               }).toList();
             }
 
+            // Process medications if they exist
+            if (item['prescriptions'] != null) {
+              try {
+                dynamic prescriptions = item['prescriptions'];
+                if (prescriptions is String) {
+                  prescriptions = json.decode(prescriptions);
+                }
+
+                if (prescriptions is List) {
+                  for (var med in prescriptions) {
+                    if (med['status'] != 0) { // Only add active medications
+                      entry.addMedicationRow(
+                        id: med['id']?.toString(),
+                        name: med['name_of_medication'] ?? '',
+                        dosage: med['dosage'] ?? '',
+                        frequency: med['frequency'] ?? '',
+                        duration: med['duration'] ?? '',
+                      );
+                    }
+                  }
+                }
+              } catch (e) {
+                print('Error parsing prescriptions: $e');
+              }
+            }
+
             return entry;
           }).toList();
 
@@ -178,26 +193,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       });
     }
   }
-  void _addMedicationRow({int count = 1}){
-    for (int i = 0; i < count; i++) {
-      setState(() {
-        _medNameControllers.add(TextEditingController());
-        _medDosageControllers.add(TextEditingController());
-        _medFrequencyControllers.add(TextEditingController());
-        _medDurationControllers.add(TextEditingController());
 
-        _medicationIds.add(""); // new rows get empty string
-      });
-    }
-  }
-  void _removeMedicationRow(int index) {
-    setState(() {
-      _medNameControllers.removeAt(index).dispose();
-      _medDosageControllers.removeAt(index).dispose();
-      _medFrequencyControllers.removeAt(index).dispose();
-      _medDurationControllers.removeAt(index).dispose();
-    });
-  }
   void _addFollowUp() {
     if (_isAddingFollowUp) {
       showTopRightToast(
@@ -223,9 +219,6 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
         followUpEntries.removeAt(index);
         isEditingList.removeAt(index);
         _isAddingFollowUp = false;
-        // Clear uploaded files when canceling
-        _uploadedFiles['investigation_image']!.clear();
-        _uploadedFiles['treatment_image']!.clear();
       });
     } else {
       // Existing → just exit edit mode
@@ -234,7 +227,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       });
     }
   }
-// Add this method to toggle edit state
+
+  // Add this method to toggle edit state
   void _toggleEditMode(int index) {
     setState(() {
       isEditingList[index] = !isEditingList[index];
@@ -290,6 +284,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
         'findings': entry.findingsController.text,
         'investigation': entry.investigationController.text,
         'intervention': entry.interventionController.text,
+        'prescriptions': jsonEncode(entry.getMedicationPayload())
       });
 
       // Add investigation images
@@ -378,122 +373,11 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
       });
     }
   }
-  Future<void> _saveFollowUps() async {
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      String? token = await AuthService.getToken();
-      if (token == null || token.isEmpty) {
-        showTopRightToast(
-          context,
-          'Authentication token not found. Please login again.',
-          backgroundColor: Colors.red,
-        );
-        return;
-      }
-
-      final headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
-      // Save all follow-ups
-      for (var entry in followUpEntries) {
-        if (entry.date == null) {
-          showTopRightToast(
-            context,
-            'Please select a date for all follow-ups',
-            backgroundColor: Colors.red,
-          );
-          return;
-        }
-
-        final endpoint = '$localurl/follow_up_date';
-        final Map<String, dynamic> requestBody = {
-          "patient_id": widget.patientId,
-          "follow_up_dates": DateFormat('yyyy-MM-dd').format(entry.date!),
-          "next_follow_up_dates": DateFormat('yyyy-MM-dd').format(entry.nextfollowupdates!),
-          "notes": entry.notesController.text,
-          "treatment": entry.treatmentController.text,
-          "follow_up_status": entry.status ? 1 : 0,
-        };
-
-        // Add ID only for existing entries
-        if (entry.id != null) {
-          requestBody['id'] = entry.id;
-        }
-
-        final body = json.encode(requestBody);
-        print("body");
-        print(endpoint);
-        print(body);
-        final response =  await http.put(Uri.parse(endpoint), headers: headers, body: body);
-
-        if (response.statusCode != 200) {
-          final responseData = json.decode(response.body);
-          print("responseData['message");
-          print(responseData['message']);
-          print(responseData['status']);
-          showTopRightToast(
-            context,
-            'Error saving follow-up: ${responseData['message']}',
-            backgroundColor: Colors.red,
-          );
-          return;
-        }
-      }
-
-      showTopRightToast(
-        context,
-        'Follow-ups saved successfully',
-        backgroundColor: Colors.green,
-      );
-      setState(() {
-        _isAddingFollowUp = false; // Reset the flag
-      });
-
-      // Refresh data after save
-      await _fetchFollowUpData();
-    } catch (e) {
-
-      showTopRightToast(
-        context,
-        'Error: $e',
-        backgroundColor: Colors.red,
-      );
-    } finally {
-      setState(() {
-        _isSaving = false;
-      });
-    }
-  }
-/*  void _cancelEditOrDelete(int index) {
-    final entry = followUpEntries[index];
-    if (entry.id == null) {
-      // Unsaved → delete
-      setState(() {
-        followUpEntries.removeAt(index);
-        isEditingList.removeAt(index);
-        _isAddingFollowUp = false;
-      });
-    } else {
-      // Existing → just exit edit mode
-      setState(() {
-        isEditingList[index] = false;
-      });
-    }
-  }*/
-
-
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(
-
         color: AppColors.primary,
       ));
     }
@@ -504,7 +388,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Visibility(
-            visible:PermissionService().canEditPatients ,
+            visible: PermissionService().canEditPatients,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -543,7 +427,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       children: [
                         Text(
                           'Follow up ${followUpEntries.length - entry.key}',
-                          style:  TextStyle(
+                          style: TextStyle(
                             fontSize: ResponsiveUtils.fontSize(context, 16),
                             fontWeight: FontWeight.w600,
                           ),
@@ -551,13 +435,12 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
 
                         if (!isEditingList[entry.key])
                           Row(
-                            spacing:10,
+                            spacing: 10,
                             children: [
                               Container(
-
                                   padding: EdgeInsets.all(4),
-                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8),color: Colors.green.withOpacity(0.7)),
-                                  child: Text('Saved',style: TextStyle(color: Colors.white,fontWeight: FontWeight.w200),)),
+                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.green.withOpacity(0.7)),
+                                  child: Text('Saved', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w200))),
                               IconButton(
                                 icon: Icon(Icons.edit_outlined, color: AppColors.primary),
                                 onPressed: () => _toggleEditMode(entry.key),
@@ -566,17 +449,9 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                           ),
                         if (isEditingList[entry.key])
                           Visibility(
-                            visible:PermissionService().canEditPatients ,
+                            visible: PermissionService().canEditPatients,
                             child: Row(
                               children: [
-                              /*  GestureDetector(
-                                  onTap: () => _UpdateSingleFollowUp(entry.key),
-                                  child: HugeIcon(
-                                    icon: HugeIcons.strokeRoundedTick04,
-                                    color: AppColors.primary,
-
-                                  ),
-                                ),*/
                                 IconButton(
                                   icon: Icon(Icons.check_rounded, color: AppColors.primary),
                                   onPressed: () => _UpdateSingleFollowUp(entry.key),
@@ -585,7 +460,6 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                   icon: Icon(Icons.close_rounded, color: Colors.red),
                                   onPressed: () => _cancelEditOrDelete(entry.key),
                                 ),
-
                               ],
                             ),
                           )
@@ -593,7 +467,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                     ),
                     const SizedBox(height: 12),
                     LayoutBuilder(
-                        builder: (context,constraints) {
+                        builder: (context, constraints) {
                           double screenWidth = constraints.maxWidth;
                           int itemsPerRow;
 
@@ -608,85 +482,79 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                           }
 
                           double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
-                        return Wrap(
-                          runSpacing: 12,
-                        spacing: 16,
-                                         alignment: WrapAlignment.start,
-                        //  mainAxisAlignment: MainAxisAlignment.start,
-                                           //   crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DatePickerInput(
-                              label: 'Date',
-                              hintlabel: 'Date',
-                              initialDate: entry.value.date,
-                              onDateSelected: (date) {
-                                setState(() {
-                                  entry.value.date = date;
-                                });
-                              },
-                            ),
+                          return Wrap(
+                            runSpacing: 12,
+                            spacing: 16,
+                            alignment: WrapAlignment.start,
+                            children: [
+                              DatePickerInput(
+                                label: 'Date',
+                                hintlabel: 'Date',
+                                initialDate: entry.value.date,
+                                onDateSelected: (date) {
+                                  setState(() {
+                                    entry.value.date = date;
+                                  });
+                                },
+                              ),
 
-                            FormInput(
-                              controller: entry.value.notesController,
-                              label: 'Notes',
-                              hintlabel: 'Enter notes',
-                              maxlength: 4,
-                            ),
+                              FormInput(
+                                controller: entry.value.notesController,
+                                label: 'Notes',
+                                hintlabel: 'Enter notes',
+                                maxlength: 4,
+                              ),
 
-                            FormInput(
-                              controller: entry.value.treatmentController,
-                              label: 'Treatment',
-                              hintlabel: 'Enter treatment',
-                              maxlength: 4,
-                            ),
-                            DatePickerInput(
-                              label: 'Next follow up date',
-                              hintlabel: 'Next follow up date',
-                              initialDate: entry.value.nextfollowupdates,
-                              onDateSelected: (date) {
-                                setState(() {
-                                  entry.value.nextfollowupdates = date;
-                                });
-                              },
-                            ),
-                            FormInput(
-                              controller: entry.value.locationController,
-                              label: 'Location',
-                              hintlabel: 'Enter Location',
-                              maxlength: 1,
-                            ),
+                              FormInput(
+                                controller: entry.value.treatmentController,
+                                label: 'Treatment',
+                                hintlabel: 'Enter treatment',
+                                maxlength: 4,
+                              ),
+                              DatePickerInput(
+                                label: 'Next follow up date',
+                                hintlabel: 'Next follow up date',
+                                initialDate: entry.value.nextfollowupdates,
+                                onDateSelected: (date) {
+                                  setState(() {
+                                    entry.value.nextfollowupdates = date;
+                                  });
+                                },
+                              ),
+                              FormInput(
+                                controller: entry.value.locationController,
+                                label: 'Location',
+                                hintlabel: 'Enter Location',
+                                maxlength: 1,
+                              ),
 
-                            FormInput(
-                              controller: entry.value.symptomscomplaintsController,
-                              label: 'Symptoms/Complaints',
-                              hintlabel: 'Enter Symptoms/Complaints',
-                              maxlength: 1,
-                            ),
+                              FormInput(
+                                controller: entry.value.symptomscomplaintsController,
+                                label: 'Symptoms/Complaints',
+                                hintlabel: 'Enter Symptoms/Complaints',
+                                maxlength: 1,
+                              ),
 
-                            FormInput(
-                              controller: entry.value.findingsController,
-                              label: 'Add Findings',
-                              hintlabel: 'Enter Findings',
-                              maxlength: 1,
-                            ),
-                            FormInput(
-                              controller: entry.value.investigationController,
-                              label: 'Add investigation',
-                              hintlabel: 'Enter investigation',
-                              maxlength: 1,
-                            ),
-
-
-
-
-                          ].map((child) {
-                            return SizedBox(
-                              width: itemWidth,
-                              child: child,
-                            );
-                          }).toList(),
-                        );
-                      }
+                              FormInput(
+                                controller: entry.value.findingsController,
+                                label: 'Add Findings',
+                                hintlabel: 'Enter Findings',
+                                maxlength: 1,
+                              ),
+                              FormInput(
+                                controller: entry.value.investigationController,
+                                label: 'Add investigation',
+                                hintlabel: 'Enter investigation',
+                                maxlength: 1,
+                              ),
+                            ].map((child) {
+                              return SizedBox(
+                                width: itemWidth,
+                                child: child,
+                              );
+                            }).toList(),
+                          );
+                        }
                     ),
                     const SizedBox(height: 12),
                     DocumentUploadWidget(
@@ -701,7 +569,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                     ),
                     const SizedBox(height: 12),
                     LayoutBuilder(
-                        builder: (context,constraints) {
+                        builder: (context, constraints) {
                           double screenWidth = constraints.maxWidth;
                           int itemsPerRow;
 
@@ -753,16 +621,13 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.Offwhitebackground,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.Containerbackground),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-
-
-
                           // Medication Table
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,7 +650,11 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: IconButton(
-                                      onPressed: () => _addMedicationRow(),
+                                      onPressed: () {
+                                        setState(() {
+                                          entry.value.addMedicationRow();
+                                        });
+                                      },
                                       icon: Icon(Icons.add_box_rounded, size: 26, color: AppColors.secondary),
                                       style: IconButton.styleFrom(
                                         backgroundColor: AppColors.secondary,
@@ -797,7 +666,6 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                       ),
                                     ),
                                   )
-
                                 ],
                               ),
                               SizedBox(height: 10),
@@ -848,15 +716,14 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                     ListView.builder(
                                       shrinkWrap: true,
                                       physics: NeverScrollableScrollPhysics(),
-                                      itemCount: _medNameControllers.length,
+                                      itemCount: entry.value.medNameControllers.length,
                                       itemBuilder: (context, index) {
                                         return Container(
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.all(Radius.circular(8)),
                                             border: Border(
                                               bottom: BorderSide(
-
-                                                  color: index == _medNameControllers.length - 1
+                                                  color: index == entry.value.medNameControllers.length - 1
                                                       ? Colors.transparent
                                                       : Colors.grey.shade300
                                               ),
@@ -873,7 +740,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                                   flex: 3,
                                                   child: _buildCell(
                                                     TextFormField(
-                                                      controller: _medNameControllers[index],
+                                                      controller: entry.value.medNameControllers[index],
                                                       decoration: InputDecoration(
                                                         hintText: 'Enter medication',
                                                         border: InputBorder.none,
@@ -886,7 +753,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                                   flex: 1,
                                                   child: _buildCell(
                                                     TextFormField(
-                                                      controller: _medDosageControllers[index],
+                                                      controller: entry.value.medDosageControllers[index],
                                                       decoration: InputDecoration(
                                                         hintText: 'Dosage',
                                                         border: InputBorder.none,
@@ -899,7 +766,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                                   flex: 1,
                                                   child: _buildCell(
                                                     TextFormField(
-                                                      controller: _medFrequencyControllers[index],
+                                                      controller: entry.value.medFrequencyControllers[index],
                                                       decoration: InputDecoration(
                                                         hintText: 'Frequency',
                                                         border: InputBorder.none,
@@ -912,7 +779,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                                   flex: 1,
                                                   child: _buildCell(
                                                     TextFormField(
-                                                      controller: _medDurationControllers[index],
+                                                      controller: entry.value.medDurationControllers[index],
                                                       decoration: InputDecoration(
                                                         hintText: 'Duration',
                                                         border: InputBorder.none,
@@ -925,11 +792,15 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                                     Center(
                                                       child: IconButton(
                                                         icon: Icon(Icons.delete,
-                                                            color: _medNameControllers.length > 1
+                                                            color: entry.value.medNameControllers.length > 1
                                                                 ? Colors.red
                                                                 : Colors.grey),
-                                                        onPressed: _medNameControllers.length > 1
-                                                            ? () => _removeMedicationRow(index)
+                                                        onPressed: entry.value.medNameControllers.length > 1
+                                                            ? () {
+                                                          setState(() {
+                                                            entry.value.removeMedicationRow(index);
+                                                          });
+                                                        }
                                                             : null,
                                                       ),
                                                     ),
@@ -944,84 +815,16 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                   ],
                                 ),
                               ),
-
-
-
                             ],
                           ),
-
-
-
-
                         ],
                       ),
                     ),
-
-                    const SizedBox(width: 16),
-                 /*   if (_hasInitialData && entry.value.id != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Text('Status: '),
-                          Switch(
-                            value: entry.value.status,
-                            onChanged: (value) {
-                              setState(() {
-                                entry.value.status = value;
-                              });
-                            },
-                            activeColor: AppColors.secondary,
-                          ),
-                          Text(entry.value.status ? 'Active' : 'Inactive'),
-                        ],
-                      ),
-                    ],*/
                   ],
                 ),
               ),
             ),
           ),
-     /*     const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                style: ButtonStyle(shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))))),
-                icon: const Icon(
-                  Icons.add_box_rounded,
-                  color: AppColors.secondary,
-                  size: 40,
-                ),
-                onPressed: _addFollowUp,
-              ),
-            ],
-          ),*/
-          //const SizedBox(height: 32),
-          /*
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Animatedbutton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                shadowColor: Colors.white,
-                titlecolor: AppColors.primary,
-                backgroundColor: Colors.white,
-                borderColor: AppColors.secondary,
-                isLoading: false,
-                title: 'Cancel',
-              ),
-              const SizedBox(width: 12),
-              Animatedbutton(
-                onPressed: _saveFollowUps,
-                shadowColor: Colors.white,
-                backgroundColor: AppColors.secondary,
-                isLoading: _isSaving,
-                title: _hasInitialData ? 'Update' : 'Save',
-              ),
-            ],
-          ),*/
         ],
       ),
     );
@@ -1052,6 +855,7 @@ Widget _buildCell(Widget child, {double? width}) {
     child: child,
   );
 }
+
 class FollowUpEntry {
   int? id;
   DateTime? date;
@@ -1065,6 +869,14 @@ class FollowUpEntry {
   final TextEditingController interventionController = TextEditingController();
   bool status;
   final Map<String, List<Map<String, dynamic>>> uploadedFiles;
+
+  // Medication-related properties moved to FollowUpEntry
+  final List<TextEditingController> medNameControllers = [];
+  final List<TextEditingController> medDosageControllers = [];
+  final List<TextEditingController> medFrequencyControllers = [];
+  final List<TextEditingController> medDurationControllers = [];
+  final List<String> medicationIds = []; // can hold int or ""
+  final List<Map<String, dynamic>> deletedMedications = [];
 
   FollowUpEntry({
     this.id,
@@ -1090,6 +902,60 @@ class FollowUpEntry {
     if (findings != null) findingsController.text = findings;
     if (investigation != null) investigationController.text = investigation;
     if (intervention != null) interventionController.text = intervention;
+
+    // Add default medication rows
+   // addMedicationRow(count: 2);
+  }
+
+  void addMedicationRow({int count = 1, String? id, String name = '', String dosage = '', String frequency = '', String duration = ''}) {
+    for (int i = 0; i < count; i++) {
+      medNameControllers.add(TextEditingController(text: name));
+      medDosageControllers.add(TextEditingController(text: dosage));
+      medFrequencyControllers.add(TextEditingController(text: frequency));
+      medDurationControllers.add(TextEditingController(text: duration));
+      medicationIds.add(id ?? "");
+    }
+  }
+
+  void removeMedicationRow(int index) {
+    // If this is an existing medication, mark it as deleted
+    if (medicationIds[index].isNotEmpty) {
+      deletedMedications.add({
+        "id": medicationIds[index],
+        "name_of_medication": medNameControllers[index].text,
+        "dosage": medDosageControllers[index].text,
+        "frequency": medFrequencyControllers[index].text,
+        "duration": medDurationControllers[index].text,
+        "status": 0, // 0 means deleted
+      });
+    }
+
+    medNameControllers.removeAt(index).dispose();
+    medDosageControllers.removeAt(index).dispose();
+    medFrequencyControllers.removeAt(index).dispose();
+    medDurationControllers.removeAt(index).dispose();
+    medicationIds.removeAt(index);
+  }
+
+  List<Map<String, dynamic>> getMedicationPayload() {
+    List<Map<String, dynamic>> medications = [];
+
+    // Add active medications
+    for (int i = 0; i < medNameControllers.length; i++) {
+      medications.add({
+        "id": medicationIds[i] == null ? "" : medicationIds[i],
+        "name_of_medication": medNameControllers[i].text,
+        "dosage": medDosageControllers[i].text,
+        "frequency": medFrequencyControllers[i].text,
+        "duration": medDurationControllers[i].text,
+        "status": 1,
+      });
+    }
+
+    // Add deleted medications
+    medications.addAll(deletedMedications);
+
+    return medications;
   }
 
   void dispose() {
@@ -1100,5 +966,19 @@ class FollowUpEntry {
     findingsController.dispose();
     investigationController.dispose();
     interventionController.dispose();
+
+    // Dispose medication controllers
+    for (var controller in medNameControllers) {
+      controller.dispose();
+    }
+    for (var controller in medDosageControllers) {
+      controller.dispose();
+    }
+    for (var controller in medFrequencyControllers) {
+      controller.dispose();
+    }
+    for (var controller in medDurationControllers) {
+      controller.dispose();
+    }
   }
 }

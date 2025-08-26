@@ -50,7 +50,9 @@ class _DatePickerInputState extends State<DatePickerInput> {
   Future<void> _selectDate(BuildContext context) async {
     if (!widget.enabled) return;
 
-    DateTime? pickedDate;
+
+
+    DateTime? pickedDate = _selectedDate ?? DateTime.now(); // 👈 default to current date
 
     await showDialog(
       context: context,
@@ -125,18 +127,22 @@ class _DatePickerInputState extends State<DatePickerInput> {
                       // ✅ Calendar with custom navigation
                       Expanded(
                         child: SfDateRangePicker(
-                          headerHeight: 0, // Hide default header
+                          headerHeight: 0,
                           selectionMode: DateRangePickerSelectionMode.single,
-                          initialSelectedDate: _selectedDate ?? DateTime.now(),
+                          initialSelectedDate: pickedDate,
                           showActionButtons: true,
-                          controller: _datePickerController, // ✅ Persistent controller
+                          controller: _datePickerController,
                           selectionColor: AppColors.secondary,
                           todayHighlightColor: AppColors.primary,
-                          onSelectionChanged:
-                              (DateRangePickerSelectionChangedArgs args) {
+
+                          onSelectionChanged: (args) {
                             pickedDate = args.value as DateTime?;
                           },
                           onSubmit: (Object? val) {
+                            // 👇 ensure pickedDate is not null
+                            if (pickedDate == null) {
+                              pickedDate = DateTime.now();
+                            }
                             Navigator.of(context).pop();
                           },
                           onCancel: () {
@@ -144,6 +150,7 @@ class _DatePickerInputState extends State<DatePickerInput> {
                             Navigator.of(context).pop();
                           },
                         ),
+
                       ),
                     ],
                   ),

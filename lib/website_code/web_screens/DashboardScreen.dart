@@ -1,20 +1,25 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:poojaheakthcare/widgets/showTopSnackBar.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
+import '../../models/DashboardResponseModel.dart';
 import '../../provider/PermissionService.dart';
 import '../../screens/olddpatientfom.dart';
+import '../../services/api_services.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
 import 'CustomSidebar.dart';
+import 'FollowUpCalendar.dart';
 import 'Home_Screen.dart';
 import 'PatientDataTabsScreen.dart';
 import 'SearchBar.dart';
@@ -32,12 +37,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TextEditingController _lastnameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   bool isHovered = false;
+  List<FollowUp> followUps = [];
+  bool isLoadingFollowUps = false;
+  String selectedMonth = DateFormat('MM-yyyy').format(DateTime.now());
+  int _touchedIndex = -1;
+  DashboardResponse? dashboard;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     _initializeData();
+    _fetchFollowUps(); // Fetch follow-ups on init
+    fetchDashboardData(); // Fetch follow-ups on init
+  }
+  Future<void> fetchDashboardData() async {
+    try {
+      setState(() {
+        // Set loading state if you have one
+      });
+
+      await APIManager().apiRequest(
+        context,
+        API.getdashbord,
+        params: {},
+        onSuccess: (responseBody) {
+          try {
+            final data = json.decode(responseBody);
+            if (data['status'] == true) {
+              setState(() {
+                dashboard = DashboardResponse.fromJson(data); // Use already decoded data
+              });
+            } else {
+              // Handle API success but false status
+              print('API returned false status: ${data['message']}');
+              _showErrorSnackbar(data['message'] ?? 'Failed to load dashboard data');
+            }
+          } catch (e) {
+            print('Error parsing response: $e');
+            _showErrorSnackbar('Error parsing dashboard data');
+          }
+        },
+        onFailure: (error) {
+          print('API failure: $error');
+          _showErrorSnackbar('Failed to load dashboard data: $error');
+        },
+      );
+    } catch (e) {
+      print('Unexpected error: $e');
+      _showErrorSnackbar('Unexpected error loading dashboard');
+    } finally {
+      setState(() {
+        // Reset loading state if you have one
+      });
+    }
+  }
+
+
+
+  Future<void> _fetchFollowUps() async {
+    setState(() {
+      isLoadingFollowUps = true;
+    });
+
+    try {
+      String? token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        showTopRightToast(context, 'Authentication token not found. Please login again.');
+        return;
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.post(
+        Uri.parse('$localurl/get_all_follow_up'),
+        headers: headers,
+        body: json.encode({
+          "date": selectedMonth,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['status'] == true) {
+          List<FollowUp> fetchedFollowUps = [];
+          for (var item in responseData['data']) {
+            fetchedFollowUps.add(FollowUp.fromJson(item));
+          }
+          setState(() {
+            followUps = fetchedFollowUps;
+          });
+        } else {
+          print(responseData['message']);
+         // showTopRightToast(context, responseData['message'] ?? 'Failed to fetch follow-ups');
+        }
+      } else {
+        print('API Error: ${response.statusCode}');
+       // showTopRightToast(context, 'API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: ${e.toString()}');
+      //showTopRightToast(context, 'Error: ${e.toString()}');
+    } finally {
+      setState(() {
+        isLoadingFollowUps = false;
+      });
+    }
   }
 
   Future<void> _initializeData() async {
@@ -329,36 +437,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
 
                               Expanded(
-                                flex: 7, //
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Welcome Section
-
-                                    // Stats Cards - Horizontal Scroll
-                                    SizedBox(
-                                      height: 120, // Fixed height for stats cards
-                                      child: ListView(
-                                        scrollDirection: Axis.horizontal,
-                                        children: [
-                                          _buildStatCard("Todays Follow Ups", "42", 'assets/Dashboardicon5.png'),
-                                          const SizedBox(width: 16),
-                                          _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
-                                          const SizedBox(width: 16),
-                                          _buildStatCard("Pending Reports", "12", 'assets/Dashboardicon3.png'),
-                                          const SizedBox(width: 16),
-                                          _buildStatCard("Total Appointment", "879", 'assets/Dashboardicon2.png'),
-                                          const SizedBox(width: 16),
-                                          _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon1.png'),
-                                        ],
+                                flex: 7,
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Stats Cards - Horizontal Scroll
+                                      SizedBox(
+                                        height: 120,
+                                        child: ListView(
+                                          scrollDirection: Axis.horizontal,
+                                          children: [
+                                            _buildStatCard(
+                                                "Total Operations",
+                                                dashboard?.data.totalOperations ?? "0",
+                                                'assets/Dashboardicon1.png'
+                                            ),  const SizedBox(width: 16),
+                                            _buildStatCard("Todays Follow Ups", "42", 'assets/Dashboardicon5.png'),
+                                            const SizedBox(width: 16),
+                                            _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
+                                            const SizedBox(width: 16),
+                                            _buildStatCard("Pending Reports", "12", 'assets/Dashboardicon3.png'),
+                                            const SizedBox(width: 16),
+                                            _buildStatCard("Total Appointment", "879", 'assets/Dashboardicon2.png'),
+                                            const SizedBox(width: 16),
+                                            _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon1.png'),
+                                          ],
+                                        ),
                                       ),
-                                    ),
 
-                                    const SizedBox(height: 20),
+                                      const SizedBox(height: 20),
 
-
-                                    Expanded(
-                                      child: Container(
+                                      // Bookmarks Section
+                                      Container(
+                                        height: 400,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius: BorderRadius.circular(12),
@@ -388,57 +500,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         decoration: BoxDecoration(
                                                           color: AppColors.primary.withOpacity(0.1),
                                                           borderRadius: const BorderRadius.only(
-                                                              topRight: Radius.circular(12),
-                                                              topLeft: Radius.circular(12)),
+                                                            topRight: Radius.circular(12),
+                                                            topLeft: Radius.circular(12),
+                                                          ),
                                                         ),
                                                         child: const Padding(
                                                           padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
                                                           child: Row(
                                                             children: [
-                                                              Expanded(
-                                                                flex: 2,
-                                                                child: Text(
-                                                                  "Patient name",
-                                                                  style: TextStyle(
-                                                                    fontWeight: FontWeight.bold,
-                                                                    color: AppColors.primary,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              Expanded(
-                                                                flex: 2,
-                                                                child: Text(
-                                                                  "Diagnosis",
-                                                                  style: TextStyle(
-                                                                    fontWeight: FontWeight.bold,
-                                                                    color: AppColors.primary,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              Expanded(
-                                                                flex: 2,
-                                                                child: Text(
-                                                                  "Summary",
-                                                                  style: TextStyle(
-                                                                    fontWeight: FontWeight.bold,
-                                                                    color: AppColors.primary,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              Expanded(
-                                                                flex: 1,
-                                                                child: Text(
-                                                                  "Actions",
-                                                                  style: TextStyle(
-                                                                    fontWeight: FontWeight.bold,
-                                                                    color: AppColors.primary,
-                                                                  ),
-                                                                ),
-                                                              ),
+                                                              Expanded(flex: 2, child: Text("Patient name", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
+                                                              Expanded(flex: 2, child: Text("Diagnosis", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
+                                                              Expanded(flex: 2, child: Text("Summary", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
+                                                              Expanded(flex: 1, child: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
                                                             ],
                                                           ),
                                                         ),
                                                       ),
+
                                                       // Table Rows
                                                       Expanded(
                                                         child: ListView(
@@ -467,102 +545,266 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                         ),
                                       ),
-                                    ),
 
-                                    const SizedBox(height: 20),
+                                      const SizedBox(height: 20),
 
-                                    // Follow Ups Section
-                                    SizedBox(
-                                      height: 216, // Fixed height for follow-ups
-                                      child: Container(
-                                        padding: const EdgeInsets.all(16.0),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                const Text(
-                                                  "Follow ups",
-                                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                                ),
-                                                const Text(
-                                                  "Today",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                            Expanded(
-                                              child: ListView(
-                                                scrollDirection: Axis.horizontal,
-                                                children: [
-                                                  FollowUpItem(
-                                                    name: "Gretchen O'Kon, M/31",
-                                                    date: "07 May 2025,\n9am",
-                                                    condition: "Hernia",
-                                                    phone: "+91-7788544987",
-                                                    index: '1',
-                                                    isToday: false,
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  FollowUpItem(
-                                                    name: "Gretchen O'Kon, M/31",
-                                                    date: "07 May 2025,\n9am",
-                                                    condition: "Hernia",
-                                                    phone: "+91-7788544987",
-                                                    index: '2',
-                                                    isToday: false,
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  FollowUpItem(
-                                                    name: "Gretchen O'Kon, M/31",
-                                                    date: "07 May 2025,\n9am",
-                                                    condition: "Hernia",
-                                                    phone: "+91-7788544987",
-                                                    index: '3',
-                                                    isToday: false,
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  FollowUpItem(
-                                                    name: "Gretchen O'Kon, M/31",
-                                                    date: "07 May 2025,\n9am",
-                                                    condition: "Hernia",
-                                                    phone: "+91-7788544987",
-                                                    index: '4',
-                                                    isToday: false,
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  FollowUpItem(
-                                                    name: "Gretchen O'Kon, M/31",
-                                                    date: "07 May 2025,\n9am",
-                                                    condition: "Hernia",
-                                                    phone: "+91-7788544987",
-                                                    index: '5',
-                                                    isToday: false,
-                                                  ),
-                                                ],
+                                      // Pie Chart + Legend Section
+                                  Row(
+                                    spacing: 20,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      /// ----------- PIE CHART (Locations) ----------
+                                      Expanded(
+                                        flex: 5,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.05),
+                                                blurRadius: 8,
+                                                offset: Offset(2, 4),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              /// Pie Chart
+                                              Expanded(
+                                                flex: 5,
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    const Text(
+                                                      "Location Distribution",
+                                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    SizedBox(
+                                                      height: 250,
+                                                      child: dashboard != null
+                                                          ? PieChart(
+                                                        PieChartData(
+                                                          sectionsSpace: 0,
+                                                          centerSpaceRadius: 40,
+                                                          pieTouchData: PieTouchData(
+                                                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                                              setState(() {
+                                                                if (event is FlTapUpEvent || event is FlPanEndEvent) {
+                                                                  _touchedIndex = -1;
+                                                                } else if (event is FlLongPressStart || event is FlPanStartEvent) {
+                                                                  if (pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
+                                                                    _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                                                  }
+                                                                }
+                                                              });
+                                                            },
+                                                          ),
+                                                          sections: List.generate(
+                                                            dashboard!.data.surgeryByLocation.length,
+                                                                (i) {
+                                                              final loc = dashboard!.data.surgeryByLocation[i];
+                                                              final isTouched = i == _touchedIndex;
+                                                              final double radius = isTouched ? 82 : 70;
+                                                              final value = loc.totalNumber.toDouble();
+                                                              final title = value.toInt().toString();
+
+                                                              // assign colors dynamically
+                                                              final colors = [
+                                                                [Colors.orange.shade200, Colors.orange.shade700],
+                                                                [Colors.blue.shade200, Colors.blue.shade700],
+                                                                [Colors.green.shade200, Colors.green.shade700],
+                                                                [Colors.purple.shade200, Colors.purple.shade700],
+                                                                [Colors.red.shade200, Colors.red.shade700],
+                                                                [Colors.teal.shade200, Colors.teal.shade700],
+                                                              ];
+
+                                                              final colorPair = colors[i % colors.length];
+
+                                                              return PieChartSectionData(
+                                                                value: value,
+                                                                title: title,
+                                                                radius: radius,
+                                                                gradient: LinearGradient(
+                                                                  colors: colorPair,
+                                                                  begin: Alignment.topLeft,
+                                                                  end: Alignment.bottomRight,
+                                                                ),
+                                                                borderSide: isTouched
+                                                                    ? BorderSide(color: AppColors.primary, width: 1)
+                                                                    : BorderSide(color: Colors.transparent, width: 0),
+                                                                titleStyle: const TextStyle(
+                                                                  fontSize: 14,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  color: Colors.white,
+                                                                ),
+                                                              );
+                                                            },
+                                                          ),
+                                                        ),
+                                                      )
+                                                          : Center(child: CircularProgressIndicator()),
+                                                    )
+                                                  ],
+                                                ),
+                                              ),
+
+                                              /// Legenddashboard != null
+                                              //
+                                              dashboard != null
+                                                  ? Center(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(left: 20),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: List.generate(
+                                                      dashboard!.data.surgeryByLocation.length,
+                                                          (i) {
+                                                        final loc = dashboard!.data.surgeryByLocation[i];
+                                                        final colors = [
+                                                          Colors.orange,
+                                                          Colors.blue,
+                                                          Colors.green,
+                                                          Colors.purple,
+                                                          Colors.red,
+                                                          Colors.teal,
+                                                        ];
+                                                        return buildLegendItem(colors[i % colors.length], loc.location);
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                                  : Center(child: CircularProgressIndicator()),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
+
+                                      /// ----------- BAR CHART (Types) ----------
+                                      Expanded(
+                                        flex: 5,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.05),
+                                                blurRadius: 8,
+                                                offset: Offset(2, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                "Hernia Types Distribution",
+                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(height: 20),
+                                              SizedBox(
+                                                height: 250,
+                                                child:dashboard != null
+                                                    ?  BarChart(
+                                                  BarChartData(
+                                                    alignment: BarChartAlignment.spaceEvenly,
+                                                    maxY: 1000,
+                                                    barTouchData: BarTouchData(
+                                                      enabled: true,
+                                                      touchTooltipData: BarTouchTooltipData(
+                                                        tooltipBgColor: Colors.white,
+                                                        tooltipPadding: const EdgeInsets.all(8),
+                                                        tooltipMargin: 8,
+                                                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                                          return BarTooltipItem(
+                                                            '${rod.toY.toInt()}',
+                                                            const TextStyle(
+                                                              color: Colors.black,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                    titlesData: FlTitlesData(
+                                                      leftTitles: AxisTitles(
+                                                        sideTitles: SideTitles(
+                                                          showTitles: true,
+                                                          interval: 200,
+                                                          getTitlesWidget: (value, meta) {
+                                                            return Text(value.toInt().toString());
+                                                          },
+                                                          reservedSize: 40,
+                                                        ),
+                                                      ),
+                                                      bottomTitles: AxisTitles(
+                                                        sideTitles: SideTitles(
+                                                          showTitles: true,
+                                                          getTitlesWidget: (value, meta) {
+                                                            final types = dashboard!.data.surgeryByType;
+                                                            if (value.toInt() < types.length) {
+                                                              return Text(types[value.toInt()].name);
+                                                            }
+                                                            return const Text("");
+                                                          },
+                                                        ),
+                                                      ),
+                                                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                                    ),
+                                                    gridData: FlGridData(show: true),
+                                                    borderData: FlBorderData(show: false),
+                                                    barGroups: List.generate(
+                                                      dashboard!.data.surgeryByType.length,
+                                                          (i) {
+                                                        final type = dashboard!.data.surgeryByType[i];
+                                                        return BarChartGroupData(
+                                                          x: i,
+                                                          barRods: [
+                                                            BarChartRodData(
+                                                              toY: type.totalCount.toDouble(),
+                                                              width: 50,
+                                                              borderRadius: const BorderRadius.only(
+                                                                topLeft: Radius.circular(8),
+                                                                topRight: Radius.circular(8),
+                                                              ),
+                                                              color: AppColors.secondary,
+                                                            ),
+                                                          ],
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                )  : Center(child: CircularProgressIndicator()),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+
+
+
                                   ],
+                                  ),
                                 ),
                               ),
 
+
                               // Sidebar Column (20% width)
+                              // In your DashboardScreen class, replace the Quick Actions section with:
                               Expanded(
-                                flex: 3, // 20% of width
+                                flex: 3,
                                 child: Container(
                                   padding: const EdgeInsets.all(16.0),
                                   margin: const EdgeInsets.only(left: 16),
@@ -571,10 +813,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
                                   ),
-                                  child: const Column(
+                                  child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         "Quick Actions",
                                         style: TextStyle(
                                           fontSize: 18,
@@ -582,8 +824,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           color: AppColors.primary,
                                         ),
                                       ),
-                                      SizedBox(height: 20),
-                                      // Add more sidebar items here
+                                      const SizedBox(height: 20),
+                                      // Replace the old content with the calendar
+                                      Expanded(
+                                        child: SingleChildScrollView(
+                                          child: FollowUpCalendar(),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -605,6 +852,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   }
+  Widget buildPieChart(List<SurgeryType> surgeryByType) {
+    return PieChart(
+      PieChartData(
+        sections: surgeryByType.map((e) {
+          return PieChartSectionData(
+            value: e.totalCount.toDouble(),
+            title: "${e.name}\n${e.totalCount}",
+            radius: 60,
+          );
+        }).toList(),
+      ),
+    );
+  }
+  Widget buildBarChart(List<SurgeryLocation> surgeryByLocation) {
+    return BarChart(
+      BarChartData(
+        barGroups: surgeryByLocation.asMap().entries.map((entry) {
+          int index = entry.key;
+          SurgeryLocation e = entry.value;
+
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: e.totalNumber.toDouble(),
+                width: 16,
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+            showingTooltipIndicators: [0],
+          );
+        }).toList(),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= surgeryByLocation.length) return const SizedBox();
+                return Text(
+                  surgeryByLocation[value.toInt()].location,
+                  style: const TextStyle(fontSize: 10),
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _addPatient({
     required TextEditingController firstNameController,
     required TextEditingController lastNameController,
@@ -716,7 +1015,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
+  Widget buildLegendItem(Color color, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+            ),
+          ),
+          SizedBox(width: 8),
+          Text(text, style: TextStyle(fontSize: 14)),
+        ],
+      ),
+    );
+  }
 // Example of the _buildField method (you should have this implemented)
   Widget _buildField(
       String label,
@@ -825,6 +1142,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+
+  List<DropdownMenuItem<String>> _generateMonthOptions() {
+    List<DropdownMenuItem<String>> items = [];
+    DateTime now = DateTime.now();
+
+    for (int i = -6; i <= 6; i++) {
+      DateTime date = DateTime(now.year, now.month + i, 1);
+      String value = DateFormat('MM-yyyy').format(date);
+      String label = DateFormat('MMMM yyyy').format(date);
+
+      items.add(DropdownMenuItem<String>(
+        value: value,
+        child: Text(label),
+      ));
+    }
+
+    return items;
+  }
+
+  Widget _buildFollowUpItem(FollowUp followUp) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Patient ID: ${followUp.patientId}",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            Text("Follow-up: ${DateFormat('MMM dd, yyyy').format(followUp.followUpDate)}"),
+            Text("Next: ${DateFormat('MMM dd, yyyy').format(followUp.nextFollowUpDate)}"),
+          ],
+        ),
       ),
     );
   }
@@ -955,4 +1312,36 @@ class _FollowUpItemState extends State<FollowUpItem> {
       ),
     );
   }
+}
+class FollowUp {
+  final int id;
+  final int patientId;
+  final DateTime followUpDate;
+  final DateTime nextFollowUpDate;
+
+  FollowUp({
+    required this.id,
+    required this.patientId,
+    required this.followUpDate,
+    required this.nextFollowUpDate,
+  });
+
+  factory FollowUp.fromJson(Map<String, dynamic> json) {
+    return FollowUp(
+      id: json['id'],
+      patientId: json['patient_id'],
+      followUpDate: DateTime.parse(json['follow_up_dates']).toLocal(),
+      nextFollowUpDate: DateTime.parse(json['next_follow_up_dates']).toLocal(),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is FollowUp &&
+              runtimeType == other.runtimeType &&
+              id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

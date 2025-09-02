@@ -35,6 +35,7 @@ class ConfigManager {
 
 enum API {
   getlocation,
+  gethernia,
   frontpatientbyid,
   getallusers,
   getAllRoles,
@@ -58,6 +59,7 @@ enum API {
   globalpermission,
   permissionslist,
   checkpatientinfo,
+  getdashbord,
 }
 
 class APIManager {
@@ -81,6 +83,10 @@ class APIManager {
         return '${ConfigManager.getBaseURL()}/summary_add';
         case API.checkpatientinfo:
         return '${ConfigManager.getBaseURL()}/checkpatientinfo';
+        case API.gethernia:
+        return '${ConfigManager.getBaseURL()}/get_hernia';
+        case API.getdashbord:
+        return '${ConfigManager.getBaseURL()}/get_dashbord';
         case API.getlocation:
         return '${ConfigManager.getBaseURL()}/getlocation';
         case API.getallusers:

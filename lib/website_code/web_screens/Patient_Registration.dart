@@ -225,7 +225,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
   DateTime? _CTScanDate= DateTime.now(); // Initialize with default value
 
   Map<String, List<String>> miscReportTagging = {};
-
+  final TextEditingController _docQualificationController = TextEditingController();
+  final TextEditingController _registrationNumberController = TextEditingController();
 // Add these with your other controllers
   final List<TextEditingController> _medNameControllers = [];
   final List<TextEditingController> _medDosageControllers = [];
@@ -308,7 +309,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
     };
     _submit();
 
-
+    _docQualificationController.text = ''; // Set initial value if available
+    _registrationNumberController.text = '';
     _fetchLocations();
   }
   void _initializeData() {
@@ -740,6 +742,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
           _visitData?['comorbidities']?.toString() ?? '';
       _planController.text = _visitData?['plan']?.toString() ?? '';
       _adviseController.text = _visitData?['advise']?.toString() ?? '';
+    _registrationNumberController.text = _visitData?['registration_number']?.toString() ?? '';
+    _docQualificationController .text = _visitData?['doc_qualification']?.toString() ?? '';
       _doctorNotesController.text =
           _patientData?['doctor_note']?.toString() ?? '';
 
@@ -1354,6 +1358,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'date_of_pft': _dateofpftController.toIso8601String().split('T')[0],
         'pft_finding': _ensureString(_pftFindingController.text),
         'msic_laboratory': _ensureString(_miscLaboratoryController.text),
+        'registration_number': _ensureString(_registrationNumberController.text),
+        'doc_qualification': _ensureString(_docQualificationController.text),
         'date_of_msic': _dateofmiscController.toIso8601String().split('T')[0],
         'msic_finding': _ensureString(_miscFindingController.text),
         "misc_report_tagging": _formatMiscReportTagging(miscReportTagging),
@@ -3238,6 +3244,84 @@ SizedBox(height: 16,),
                         ),
                         child: Column(
                           children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(4),
+                                ),
+                              ),
+                              padding: EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Patient Name: ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                              fontSize: ResponsiveUtils.fontSize(context, 14),
+                                            ),
+                                          ),
+                                          Text(
+                                            '${_firstNameController.text} ${_lastNameController.text}',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+
+                                      SizedBox(width: 20),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Age: ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primary,
+                                              fontSize: ResponsiveUtils.fontSize(context, 14),
+                                            ),
+                                          ),
+                                          Text(
+                                            '${_ageController.text} years',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: FormInput(
+                                          controller: _docQualificationController,
+                                          label: 'Doctor Qualification',
+                                          hintlabel: 'Enter Doctor Qualification',
+
+                                        ),
+                                      ),
+                                      SizedBox(width: 16),
+                                      Expanded(
+                                        child: FormInput(
+                                          controller: _registrationNumberController,
+                                          label: 'Registration Number',
+                                          hintlabel: 'Enter Registration Numbers',
+
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                             // Table Header
                             Container(
                               decoration: BoxDecoration(

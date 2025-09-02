@@ -34,13 +34,15 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
   bool _hasInitialData = false;
   List<bool> isEditingList = [];
   bool _isAddingFollowUp = false;
-
+  String _patientName = '';
+  String _patientAge = '';
   @override
   void initState() {
     super.initState();
     _fetchFollowUpData();
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
+
   }
 
   Future<void> _fetchFollowUpData() async {
@@ -66,6 +68,13 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
 
       if (response.statusCode == 200 && responseData['status'] == true) {
         final List<dynamic> data = responseData['data'];
+        if (data.isNotEmpty) {
+          final firstItem = data[0];
+          setState(() {
+            _patientName = firstItem['patient_name']?.toString() ?? '';
+            _patientAge = firstItem['patient_age']?.toString() ?? '';
+          });
+        }
         setState(() {
           followUpEntries = data.map((item) {
             // Parse date with custom format (DD-MM-YYYY)
@@ -101,6 +110,8 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
               findings: item['findings'] ?? '',
               investigation: item['investigation'] ?? '',
               intervention: item['intervention'] ?? '',
+              docQualification: item['doc_qualification'] ?? '', // Add this line
+              registrationNumber: item['registration_number'] ?? '', // Add this line
             );
 
             // Process investigation images
@@ -284,8 +295,12 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
         'findings': entry.findingsController.text,
         'investigation': entry.investigationController.text,
         'intervention': entry.interventionController.text,
+        'doc_qualification': entry._docQualificationController.text,
+        'registration_number': entry._registrationNumberController.text,
         'prescriptions': jsonEncode(entry.getMedicationPayload())
       });
+      print("request.fields");
+      print(request.fields);
 
       // Add investigation images
       List<String> existingInvestigationFiles = [];
@@ -558,7 +573,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                     ),
                     const SizedBox(height: 12),
                     DocumentUploadWidget(
-                      label: "Upload Documents",
+                      label: "Upload Investigation",
                       docType: "investigation_image",
                       onFilesSelected: (files) {
                         setState(() {
@@ -606,7 +621,7 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
 
                     const SizedBox(height: 12),
                     DocumentUploadWidget(
-                      label: "Upload Documents",
+                      label: "Upload Intervention",
                       docType: "treatment_image",
                       onFilesSelected: (files) {
                         setState(() {
@@ -678,6 +693,84 @@ class _FollowUpsTabContentState extends State<FollowUpsTabContent> {
                                 ),
                                 child: Column(
                                   children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        border: Border.all(color: Colors.grey.shade300),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(4),
+                                          topRight: Radius.circular(4),
+                                        ),
+                                      ),
+                                      padding: EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    'Patient Name: ',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppColors.primary,
+                                                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                                                    ),
+                                                  ),
+                                                  Text( _patientName,
+                                                    //'${_firstNameController.text} ${_lastNameController.text}',
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              SizedBox(width: 20),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    'Age: ',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppColors.primary,
+                                                      fontSize: ResponsiveUtils.fontSize(context, 14),
+                                                    ),
+                                                  ),
+                                                  Text('$_patientAge years',
+                                                    //'${_ageController.text} years',
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
+
+                                            ],
+                                          ),
+                                          SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: FormInput(
+                                                  controller: entry.value._docQualificationController,
+                                                  label: 'Doctor Qualification',
+                                                  hintlabel: 'Enter Doctor Qualification',
+
+                                                ),
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: FormInput(
+                                                  controller: entry.value._registrationNumberController,
+                                                  label: 'Registration Number',
+                                                  hintlabel: 'Enter Registration Numbers',
+
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     // Table Header
                                     Container(
                                       decoration: BoxDecoration(
@@ -867,6 +960,8 @@ class FollowUpEntry {
   final TextEditingController findingsController = TextEditingController();
   final TextEditingController investigationController = TextEditingController();
   final TextEditingController interventionController = TextEditingController();
+  final TextEditingController _docQualificationController = TextEditingController();
+  final TextEditingController _registrationNumberController = TextEditingController();
   bool status;
   final Map<String, List<Map<String, dynamic>>> uploadedFiles;
 
@@ -890,6 +985,8 @@ class FollowUpEntry {
     String? findings,
     String? investigation,
     String? intervention,
+    String? docQualification, // Add this parameter
+    String? registrationNumber, // Add this parameter
     Map<String, List<Map<String, dynamic>>>? uploadedFiles,
   }) : uploadedFiles = uploadedFiles ?? {
     "investigation_image": [],
@@ -902,7 +999,8 @@ class FollowUpEntry {
     if (findings != null) findingsController.text = findings;
     if (investigation != null) investigationController.text = investigation;
     if (intervention != null) interventionController.text = intervention;
-
+    if (docQualification != null) _docQualificationController.text = docQualification; // Add this line
+    if (registrationNumber != null) _registrationNumberController.text = registrationNumber;
     // Add default medication rows
    // addMedicationRow(count: 2);
   }
@@ -966,6 +1064,8 @@ class FollowUpEntry {
     findingsController.dispose();
     investigationController.dispose();
     interventionController.dispose();
+    _docQualificationController.dispose();
+    _registrationNumberController.dispose();
 
     // Dispose medication controllers
     for (var controller in medNameControllers) {

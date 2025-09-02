@@ -44,7 +44,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   bool _isEditing = false;
   int? _existingDischargeId;
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    "discharge_images": []
+    "investigation_discharge_image": []
   };
   // Information Controllers
   final TextEditingController _consultantController = TextEditingController();
@@ -209,10 +209,10 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         )).toList();
       }
 
-      if (data['discharge_images'] != null && data['discharge_images'] is List) {
+      if (data['investigation_discharge_image'] != null && data['investigation_discharge_image'] is List) {
         print( "_uploadedFiles");
-        print( _uploadedFiles['discharge_images']);
-        _uploadedFiles['discharge_images'] = (data['discharge_images'] as List).map((file) {
+        print( _uploadedFiles['investigation_discharge_image']);
+        _uploadedFiles['investigation_discharge_image'] = (data['investigation_discharge_image'] as List).map((file) {
           return {
             'id': file['id'],
             'path': file['image_path'],
@@ -334,17 +334,17 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 
       // Add file uploads
       List<String> existingFileIds = [];
-      for (var file in _uploadedFiles['discharge_images'] ?? []) {
+      for (var file in _uploadedFiles['investigation_discharge_image'] ?? []) {
         if (!file['isExisting']) {
           if (kIsWeb && file['bytes'] != null) {
             request.files.add(http.MultipartFile.fromBytes(
-              'discharge_images',
+              'investigation_discharge_image',
               file['bytes']!,
               filename: file['name'],
             ));
           } else if (!kIsWeb && file['path'] != null) {
             request.files.add(await http.MultipartFile.fromPath(
-              'discharge_images',
+              'investigation_discharge_image',
               file['path']!,
               filename: file['name'],
             ));
@@ -781,6 +781,16 @@ maxlength: 4,
                     ],
                   )*/
               ,
+                  DocumentUploadWidget(
+                    label: "Upload Investigation",
+                    docType: "investigation_discharge_image",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['investigation_discharge_image'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['investigation_discharge_image'],
+                  ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
                       builder: (context,constraints) {

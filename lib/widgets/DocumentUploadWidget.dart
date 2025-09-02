@@ -21,6 +21,7 @@ import 'dart:typed_data'; // For Uint8List
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
+
 class DocumentUploadWidget extends StatefulWidget {
   final String docType;
   final String label;
@@ -43,13 +44,11 @@ class DocumentUploadWidget extends StatefulWidget {
   State<DocumentUploadWidget> createState() => _DocumentUploadWidgetState();
 }
 
-
 class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   List<Map<String, dynamic>> _selectedFiles = [];
 
   @override
   void initState() {
-
     super.initState();
     _selectedFiles = widget.initialFiles?.where((file) => file['isExisting'] ?? false).toList() ?? [];
   }
@@ -71,20 +70,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'mp4', 'mov', 'avi'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'mp4', 'mov', 'avi', 'heic', 'heif'],
       );
 
       if (result != null) {
-  /*      for (var file in result.files) {
-          if (file.size > 50 * 1024 * 1024) { // 50MB limit
-            showTopRightToast(
-                context,
-                'File ${file.name} is too large (max 50MB)',
-                backgroundColor: Colors.red
-            );
-            return;
-          }
-        }*/
         List<Map<String, dynamic>> newFiles = result.files.map((file) {
           return {
             'path': kIsWeb ? file.name : file.path!,
@@ -99,23 +88,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         setState(() {
           _selectedFiles.addAll(newFiles);
         });
-print("_selectedFiles");
-print(_selectedFiles);
+
+        print("_selectedFiles");
+        print(_selectedFiles);
         widget.onFilesSelected(_selectedFiles);
       }
     } catch (e) {
       debugPrint('File picking error: $e');
     }
   }
-
-/*
-  void _removeFile(int index) {
-    setState(() {
-      _selectedFiles.removeAt(index);
-    });
-    widget.onFilesSelected(_selectedFiles);
-  }
-*/
 
   String _formatSize(dynamic size) {
     if (size is int) {
@@ -212,6 +193,7 @@ print(_selectedFiles);
   Widget _buildFileVideoPlayer(String filePath) {
     return VideoPlayerWidget(filePath: filePath);
   }
+
   void _showPreviewDialog(BuildContext context, Map<String, dynamic> file,
       {bool isNetwork = false}) {
     final filePath = file['path'] ?? '';
@@ -219,7 +201,7 @@ print(_selectedFiles);
     final fileBytes = file['bytes'];
     final fileName = file['name'] ?? 'file';
 
-    final imageTypes = {'jpg', 'jpeg', 'png', 'webp'};
+    final imageTypes = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
     final videoTypes = {'mp4', 'mov', 'avi'};
     final pdfTypes = {'pdf'};
     final documentTypes = {'doc', 'docx'};
@@ -242,6 +224,7 @@ print(_selectedFiles);
       _showGenericPreview(context, fileName, fileExtension);
     }
   }
+
   void _showImagePreview(BuildContext context, Map<String, dynamic> file, bool isNetwork) {
     final filePath = file['file_path'] ?? file['path'] ?? '';
     final fileBytes = file['bytes'];
@@ -285,13 +268,11 @@ print(_selectedFiles);
         }
 
         // Clean up any double slashes in the URL
-       // imageUrl = imageUrl.replaceAll('//', '/').replaceAll(':/', '://');
-print("imageUrl");
-print(imageUrl);
+        print("imageUrl");
+        print(imageUrl);
         return Image.network(
           imageUrl,
           fit: BoxFit.contain,
-
           errorBuilder: (context, error, stackTrace) {
             debugPrint('Network image error: $error');
             return _buildImageErrorWidget(fileName, 'Failed to load network image');
@@ -333,6 +314,7 @@ print(imageUrl);
       return _buildImageErrorWidget(fileName, e.toString());
     }
   }
+
   Widget _buildImageErrorWidget(String fileName, String error) {
     print( error.toString());
     return Center(
@@ -436,6 +418,7 @@ print(imageUrl);
       ),
     );
   }
+
   Widget _buildWebPdfPreview(Uint8List fileBytes, String fileName) {
     try {
       // Convert bytes to base64
@@ -465,6 +448,7 @@ print(imageUrl);
       return _buildPdfErrorWidget('Failed to load PDF: $e');
     }
   }
+
   Widget _buildPdfErrorWidget(String error) {
     return Center(
       child: Column(
@@ -486,6 +470,7 @@ print(imageUrl);
       ),
     );
   }
+
   void _showDocumentPreview(BuildContext context, String fileName) {
     showDialog(
       context: context,
@@ -576,7 +561,7 @@ print(imageUrl);
         children: [
           Tooltip(
             decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
-message: 'Download',
+            message: 'Download',
             child: CircleAvatar(
               backgroundColor: AppColors.secondary,
               child: IconButton(
@@ -602,8 +587,6 @@ message: 'Download',
     );
   }
 
-
-
   Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
     try {
       if (kIsWeb) {
@@ -613,11 +596,6 @@ message: 'Download',
         // Mobile implementation - saves to downloads folder
         await _downloadFileMobile(filePath, fileType, isNetwork);
       }
-     /* showTopRightToast(
-        context,
-        'Downloaded ${path.basename(filePath)}',
-        backgroundColor: Colors.green,
-      );*/
     } catch (e) {
       debugPrint('Download error: $e');
       showTopRightToast(
@@ -682,52 +660,6 @@ message: 'Download',
     // Optionally open the file after download
     await OpenFile.open(savePath);
   }
-/*  Future<void> _downloadFile(String filePath, String fileType, bool isNetwork) async {
-    try {
-      if (kIsWeb) {
-        // Handle web download
-        if (isNetwork) {
-          // For network files, use the URL directly
-          await launchUrl(Uri.parse(filePath));
-        } else {
-          // For local files selected in web, create a download link
-          final file = _selectedFiles.firstWhere(
-                (f) => f['path'] == filePath || f['name'] == path.basename(filePath),
-            orElse: () => {},
-          );
-
-          if (file.isNotEmpty && file['bytes'] != null) {
-            final bytes = file['bytes'] as Uint8List;
-            final blob = html.Blob([bytes]);
-            final url = html.Url.createObjectUrlFromBlob(blob);
-            final anchor = html.AnchorElement(href: url)
-              ..setAttribute('download', file['name'])
-              ..click();
-            html.Url.revokeObjectUrl(url);
-          }
-        }
-      } else {
-        // Handle mobile download
-        if (isNetwork) {
-          await launchUrl(Uri.parse(filePath));
-        } else {
-          OpenFile.open(filePath);
-        }
-      }
-      showTopRightToast(
-        context,
-        'Downloading ${path.basename(filePath)}',
-        backgroundColor: Colors.green,
-      );
-    } catch (e) {
-      debugPrint('Download error: $e');
-      showTopRightToast(
-        context,
-        'Failed to download file',
-        backgroundColor: Colors.red,
-      );
-    }
-  }*/
 
   Future<void> _removeFile(int index) async {
     final file = _selectedFiles[index];
@@ -953,7 +885,7 @@ message: 'Download',
                                                 );
                                               }).toList(),
                                             ),
-SizedBox(width: 10,),
+                                            SizedBox(width: 10,),
                                             Tooltip(
                                               message: 'Preview file',
                                               decoration: BoxDecoration(
@@ -1008,7 +940,7 @@ SizedBox(width: 10,),
   IconData _getFileIcon(String? fileType) {
     final type = (fileType ?? '').toLowerCase();
     if (type == 'pdf') return Icons.picture_as_pdf;
-    if (['jpg', 'jpeg', 'png'].contains(type)) return Icons.image;
+    if (['jpg', 'jpeg', 'png', 'heic', 'heif'].contains(type)) return Icons.image;
     if (['doc', 'docx'].contains(type)) return Icons.description;
     if (['mp4', 'mov', 'avi'].contains(type)) return Icons.videocam;
     return Icons.insert_drive_file;
@@ -1017,14 +949,12 @@ SizedBox(width: 10,),
   Color _getFileIconColor(String? fileType) {
     final type = (fileType ?? '').toLowerCase();
     if (type == 'pdf') return Colors.red;
-    if (['jpg', 'jpeg', 'png'].contains(type)) return Colors.blue;
+    if (['jpg', 'jpeg', 'png', 'heic', 'heif'].contains(type)) return Colors.blue;
     if (['doc', 'docx'].contains(type)) return Colors.blue.shade800;
     if (['mp4', 'mov', 'avi'].contains(type)) return Colors.purple;
     return Colors.grey;
   }
-
 }
-
 
 class PdfIframe extends StatelessWidget {
   final String pdfUrl;

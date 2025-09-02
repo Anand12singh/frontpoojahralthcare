@@ -15,13 +15,16 @@ import 'package:provider/provider.dart';
 import '../../constants/ResponsiveUtils.dart';
 import '../../constants/base_url.dart';
 import '../../provider/PermissionService.dart';
+import '../../services/api_services.dart';
 import '../../utils/colors.dart';
 import '../../widgets/DatePickerInput.dart';
 import '../../widgets/DocumentUploadWidget.dart';
+import '../../widgets/DropdownInput.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
 import '../../widgets/show_dialog.dart';
 import 'PatientDetailsSidebar.dart';
+import 'Patient_Registration.dart';
 
 
 class SurgeryTabContent extends StatefulWidget {
@@ -44,6 +47,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   final TextEditingController _anaesthetistController = TextEditingController();
   final TextEditingController _anaesthesiaController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _otherLocationController =
+  TextEditingController();
   final TextEditingController _findingsController = TextEditingController();
   final TextEditingController _procedureController = TextEditingController();
   final TextEditingController _implantsController = TextEditingController();
@@ -52,12 +57,65 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   final TextEditingController _timetakenHrController = TextEditingController();
   final TextEditingController _timetakenMinController = TextEditingController();
   final TextEditingController _complicationsController = TextEditingController();
-
+  String _selectedOperationName = '';
+  List<Map<String, dynamic>> _hernia = [];
+  String? _selectedOperationId = '2';
+  String? _selectedLocationId = '2';
+  String _selectedLocationName = '';
+  List<Map<String, dynamic>> _locations = [];
   DateTime? _selectedDate;
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
     "implants_image": []
   };
   final Map<String, List<String>> _deletedFiles = {};
+
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    PermissionService().initialize();
+
+    // Load data in sequence
+    _fetchLocations().then((_) {
+      _fetchHernia().then((_) {
+        _loadExistingData();
+      });
+    });
+  }
+
+
+  Future<void> _fetchLocations() async {
+    setState(() => _isLoading = true);
+
+    await APIManager().apiRequest(
+      context,
+      API.getlocation,
+      params: {}, // No parameters for GET
+      onSuccess: (responseBody) {
+        final data = json.decode(responseBody);
+
+        if (data['success'] == true) {
+          setState(() {
+            _locations = List<Map<String, dynamic>>.from(data['locations']);
+            if (_locations.isNotEmpty) {
+              _selectedLocationId ??= _locations.first['id'].toString();
+              _selectedLocationName = _locations.first['location'].toString();
+            }
+            debugPrint("_locations: $_locations");
+          });
+        } else {
+
+        }
+      },
+      onFailure: (error) {
+
+      },
+    );
+
+    setState(() => _isLoading = false);
+  }
+
 
   // Date Picker
   Future<void> _selectDate(BuildContext context) async {
@@ -285,7 +343,28 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
             _treatmentController.text = operationData['treatment_advised'] ?? '';
             _furtherPlanController.text = operationData['further_plan'] ?? '';
             _complicationsController.text = operationData['complications'] ?? '';
+            _selectedOperationName = operationData['hernia_name'] ?? '';
+            _selectedOperationId = operationData['hernia_type']?.toString() ?? '2';
+            // NEW: Set hospital location from API response
+            final String hospitalLocation = operationData['hospital_location'] ?? '';
+            if (hospitalLocation.isNotEmpty) {
+              // Find the location in your _locations list that matches the API value
+              final matchingLocation = _locations.firstWhere(
+                    (loc) => loc['location'] == hospitalLocation,
+                orElse: () => {},
+              );
 
+              if (matchingLocation.isNotEmpty) {
+                _selectedLocationId = matchingLocation['id'].toString();
+                _selectedLocationName = matchingLocation['location'].toString();
+              } else {
+                // If not found in predefined locations, set to "Others"
+                _selectedLocationId = '2'; // Assuming '2' is the ID for "Others"
+                _selectedLocationName = 'Others';
+
+              }
+            }
+            _otherLocationController.text = operationData['other_location'] ?? '';
             // Parse time taken
             if (operationData['time_take'] != null) {
               final timeParts = operationData['time_take'].split(' ');
@@ -357,6 +436,10 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
         'treatment_advised': _treatmentController.text,
         'further_plan': _furtherPlanController.text,
         'complications': _complicationsController.text,
+
+        'hernia_type': _selectedOperationId ?? '1',
+        'hospital_location': _selectedLocationId ?? '1',
+        'other_location': _otherLocationController.text,
         'time_take': '${_timetakenHrController.text} Hr ${_timetakenMinController.text} Min',
       };
       if (_selectedDate != null) {
@@ -423,12 +506,47 @@ print(request.fields);
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadExistingData();
-    WidgetsFlutterBinding.ensureInitialized();
-    PermissionService().initialize();
+
+  Future<void> _fetchHernia() async {
+    setState(() => _isLoading = true);
+
+    await APIManager().apiRequest(
+      context,
+      API.gethernia,
+      params: {}, // No parameters for GET
+      onSuccess: (responseBody) {
+        final data = json.decode(responseBody);
+
+        if (data['status'] == true) { // Changed from 'success' to 'status'
+          setState(() {
+            _hernia = List<Map<String, dynamic>>.from(data['data']);
+            print("_hernia");// Changed from 'hernia_name' to 'data'
+            print(_hernia);// Changed from 'hernia_name' to 'data'
+            if (_hernia.isNotEmpty) {
+              _selectedOperationId ??= _hernia.first['id'].toString();
+              _selectedOperationName = _hernia.first['hernia_name'].toString(); // Changed to 'hernia_name'
+            }
+            debugPrint("hernia_name: $_hernia");
+          });
+        } else {
+      /*    showTopRightToast(
+            context,
+            data['message'] ?? 'Failed to fetch hernia types',
+            backgroundColor: Colors.red,
+          );*/
+        }
+      },
+      onFailure: (error) {
+
+      /*  showTopRightToast(
+          context,
+          "Error fetching locations: $error",
+          backgroundColor: Colors.red,
+        );*/
+      },
+    );
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -535,12 +653,64 @@ print(request.fields);
                       runSpacing: fieldSpacing,
                       alignment: WrapAlignment.start,
                       children: [
-                        _buildFormInput('Hospital', _locationController, maxLines: 1),
+                        DropdownInput<String>(
+                          label: 'Hospital Location',
+                          hintText:'Hospital Location' ,
+                          items: _locations.map((loc) {
+                            return DropdownMenuItem<String>(
+                              value: loc['id'].toString(),
+                              child: Text(loc['location'].toString(), style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedLocationId = value;
+                              // Find the corresponding location name
+                              final selectedLoc = _locations.firstWhere(
+                                    (loc) => loc['id'].toString() == value,
+                                orElse: () => {'id': '2', 'location': 'Unknown'},
+                              );
+                              _selectedLocationName = selectedLoc['location'] ?? 'Unknown';
+                            });
+                          },
+                          value: _selectedLocationId,
+                        ),
+
+
+
+                        if(_selectedLocationName=="Others")
+                          FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
+
+                       // _buildFormInput('Hospital', _locationController, maxLines: 1),
 
                         _buildFormInput('Surgery', _surgeryController),
 
                         _buildFormInput('Surgeon', _surgeonController),
-
+                        DropdownInput<String>(
+                          label: 'Hernia Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+                          items: _hernia.map((loc) {
+                            return DropdownMenuItem<String>(
+                              value: loc['id'].toString(),
+                              child: Text(
+                                loc['hernia_name'].toString(), // Changed from 'location' to 'hernia_name'
+                                style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16)),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOperationId = value;
+                              // Find the corresponding hernia name
+                              final selectedLoc = _hernia.firstWhere(
+                                    (loc) => loc['id'].toString() == value,
+                                orElse: () => {'id': '2', 'hernia_name': 'Femoral'}, // Updated default
+                              );
+                              _selectedOperationName = selectedLoc['hernia_name'] ?? 'Unknown'; // Changed to 'hernia_name'
+                              print(_selectedOperationName);
+                            });
+                          },
+                          value: _selectedOperationId,
+                        ),
                         DatePickerInput(
                           label: 'Date',
                           initialDate: _selectedDate,
@@ -647,7 +817,7 @@ print(request.fields);
               SizedBox(height: fieldSpacing),
               // Implants Upload
               _buildImageUploadField(),
-              SizedBox(height: fieldSpacing),
+             // SizedBox(height: fieldSpacing),
 
               // Row 4 - Modified to be responsive
 

@@ -394,12 +394,13 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
 
   Widget _buildPatientInfoSection(Map<String, dynamic> patient, Map<String, dynamic>? role,
       Map<String, dynamic>? dischargeInfo, Map<String, dynamic>? visitInfo,
-      Map<String, dynamic>? summaryData, bool isMobile, bool isCompact) {
+      Map<String, dynamic>? summaryData, bool isMobile, bool isCompact)
+  {
 
-    // Get age value safely
+    // Get age value safely - always show field
     dynamic ageValue;
     bool hasValidAge = false;
-    String ageText = '';
+    String ageText = 'Not specified';
 
     if (visitInfo != null && visitInfo['age'] != null) {
       ageValue = visitInfo['age'];
@@ -412,7 +413,7 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       }
     }
 
-    // Get gender text - updated to show full text
+    // Get gender text - always show field
     String getFullGenderText(int? genderCode) {
       switch (genderCode) {
         case 1:
@@ -422,14 +423,15 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
         case 3:
           return 'Other';
         default:
-          return '';
+          return 'Not specified';
       }
     }
 
     final genderText = getFullGenderText(patient['gender']);
 
     // Get full name
-    final fullName = "${patient['first_name']} ${patient['last_name']}";
+    final fullName = "${patient['first_name']} ${patient['last_name']}".trim();
+    final nameText = fullName.isNotEmpty ? fullName : 'Not specified';
 
     return Stack(
       children: [
@@ -437,33 +439,32 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
+
+            // Patient Name row - takes full width
+            buildInfoBlock(
+              "Patient Name",
+              nameText,
+            ),
+
+            const SizedBox(height: 8),
+
+            // Gender and Age in the second row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: buildInfoBlock(
-                    "Patient Name",
-                    fullName,
+                    "Gender",
+                    genderText,
                   ),
                 ),
-                if (genderText.isNotEmpty) ...[
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: buildInfoBlock(
-                      "Gender",
-                      genderText,
-                    ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: buildInfoBlock(
+                    "Age",
+                    ageText,
                   ),
-                ],
-                if (hasValidAge) ...[
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: buildInfoBlock(
-                      "Age",
-                      ageText,
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
 
@@ -558,7 +559,6 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       );
     }
   }
-
   void _copyAllPatientInfo(
       Map<String, dynamic> patient,
       Map<String, dynamic>? dischargeInfo,
@@ -577,31 +577,35 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       lines.add('PATIENT INFORMATION');
       lines.add('-------------------');
 
-      // Basic info
-      lines.add('Name: ${patient['first_name']} ${patient['last_name']}');
-      lines.add('Gender: ${_getGenderText(patient['gender'])}');
-      if (ageValue != null) {
-        lines.add('Age: $ageValue');
-      }
-      lines.add('PH ID: $formattedPhId'); // Updated line
-      if (patient['mobile_no'] != null) {
+      // Basic info - always include all fields
+      final fullName = "${patient['first_name']} ${patient['last_name']}".trim();
+      lines.add('Name: ${fullName.isNotEmpty ? fullName : "Not specified"}');
+      lines.add('Gender: ${_getGenderText(patient['gender']) ?? "Not specified"}');
+      lines.add('Age: ${ageValue != null ? "$ageValue years" : "Not specified"}');
+      lines.add('PH ID: $formattedPhId');
+      if (patient['mobile_no'] != null && patient['mobile_no'].toString().isNotEmpty) {
         lines.add('Mobile Number: ${patient['mobile_no']}');
+      } else {
+        lines.add('Mobile Number: Not specified');
       }
 
       // Diagnosis
+      lines.add('');
+      lines.add('Diagnosis:');
       if (dischargeInfo != null &&
           dischargeInfo['diagnosis'] != null &&
           dischargeInfo['diagnosis'].toString().isNotEmpty) {
-        lines.add('');
-        lines.add('Diagnosis: ${dischargeInfo['diagnosis']}');
-
+        lines.add('${dischargeInfo['diagnosis']}');
+      } else {
+        lines.add('Not specified');
       }
 
       // Summary A
       lines.add('');
       lines.add('SUMMARY PLAN A');
       lines.add('--------------');
-      if (summaryData != null && summaryData['summary_a'] != null) {
+      if (summaryData != null && summaryData['summary_a'] != null &&
+          summaryData['summary_a'].toString().isNotEmpty) {
         lines.add(summaryData['summary_a']);
       } else {
         lines.add('No summary available');
@@ -611,13 +615,12 @@ class _PatientDetailsSidebarState extends State<PatientDetailsSidebar> {
       lines.add('');
       lines.add('SUMMARY PLAN B');
       lines.add('--------------');
-      if (summaryData != null && summaryData['summary_b'] != null) {
+      if (summaryData != null && summaryData['summary_b'] != null &&
+          summaryData['summary_b'].toString().isNotEmpty) {
         lines.add(summaryData['summary_b']);
       } else {
         lines.add('No summary available');
       }
-
-
 
       final textToCopy = lines.join('\n');
 

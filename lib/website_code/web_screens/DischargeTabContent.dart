@@ -519,7 +519,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('1. Upload Discharge Documents', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
+                  Text('1.Discharge Documents', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   DocumentUploadWidget(
                     label: "Upload Discharge Documents",

@@ -478,6 +478,23 @@ print(response.request);
         : '')
         .join(' ');
   }
+
+  String _formatAge(dynamic ageValue) {
+    if (ageValue == null) return 'N/A';
+
+    final ageStr = ageValue.toString();
+
+    // Check if age is 0, empty, or "0.0"
+    if (ageStr.isEmpty ||
+        ageStr == '0' ||
+        ageStr == '0.0' ||
+        ageStr == '0.00' ||
+        ageStr.toLowerCase() == 'null') {
+      return 'N/A';
+    }
+
+    return ageStr;
+  }
   @override
   Widget build(BuildContext context) {
     int fromRecord = ((_currentPage - 1) * (_rowsPerPage == 0 ? filteredPatients.length : _rowsPerPage)) + 1;
@@ -772,8 +789,14 @@ print(response.request);
                                                       _formatPhid(patient['phid'], patient['created_at']),
                                                       style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14)),
                                                     ),
-                                                  ),    Expanded(flex: 3, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                  Expanded(flex: 2, child: Text(patient['age'].toString() ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                  ),
+                                                  Expanded(flex: 3, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),  Expanded(
+                                                    flex: 2,
+                                                    child: Text(
+                                                      _formatAge(patient['age']),  // Use helper function
+                                                      style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14)),
+                                                    ),
+                                                  ),
                                                   Expanded(flex: 2, child: Text(_gender ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(_toCamelCase(patient['lastVisit']) ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),

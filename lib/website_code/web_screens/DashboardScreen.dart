@@ -491,7 +491,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       // Stats Cards - Horizontal Scroll
-                                      SizedBox(
+
+                                      // Stats Cards - Take full width equally
+                                      Container(
+                                        height: 140,
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: _buildStatCard(
+                                                  "Total Operations",
+                                                  dashboard?.data.totalOperations ?? "0",
+                                                  'assets/Dashboardicon1.png'
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: _buildStatCard(
+                                                  "Today's Follow Ups",
+                                                  "42",
+                                                  'assets/Dashboardicon5.png'
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: _buildStatCard(
+                                                  "Total Patients",
+                                                  "122",
+                                                  'assets/Dashboardicon4.png'
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  /*    SizedBox(
                                         height: 120,
                                         child: ListView(
                                           scrollDirection: Axis.horizontal,
@@ -503,17 +535,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),  const SizedBox(width: 16),
                                             _buildStatCard("Todays Follow Ups", "42", 'assets/Dashboardicon5.png'),
                                             const SizedBox(width: 16),
-                                          /*  _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
+                                          *//*  _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Pending Reports", "12", 'assets/Dashboardicon3.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Total Appointment", "879", 'assets/Dashboardicon2.png'),
-                                            const SizedBox(width: 16),*/
-                                            _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon1.png'),
+                                            const SizedBox(width: 16),*//*
+                                            _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon4.png'),
                                           ],
                                         ),
                                       ),
-
+*/
                                  /*     const SizedBox(height: 20),
 
                                       // Bookmarks Section
@@ -1193,8 +1225,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildStatCard(String title, String count, String assetPath) {
     return Container(
-      width: 170,
-
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1202,34 +1232,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // First row: Icon + Title
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                count,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
               Image.asset(
                 assetPath,
-                height: 50,
+                height: 60, // Adjusted height
+                width: 60, // Added width for consistency
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
           const SizedBox(height: 10),
+          // Second row: Count/Number
           Text(
-            title,
+            count,
             style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.secondary,
-                fontWeight: FontWeight.w500),
+              fontSize: 24, // Increased font size for emphasis
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
     );
   }
-
   Widget _buildTableRow(String patientName, String diagnosis, String summary) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0,horizontal: 12),

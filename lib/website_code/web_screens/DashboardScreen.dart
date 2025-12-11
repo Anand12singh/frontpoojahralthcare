@@ -20,7 +20,6 @@ import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
 import 'CustomSidebar.dart';
 import 'FollowUpCalendar.dart';
-import 'Home_Screen.dart';
 import 'PatientDataTabsScreen.dart';
 import 'SearchBar.dart';
 
@@ -74,17 +73,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _showErrorSnackbar(data['message'] ?? 'Failed to load dashboard data');
             }
           } catch (e) {
-            print('Error parsing response: $e');
+          
             _showErrorSnackbar('Error parsing dashboard data');
           }
         },
         onFailure: (error) {
-          print('API failure: $error');
+         
           _showErrorSnackbar('Failed to load dashboard data: $error');
         },
       );
     } catch (e) {
-      print('Unexpected error: $e');
+ 
       _showErrorSnackbar('Unexpected error loading dashboard');
     } finally {
       setState(() {
@@ -390,6 +389,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
     final dimensions = chartDimensions;
+
+   if (isMobile) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFF5F8FC),
+    drawer: const Sidebar(),
+
+    appBar: AppBar(
+      backgroundColor: AppColors.primary,
+      elevation: 3,
+      titleSpacing: 0,
+      iconTheme: const IconThemeData(color: Colors.white),
+      title: const Text(
+        'Dashboard',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+        ),
+      ),
+    ),
+
+    body: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            const SizedBox(height: 6),
+
+            // HEADER CARD
+            Text(
+              "Welcome Back,\nDr. Pooja",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // Your existing dashboard widgets safely go here
+            Column(
+              children: [
+                // Your original dashboard data/widgets come here.
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+   
+   
+   
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FC),
       body: Row(

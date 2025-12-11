@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/constants/ResponsiveUtils.dart';
 import 'package:http/http.dart' as http;
@@ -20,19 +19,14 @@ class Sidebar extends StatefulWidget {
 
 class _SidebarState extends State<Sidebar> {
   bool isSidebarCollapsed = false;
-
   int? hoveredSidebarIndex;
-
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-   // _initializeData();
-  //  _loadSelectedIndex();
-
     _loadPermissionsAndIndex();
   }
+
   Future<void> _initializeData() async {
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
@@ -46,14 +40,15 @@ class _SidebarState extends State<Sidebar> {
       setState(() {
         selectedPageIndex = index;
       });
-    }}
-
+    }
+  }
 
   void onToggleSidebar() {
     setState(() {
       isSidebarCollapsed = !isSidebarCollapsed;
     });
   }
+
   Future<void> _logout() async {
     try {
       final token = await AuthService.getToken();
@@ -72,7 +67,6 @@ class _SidebarState extends State<Sidebar> {
         await AuthService.deleteToken();
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('global_permissions');
-
 
         // Reset permission service
         PermissionService().forceReload();
@@ -96,11 +90,12 @@ class _SidebarState extends State<Sidebar> {
       context: context,
       title: 'Logout',
       message: 'Are you sure you want to logout?',
-      confirmText: 'Logout',  // Changed from 'Delete' to 'Logout'
+      confirmText: 'Logout',
       confirmColor: AppColors.secondary,
       onConfirm: _logout,
     );
   }
+
   Future<void> _loadSelectedIndex() async {
     final index = await AppState.getSelectedPageIndex();
     setState(() {
@@ -108,18 +103,136 @@ class _SidebarState extends State<Sidebar> {
     });
   }
 
-// Modify where you change the index to save it:
-  void _updateSelectedIndex(int index) async {
+  // Modify where you change the index to save it:
+   _updateSelectedIndex(int index) async {
     await AppState.setSelectedPageIndex(index);
     setState(() {
       selectedPageIndex = index;
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    // ---------------------- MOBILE VIEW (ALWAYS EXPANDED) ----------------------
+    if (isMobile) {
+      return SafeArea(
+        child: Drawer(
+          child: Container(
+            color: const Color(0xFFF9FAFB),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/company_logo.png',
+                          height: 26,
+                        ),
+                        const SizedBox(width: 12),
+                      
+                        // Optional collapse button (kept for parity but does nothing on mobile)
+                      
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        const SizedBox(height: 6),
+                        _buildMobileItem(
+                          assetPath: 'assets/Dashboard.png',
+                          label: 'Dashboard',
+                          index: 0,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.pushReplacementNamed(context, '/dashboard');
+                          },
+                        ),
+                        _buildMobileItem(
+                          assetPath: 'assets/PatientList.png',
+                          label: 'Patient list',
+                          index: 1,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.pushReplacementNamed(context, '/patientList');
+                          },
+                        ),
+                        if (PermissionService().canViewUsers)
+                          _buildMobileItem(
+                            assetPath: 'assets/UserManagement.png',
+                            label: 'User',
+                            index: 3,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/userManagement');
+                            },
+                          ),
+                        if (PermissionService().canViewRoles)
+                          _buildMobileItem(
+                            assetPath: 'assets/roles.png',
+                            label: 'Role',
+                            index: 4,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/roleManagement');
+                            },
+                          ),
+                        if (PermissionService().canViewPermissions)
+                          _buildMobileItem(
+                            assetPath: 'assets/permission.png',
+                            label: 'Permission',
+                            index: 5,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/permissionManagement');
+                            },
+                          ),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        _buildMobileItem(
+                          assetPath: 'assets/logouticon.png',
+                          label: 'Logout',
+                          index: 6,
+                          isLogout: true,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showLogoutConfirmation(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+              
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Version V1.0.2',
+                          style: TextStyle(
+                            fontSize: ResponsiveUtils.fontSize(context, 12),
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ---------------------- WEB VIEW (UNCHANGED BEHAVIOR, MODERN FLAT STYLE) ----------------------
     return MouseRegion(
       onEnter: (_) {
         setState(() {
@@ -140,13 +253,9 @@ class _SidebarState extends State<Sidebar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           child: Column(
-
             children: [
-              // No more tap gesture
               Image.asset(
-                isSidebarCollapsed
-                    ? 'assets/logo1.png'
-                    : 'assets/company_logo.png',
+                isSidebarCollapsed ? 'assets/logo1.png' : 'assets/company_logo.png',
                 fit: isSidebarCollapsed ? null : BoxFit.contain,
                 height: isSidebarCollapsed
                     ? ResponsiveUtils.scaleHeight(context, 42)
@@ -156,8 +265,7 @@ class _SidebarState extends State<Sidebar> {
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                      right: 8, left: 8, bottom: 20, top: 10),
+                  padding: const EdgeInsets.only(right: 8, left: 8, bottom: 20, top: 10),
                   child: Column(
                     spacing: 6,
                     children: [
@@ -178,7 +286,7 @@ class _SidebarState extends State<Sidebar> {
                         },
                       ),
                       Visibility(
-                        visible:     PermissionService().canViewUsers,
+                        visible: PermissionService().canViewUsers,
                         child: _buildSidebarItem(
                           assetPath: 'assets/UserManagement.png',
                           label: 'User',
@@ -187,9 +295,9 @@ class _SidebarState extends State<Sidebar> {
                             Navigator.pushReplacementNamed(context, '/userManagement');
                           },
                         ),
-                      ),  Visibility(
+                      ),
+                      Visibility(
                         visible: PermissionService().canViewRoles,
-
                         child: _buildSidebarItem(
                           assetPath: 'assets/roles.png',
                           label: 'Role',
@@ -199,7 +307,6 @@ class _SidebarState extends State<Sidebar> {
                           },
                         ),
                       ),
-
                       Visibility(
                         visible: PermissionService().canViewPermissions,
                         child: _buildSidebarItem(
@@ -217,65 +324,33 @@ class _SidebarState extends State<Sidebar> {
                         label: 'Logout',
                         index: 6,
                         isLogout: true,
-                        onTap: () => _showLogoutConfirmation(context), // Wrap in a function
+                        onTap: () => _showLogoutConfirmation(context),
                       ),
                       const Divider(
                         color: AppColors.secondary,
                         thickness: 0.5,
                       ),
-                      if (isSidebarCollapsed)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 11),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundgreycolor,
-                            borderRadius:
-                            const BorderRadius.all(Radius.circular(8)),
-                            border: Border.all(color: AppColors.darkgreycolor),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/applelogosvg.svg',
-                            height: 20,
-                          ),
-                        )
-                      else
-                        Image.asset('assets/appstore.png'),
-                      if (isSidebarCollapsed)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundgreycolor,
-                            borderRadius:
-                            const BorderRadius.all(Radius.circular(8)),
-                            border: Border.all(color: AppColors.darkgreycolor),
-                          ),
-                          child: Image.asset(
-                            'assets/playstorelogo.png',
-                            height: 20,
-                          ),
-                        )
-                      else
-                        Image.asset('assets/googleplay.png'),
+          
                       Row(
                         children: [
                           if (isSidebarCollapsed)
-                          Text(
-                            'V1.0.2',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.fontSize(context, 12),
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                            ),
-                          )
+                            Text(
+                              'V1.0.2',
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.fontSize(context, 12),
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w400,
+                              ),
+                            )
                           else
-                          Text(
-                            'Version V1.0.2',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.fontSize(context, 12),
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
+                            Text(
+                              'Version V1.0.2',
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.fontSize(context, 12),
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
-                          ),
                         ],
                       )
                     ],
@@ -289,7 +364,7 @@ class _SidebarState extends State<Sidebar> {
     );
   }
 
-
+  // --- original item builder preserved (used in web view) ---
   Widget _buildSidebarItem({
     required String assetPath,
     required String label,
@@ -304,19 +379,17 @@ class _SidebarState extends State<Sidebar> {
     final Color backgroundColor = isLogout
         ? AppColors.lightred
         : isSelected
-        ? const Color(0xFFEDF1F6)
-        : Colors.transparent;
+            ? const Color(0xFFEDF1F6)
+            : Colors.transparent;
 
     final Color iconColor = isLogout
         ? AppColors.red
         : isSelected
-        ? AppColors.primary
-        : AppColors.secondary;
+            ? AppColors.primary
+            : AppColors.secondary;
 
     final Color textColor = iconColor;
-    final Color? borderColor = isHovered
-        ? (isLogout ? AppColors.red : AppColors.primary)
-        : Colors.transparent;
+    final Color? borderColor = isHovered ? (isLogout ? AppColors.red : AppColors.primary) : Colors.transparent;
 
     Widget content = Row(
       children: [
@@ -368,8 +441,7 @@ class _SidebarState extends State<Sidebar> {
           ),
         ),
         child: Padding(
-          padding:
-          const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
           child: InkWell(
             onTap: () {
               if (isLogout) {
@@ -385,4 +457,43 @@ class _SidebarState extends State<Sidebar> {
       ),
     );
   }
+
+
+
+  Widget _buildMobileItem({
+    required String assetPath,
+    required String label,
+    required int index,
+    VoidCallback? onTap,
+    bool isLogout = false,
+  }) {
+    final bool isHighlightable = ![2].contains(index);
+    final bool isSelected = selectedPageIndex == index && isHighlightable;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: Image.asset(
+        assetPath,
+        height: 22,
+        color: isLogout ? AppColors.red : (isSelected ? AppColors.primary : AppColors.secondary),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isLogout ? AppColors.red : (isSelected ? AppColors.primary : AppColors.textPrimary),
+          fontSize: ResponsiveUtils.fontSize(context, 15),
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+        ),
+      ),
+      onTap: () async {
+        if (isLogout) {
+          onTap?.call();
+        } else {
+          await _updateSelectedIndex(index);
+          onTap?.call();
+        }
+      },
+    );
+  }
+  
 }

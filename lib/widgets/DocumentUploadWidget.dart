@@ -16,10 +16,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 import 'VideoPlayerWidget.dart';
-import 'dart:html' as html; // For web-specific functionality
+// import 'dart:html' as html; // For web-specific functionality
 import 'dart:typed_data'; // For Uint8List
 
-import 'dart:ui' as ui;
+// import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'WebVideoPlayer.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
@@ -522,15 +522,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
       // Register iframe view
       // ignore: undefined_prefixed_name
-      ui.platformViewRegistry.registerViewFactory(
-        viewType,
-            (int viewId) => html.IFrameElement()
-          ..src = dataUrl
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.border = 'none'
-          ..setAttribute('type', 'application/pdf'),
-      );
+      // ui.platformViewRegistry.registerViewFactory(
+      //   viewType,
+      //       (int viewId) => html.IFrameElement()
+      //     ..src = dataUrl
+      //     ..style.width = '100%'
+      //     ..style.height = '100%'
+      //     ..style.border = 'none'
+      //     ..setAttribute('type', 'application/pdf'),
+      // );
 
       return HtmlElementView(
         viewType: viewType,
@@ -709,15 +709,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         orElse: () => {},
       );
 
-      if (file.isNotEmpty && file['bytes'] != null) {
-        final bytes = file['bytes'] as Uint8List;
-        final blob = html.Blob([bytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', file['name'])
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      }
+      // if (file.isNotEmpty && file['bytes'] != null) {
+      //   final bytes = file['bytes'] as Uint8List;
+      //   final blob = html.Blob([bytes]);
+      //   final url = html.Url.createObjectUrlFromBlob(blob);
+      //   final anchor = html.AnchorElement(href: url)
+      //     ..setAttribute('download', file['name'])
+      //     ..click();
+      //   html.Url.revokeObjectUrl(url);
+      // }
     }
   }
 
@@ -1118,35 +1118,35 @@ class PdfIframe extends StatelessWidget {
     final hexColor = '#${headerColor.value.toRadixString(16).substring(2)}';
 
     // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
-      viewType,
-          (int viewId) {
-        final container = html.DivElement()
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.display = 'flex'
-          ..style.flexDirection = 'column';
+    // ui.platformViewRegistry.registerViewFactory(
+    //   viewType,
+    //       (int viewId) {
+    //     final container = html.DivElement()
+    //       ..style.width = '100%'
+    //       ..style.height = '100%'
+    //       ..style.display = 'flex'
+    //       ..style.flexDirection = 'column';
 
-        // Create custom header
-        final header = html.DivElement()
-          ..style.backgroundColor = hexColor
-          ..style.padding = '10px'
-          ..style.color = 'white'
-          ..style.fontWeight = 'bold'
-          ..innerText = 'PDF Document';
+    //     // Create custom header
+    //     final header = html.DivElement()
+    //       ..style.backgroundColor = hexColor
+    //       ..style.padding = '10px'
+    //       ..style.color = 'white'
+    //       ..style.fontWeight = 'bold'
+    //       ..innerText = 'PDF Document';
 
-        // Create iframe
-        final iframe = html.IFrameElement()
-          ..src = pdfUrl
-          ..style.flex = '1'
-          ..style.border = 'none';
+    //     // Create iframe
+    //     final iframe = html.IFrameElement()
+    //       ..src = pdfUrl
+    //       ..style.flex = '1'
+    //       ..style.border = 'none';
 
-        container.append(header);
-        container.append(iframe);
+    //     container.append(header);
+    //     container.append(iframe);
 
-        return container;
-      },
-    );
+    //     return container;
+    //   },
+    // );
 
     return HtmlElementView(
       viewType: viewType,

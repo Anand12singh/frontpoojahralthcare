@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:heic_to_png_jpg/heic_to_png_jpg.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
@@ -20,6 +21,7 @@ import 'dart:typed_data'; // For Uint8List
 
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'WebVideoPlayer.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
 
 class DocumentUploadWidget extends StatefulWidget {
@@ -46,7 +48,8 @@ class DocumentUploadWidget extends StatefulWidget {
 
 class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   List<Map<String, dynamic>> _selectedFiles = [];
-
+  bool _isUploading = false;
+  List<bool> _fileUploadingStates = [];
   @override
   void initState() {
     super.initState();
@@ -65,6 +68,8 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     }
   }
 
+
+// Update the _pickFiles method to include size validation
   Future<void> _pickFiles() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -74,26 +79,122 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       );
 
       if (result != null) {
-        List<Map<String, dynamic>> newFiles = result.files.map((file) {
-          return {
-            'path': kIsWeb ? file.name : file.path!,
-            'name': file.name,
-            'bytes': file.bytes,
+        // Check for files that exceed the size limit
+        final oversizedFiles = result.files.where((file) =>
+        file.size > 100 * 1024 * 1024 && // 100MB in bytes
+            ['mp4', 'mov', 'avi'].contains(file.extension?.toLowerCase())).toList();
+
+        if (oversizedFiles.isNotEmpty) {
+          showTopRightToast(
+            context,
+            'Video files cannot exceed 100MB. Please select smaller files.',
+            backgroundColor: Colors.red,
+          );
+
+          // Remove oversized files from the selection
+          result.files.removeWhere((file) => oversizedFiles.contains(file));
+
+          if (result.files.isEmpty) return;
+        }
+
+        setState(() {
+          _isUploading = true;
+          // Initialize upload states for each file
+          _fileUploadingStates = List<bool>.filled(result.files.length, true);
+        });
+
+        List<Map<String, dynamic>> newFiles = [];
+
+        for (int i = 0; i < result.files.length; i++) {
+          final file = result.files[i];
+          final isVideo = ['mp4', 'mov', 'avi'].contains(file.extension?.toLowerCase());
+          final isHeic = ['heic', 'heif'].contains(file.extension?.toLowerCase());
+
+          // Handle HEIC file conversion
+          Uint8List? finalBytes = file.bytes;
+          String? finalExtension = file.extension?.toLowerCase();
+          String? finalName = file.name;
+
+          // Enhanced HEIC conversion with fallback options
+          if (isHeic && file.bytes != null) {
+            try {
+              Uint8List? convertedBytes;
+
+              // First try to convert to JPG
+              try {
+                convertedBytes = await HeicConverter.convertToJPG(
+                  heicData: file.bytes!,
+                  quality: 85,
+                );
+                finalExtension = 'jpg';
+              } catch (jpgError) {
+                debugPrint('JPG conversion failed, trying PNG: $jpgError');
+
+                // Fallback to PNG if JPG conversion fails
+                convertedBytes = await HeicConverter.convertToPNG(
+                  heicData: file.bytes!,
+                );
+                finalExtension = 'png';
+              }
+
+              if (convertedBytes != null) {
+                finalBytes = convertedBytes;
+                finalName = file.name
+                    .replaceAll('.heic', '.$finalExtension')
+                    .replaceAll('.HEIC', '.$finalExtension')
+                    .replaceAll('.heif', '.$finalExtension')
+                    .replaceAll('.HEIF', '.$finalExtension');
+              } else {
+                throw Exception('Both JPG and PNG conversion failed');
+              }
+            } catch (e) {
+              debugPrint('HEIC conversion error: $e');
+              showTopRightToast(
+                context,
+                'Failed to convert HEIC image. Using original format which may not display correctly.',
+                backgroundColor: Colors.orange,
+              );
+              // Fallback to original file
+              finalBytes = file.bytes;
+            }
+          }
+
+          // Simulate upload delay for videos (replace with actual upload logic)
+          if (isVideo) {
+            await Future.delayed(Duration(seconds: 2)); // Simulate upload time
+          }
+
+          newFiles.add({
+            'path': kIsWeb ? finalName : file.path!,
+            'name': finalName,
+            'bytes': finalBytes,
             'size': file.size,
-            'type': file.extension?.toUpperCase() ?? 'FILE',
+            'type': finalExtension?.toUpperCase() ?? 'FILE',
             'isExisting': false,
-          };
-        }).toList();
+            'originalExtension': file.extension?.toLowerCase(),
+          });
+
+          // Update the upload state for this file
+          if (isVideo) {
+            setState(() {
+              _fileUploadingStates[i] = false;
+            });
+          }
+        }
 
         setState(() {
           _selectedFiles.addAll(newFiles);
+          _isUploading = false;
+          _fileUploadingStates = [];
         });
 
-        print("_selectedFiles");
-        print(_selectedFiles);
         widget.onFilesSelected(_selectedFiles);
       }
     } catch (e) {
+      setState(() {
+        _isUploading = false;
+        _fileUploadingStates = [];
+      });
       debugPrint('File picking error: $e');
     }
   }
@@ -117,14 +218,13 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         ? '${widget.baseUrl}$filePath'
         : filePath;
 
-    print("filePath");
-    print(file);
-    print(filePath);
+
 
     _showPreviewDialog(context, file, isNetwork: isNetwork);
   }
 
-  void _showVideoPreviewDialog(BuildContext context, String filePath, {bool isNetwork = false}) {
+  void _showVideoPreviewDialog(BuildContext context, String filePath, {bool isNetwork = false, Map<String, dynamic>? file}) {
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -136,7 +236,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               child: isNetwork
                   ? _buildNetworkVideoPlayer(filePath)
                   : (kIsWeb
-                  ? _buildWebVideoPlayer(filePath)
+                  ?WebVideoPlayer(
+                filePath: filePath,
+                fileBytes: file?['bytes'],
+              )
                   : _buildFileVideoPlayer(filePath)),
             ),
             Positioned(
@@ -173,24 +276,13 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     return VideoPlayerWidget(url: url, isNetwork: true);
   }
 
-  Widget _buildWebVideoPlayer(String filePath) {
-    // For web, you might need to use a different approach
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.videocam, size: 50),
-          Text('Video playback not supported in preview\n${path.basename(filePath)}'),
-          TextButton(
-            onPressed: () => launchUrl(Uri.parse(filePath)),
-            child: const Text('Open in new tab'),
-          ),
-        ],
-      ),
-    );
-  }
+
+
 
   Widget _buildFileVideoPlayer(String filePath) {
+
+    print("_buildFileVideoPlayer");
+    print(filePath);
     return VideoPlayerWidget(filePath: filePath);
   }
 
@@ -205,7 +297,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     final videoTypes = {'mp4', 'mov', 'avi'};
     final pdfTypes = {'pdf'};
     final documentTypes = {'doc', 'docx'};
-    print('file:$file');
+
     print('isNetwork:$isNetwork');
     final fileExtension = fileType.toLowerCase();
     print("fileExtension");
@@ -214,7 +306,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     if (imageTypes.contains(fileExtension)) {
       _showImagePreview(context, file, isNetwork);
     } else if (videoTypes.contains(fileExtension)) {
-      _showVideoPreviewDialog(context, filePath, isNetwork: isNetwork);
+      _showVideoPreviewDialog(context,file:file , filePath, isNetwork: isNetwork);
     } else if (pdfTypes.contains(fileExtension)) {
       print('pdf file');
       _showPdfPreview(context, file, isNetwork: isNetwork);
@@ -722,10 +814,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                       ),
                       const SizedBox(height: 8),
                       GestureDetector(
-                        onTap: _pickFiles,
+                        onTap: _isUploading ? null : _pickFiles,
                         child: Tooltip(
-                          message:'Tap to upload documents',
-                          decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
+                          message: 'Tap to upload documents',
+                          decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(8)),
                           child: Container(
                             height: 50,
                             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -738,16 +830,26 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
-                                  Icons.attach_file,
-                                  color: Colors.grey,
-                                  size: ResponsiveUtils.fontSize(context, 18),
-                                ),
+                                if (_isUploading)
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    Icons.attach_file,
+                                    color: Colors.grey,
+                                    size: ResponsiveUtils.fontSize(context, 18),
+                                  ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  "Tap to upload documents",
+                                  _isUploading ? "Uploading..." : "Tap to upload documents",
                                   style: TextStyle(
-                                    color: Colors.grey[700],
+                                    color: _isUploading ? AppColors.secondary : Colors.grey[700],
                                     fontSize: ResponsiveUtils.fontSize(context, 14),
                                   ),
                                 ),
@@ -805,125 +907,167 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _selectedFiles.length,
                           // In the DocumentUploadWidget's build method, update the file list item:
-                          itemBuilder: (context, index) {
-                            final file = _selectedFiles[index];
 
-                            final fileName = file['name'] ?? '';
-                            final apiTags = file['tags'] as List? ?? [];
-                            final localTags = widget.docType == 'misc_report' ? widget.miscReportTagging![fileName] ?? [] : [];
-                            final tags = apiTags.isNotEmpty ? apiTags : localTags;
+// In your build method, update the file list item to show loading indicators
+// Replace the file list item builder with this:
+                            itemBuilder: (context, index) {
+                              final file = _selectedFiles[index];
+                              final fileName = file['name'] ?? '';
+                              final apiTags = file['tags'] as List? ?? [];
+                              final localTags = widget.docType == 'misc_report' ? widget.miscReportTagging![fileName] ?? [] : [];
+                              final tags = apiTags.isNotEmpty ? apiTags : localTags;
 
-                            print("tags");
-                            print(tags);
-                            return GestureDetector(
-                              onTap: () => _showFilePreview(index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 4,
-                                ),
-                                margin: const EdgeInsets.only(bottom: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryLight,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          _getFileIcon(file['type']),
-                                          size: 16,
-                                          color: _getFileIconColor(file['type']),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                file['name'],
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
+                              final isVideo = ['mp4', 'mov', 'avi'].contains((file['type'] ?? '').toLowerCase());
+                              final isUploading = index >= _selectedFiles.length - _fileUploadingStates.length &&
+                                  _fileUploadingStates.isNotEmpty &&
+                                  _fileUploadingStates[index - (_selectedFiles.length - _fileUploadingStates.length)];
+
+                              return GestureDetector(
+                                onTap: () => isUploading ? null : _showFilePreview(index),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                    vertical: 4,
+                                  ),
+                                  margin: const EdgeInsets.only(bottom: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          // Show loading indicator for videos that are still uploading
+                                          if (isUploading)
+                                            SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
                                               ),
-                                              // Display tags if they exist
-
-
+                                            )
+                                          else
+                                            Icon(
+                                              _getFileIcon(file['type']),
+                                              size: 16,
+                                              color: _getFileIconColor(file['type']),
+                                            ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  file['name'],
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color: isUploading ? Colors.grey : Colors.black,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                // Display tags if they exist
+                                              ],
+                                            ),
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              if (tags.isNotEmpty && !isUploading)
+                                                Wrap(
+                                                  spacing: 4,
+                                                  children: tags.map((tag) {
+                                                    return Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(
+                                                          color: AppColors.secondary,
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        tag,
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          color: AppColors.secondary,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              SizedBox(width: 10),
+                                              if (!isUploading)
+                                                Tooltip(
+                                                  message: 'Preview file',
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.secondary,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.remove_red_eye,
+                                                    color: AppColors.secondary,
+                                                    size: 16,
+                                                  ),
+                                                ),
                                             ],
                                           ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [  if (tags.isNotEmpty)
-                                            Wrap(
-                                              spacing: 4,
-                                              children: tags.map((tag) {
-                                                return Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(
-                                                      color: AppColors.secondary,
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    tag,
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: AppColors.secondary,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-                                            SizedBox(width: 10,),
+                                          const SizedBox(width: 4),
+                                          // Remove icon with tooltip (only show when not uploading)
+                                          if (!isUploading)
                                             Tooltip(
-                                              message: 'Preview file',
+                                              message: 'Remove file',
                                               decoration: BoxDecoration(
                                                 color: AppColors.secondary,
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
-                                              child: Icon(
-                                                Icons.remove_red_eye,
-                                                color: AppColors.secondary,
-                                                size: 16,
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  color: Colors.red,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () => _removeFile(index),
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(width: 4),
-                                        // Remove icon with tooltip
-                                        Tooltip(
-                                          message: 'Remove file',
-                                          decoration: BoxDecoration(
-                                            color: AppColors.secondary,
-                                            borderRadius: BorderRadius.circular(8),
+                                        ],
+                                      ),
+                                      // Show upload progress for videos
+                                      if (isUploading && isVideo)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: LinearProgressIndicator(
+                                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                                                  backgroundColor: Colors.grey[300],
+                                                ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Uploading...',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              Icons.close,
-                                              color: Colors.red,
-                                              size: 16,
-                                            ),
-                                            onPressed: () => _removeFile(index),
-                                          ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            }
+
                         ),
                       ),
                     ],

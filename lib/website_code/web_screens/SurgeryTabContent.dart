@@ -209,7 +209,7 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DocumentUploadWidget(
-          label: "Implants",
+          label: "Surgery Images",
           docType: "discharge_images",
           onFilesSelected: (files) {
             setState(() {
@@ -439,9 +439,18 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
 
         'hernia_type': _selectedOperationId ?? '1',
         'hospital_location': _selectedLocationId ?? '1',
-        'other_location': _otherLocationController.text,
+
         'time_take': '${_timetakenHrController.text} Hr ${_timetakenMinController.text} Min',
       };
+      // Only include other_location if the selected location is 'Others'
+      if (_selectedLocationName == 'Others') {
+        fields['other_location'] = _otherLocationController.text;
+      }
+      else
+        {
+          _otherLocationController.clear();
+          fields['other_location']='';
+        }
       if (_selectedDate != null) {
         fields["date"] =
             DateFormat('yyyy-MM-dd').format(_selectedDate!);
@@ -452,8 +461,8 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
       }
 
       request.fields.addAll(fields);
-print("request.fields");
-print(request.fields);
+      print("request.fields");
+      print(request.fields);
       // Handle file uploads
       List<String> existingFileIds = [];
       for (var file in _uploadedFiles['implants_image'] ?? []) {
@@ -683,11 +692,13 @@ print(request.fields);
 
                        // _buildFormInput('Hospital', _locationController, maxLines: 1),
 
-                        _buildFormInput('Surgery', _surgeryController),
+                        _buildFormInput('Surgery', _surgeryController,maxLines: 3),
 
-                        _buildFormInput('Surgeon', _surgeonController),
+                        _buildFormInput('Surgeon', _surgeonController,maxLines: 3),
                         DropdownInput<String>(
-                          label: 'Hernia Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+                          label: 'Surgery Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+                          hintText: 'Enter Surgery Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+
                           items: _hernia.map((loc) {
                             return DropdownMenuItem<String>(
                               value: loc['id'].toString(),

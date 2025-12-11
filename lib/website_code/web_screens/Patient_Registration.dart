@@ -37,7 +37,7 @@ class OnboardingForm extends StatefulWidget {
 
 class _OnboardingFormState extends State<OnboardingForm> {
   static const Map<int, String> _docTypeMapping = {
-    1: 'blood_reports',
+    1: 'miscellaneous_report',
     2: 'xray_report',
     3: 'ecg_report',
     4: 'ct_scan_report',
@@ -47,6 +47,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     8: 'pa_abdomen_image',
     9: 'pr_rectum_image',
     10: 'doctor_note_image',
+    15: 'patient_treatment',
   };
 
   int _currentStep = 0;
@@ -93,6 +94,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
   final TextEditingController _copdDescriptionController = TextEditingController();
   final TextEditingController _ihdDescriptionController = TextEditingController();
   final TextEditingController _pulseController = TextEditingController();
+  final TextEditingController _RBSController = TextEditingController();
   final TextEditingController _bpSystolicController = TextEditingController();
   final TextEditingController _bpDiastolicController = TextEditingController();
   final TextEditingController _oedemaDetailsController = TextEditingController();
@@ -248,6 +250,9 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   }
   String? _gender; // Make it nullable
+  String _basePhId = '';
+  String _phIdYear = '';
+  String _fullPhId = ''; // This will be PHID/YEAR
 
   DateTime _selectedDate = DateTime.now();
   List<Map<String, dynamic>> _deletedMedications = [];
@@ -270,7 +275,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     return ''; // or some default value if required
   }
   late Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    'blood_reports': [],
+    'miscellaneous_report': [],
     'xray_report': [],
     'ecg_report': [],
     'ct_scan_report': [],
@@ -280,6 +285,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     'pa_abdomen_image': [],
     'pr_rectum_image': [],
     'doctor_note_image': [],
+    'patient_treatment': [],
   };
   List<Map<String, dynamic>> medications = [];
   @override
@@ -290,13 +296,13 @@ class _OnboardingFormState extends State<OnboardingForm> {
     PermissionService().initialize();
 
     _addMedicationRow(count: 2);
-
+    _initializePhId();
     _phIdController.text = '${GlobalPatientData.patientId =="NA" ? GlobalPatientData.phid: GlobalPatientData.patientId}';
     _firstNameController.text = GlobalPatientData.firstName ?? '';
     _lastNameController.text = GlobalPatientData.lastName ?? '';
     _phoneController.text = GlobalPatientData.phone ?? '';
     _uploadedFiles = {
-      'blood_reports': [],
+      'miscellaneous_report': [],
       'xray_report': [],
       'ecg_report': [],
       'ct_scan_report': [],
@@ -312,6 +318,20 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _docQualificationController.text = ''; // Set initial value if available
     _registrationNumberController.text = '';
     _fetchLocations();
+  }
+
+  void _initializePhId() {
+    // Get base PH ID
+    _basePhId = '${GlobalPatientData.patientId == "NA" ? GlobalPatientData.phid : GlobalPatientData.patientId}';
+
+    // Default to current year initially
+    _phIdYear = DateTime.now().year.toString();
+
+    // Create full PH ID
+    _fullPhId = '$_basePhId/$_phIdYear';
+
+    // Set controller text
+    _phIdController.text = _fullPhId;
   }
   void _initializeData() {
     initState();
@@ -590,6 +610,28 @@ class _OnboardingFormState extends State<OnboardingForm> {
       _populateFormFields();
     });
   }
+
+  void _updatePhIdFromPatientData() {
+    // Update base PH ID
+    _basePhId = _patientData?['phid']?.toString() ?? _basePhId;
+
+    // Extract year from created_at field
+    final createdAt = _patientData?['created_at']?.toString();
+    if (createdAt != null && createdAt.isNotEmpty) {
+      try {
+        final date = DateTime.parse(createdAt);
+        _phIdYear = date.year.toString();
+      } catch (e) {
+        _phIdYear = DateTime.now().year.toString();
+      }
+    }
+
+    // Update full PH ID
+    _fullPhId = '$_basePhId/$_phIdYear';
+
+    // Update controller
+    _phIdController.text = _fullPhId;
+  }
   void _populateFormFields() {
     try {  _firstNameController.text = _patientData?['first_name']?.toString() ?? '';
     _lastNameController.text = _patientData?['last_name']?.toString() ?? '';
@@ -599,6 +641,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _occupationController.text =
         _patientData?['occupation']?.toString() ?? '';
     _phIdController.text = '${_patientData?['phid']?.toString() ?? ''}';
+
     _addressController.text = _patientData?['address']?.toString() ?? '';
     _OccupationController.text = _patientData?['occupation']?.toString() ?? '';
     _cityController.text = _patientData?['city']?.toString() ?? '';
@@ -622,7 +665,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         ? 'Female'
         : null;
 
-
+    _updatePhIdFromPatientData();
     _selectedDate = DateTime.tryParse(
         _patientData?['registration_date']?.toString() ?? '')
         ?? DateTime.now();
@@ -684,7 +727,10 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
 
 
-    _tempStatus = _visitData?['temp'] == '0' ? 'Afebrile' : 'Febrile';
+    _tempStatus = (_visitData?['temp'] == null || _visitData?['temp'] == "0")
+        ? 'Afebrile'
+        : 'Febrile';
+
 
     // Pallor
     _pallorStatus = (_visitData?['pallor']?.toString() ?? "0") == "1" ? '+' : 'Nil';
@@ -716,6 +762,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
           _visitData?['drug_allergy']?.toString() ?? '';
       _isFebrile = (_visitData?['temp']?.toString() ?? '') == '98.6';
       _pulseController.text = _visitData?['pulse']?.toString() ?? '';
+    _RBSController.text = _visitData?['rbs_text']?.toString() ?? '';
       _bpSystolicController.text = _visitData?['bp_systolic']?.toString() ?? '';
       _bpDiastolicController.text =
           _visitData?['bp_diastolic']?.toString() ?? '';
@@ -1011,6 +1058,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     _surgicalHistoryController.dispose();
     _drugAllergyController.dispose();
     _pulseController.dispose();
+    _RBSController.dispose();
     _bpSystolicController.dispose();
     _bpDiastolicController.dispose();
     _oedemaDetailsController.dispose();
@@ -1168,7 +1216,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
     });
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _submitForm({bool showSuccessDialog = false}) async {
 
     bool personalValid = _personalInfoFormKey.currentState?.validate() ?? false;
     bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
@@ -1278,6 +1326,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
         'lymphadenopathy': _lymphadenopathyStatus == '+' ? '1' : '0',
         'oedema_status': _oedemaStatus == '+' ? '1' : '0',
         'pulse': _ensureNumber(_pulseController.text),
+        'rbs_text': _ensureNumber(_RBSController.text),
         'bp_systolic': _ensureNumber(_bpSystolicController.text),
         'bp_diastolic': _ensureNumber(_bpDiastolicController.text),
 
@@ -1377,19 +1426,46 @@ class _OnboardingFormState extends State<OnboardingForm> {
       request.fields.addAll(fields);
 
       List<String> existingFileIds = [];
-// Inside your _submitForm function
-      // Inside your _submitForm function, when processing files:
+
+// Debug: Print all uploaded files
+      log('📋 Total document types in _uploadedFiles: ${_uploadedFiles.length}');
+      for (var docType in _uploadedFiles.keys) {
+        log('📄 Document type: $docType, File count: ${_uploadedFiles[docType]?.length ?? 0}');
+        if (_uploadedFiles[docType] != null) {
+          for (var file in _uploadedFiles[docType]!) {
+            log('   - File: ${file['name']}, isExisting: ${file['isExisting']}, id: ${file['id']}');
+          }
+        }
+      }
+
+// Process files
       for (var docType in _uploadedFiles.keys) {
         final fieldName = _mapDocTypeToField(docType);
-        if (fieldName == null) continue;
+
+        // Debug: Check mapping
+        log('🔄 Processing docType: $docType -> fieldName: $fieldName');
+
+        if (fieldName == null) {
+          log('⚠️ Skipping: No field mapping for docType: $docType');
+          continue;
+        }
+
+        if (_uploadedFiles[docType] == null || _uploadedFiles[docType]!.isEmpty) {
+          log('ℹ️ No files for docType: $docType');
+          continue;
+        }
 
         for (var file in _uploadedFiles[docType]!) {
+          log('📤 Processing file: ${file['name']}, isExisting: ${file['isExisting']}');
+
           if (!file['isExisting']) {
-            // For new files, check if they have tags
+            // For new files
             final fileName = file['name'];
             final tags = miscReportTagging[fileName] ?? [];
+            log('   Tags for $fileName: $tags');
 
             if (kIsWeb && file['bytes'] != null) {
+              log('🌐 Web upload: Adding multipart file for $fileName');
               var multipartFile = http.MultipartFile.fromBytes(
                 fieldName,
                 file['bytes']!,
@@ -1398,11 +1474,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
               // Add tags as additional field if this is a MISC report
               if (docType == 'misc_report' && tags.isNotEmpty) {
-                request.fields['${fieldName}_${fileName}_tags'] = tags.join(',');
+                final tagField = '${fieldName}_${fileName}_tags';
+                log('🏷️ Adding tags field: $tagField = $tags');
+                request.fields[tagField] = tags.join(',');
               }
 
               request.files.add(multipartFile);
+              log('✅ Added file to request: $fileName');
+
             } else if (!kIsWeb && file['path'] != null) {
+              log('📱 Mobile upload: Adding multipart file from path: ${file['path']}');
               var multipartFile = await http.MultipartFile.fromPath(
                 fieldName,
                 file['path']!,
@@ -1411,17 +1492,35 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
               // Add tags as additional field if this is a MISC report
               if (docType == 'misc_report' && tags.isNotEmpty) {
-                request.fields['${fieldName}_${fileName}_tags'] = tags.join(',');
+                final tagField = '${fieldName}_${fileName}_tags';
+                log('🏷️ Adding tags field: $tagField = $tags');
+                request.fields[tagField] = tags.join(',');
               }
 
               request.files.add(multipartFile);
+              log('✅ Added file to request: $fileName');
+            } else {
+              log('❌ File missing required data: bytes or path');
             }
           } else {
-            // For existing files, preserve their tags
+            // For existing files
+            log('💾 Existing file ID: ${file['id']}');
             existingFileIds.add(file['id'].toString());
           }
         }
       }
+
+// Debug: Print existing file IDs
+      if (existingFileIds.isNotEmpty) {
+        log('🆔 Existing file IDs to preserve: ${existingFileIds.join(',')}');
+        request.fields['existing_file'] = existingFileIds.join(',');
+      } else {
+        log('ℹ️ No existing files to preserve');
+      }
+
+// Debug: Print total files in request
+      log('📦 Total files in request: ${request.files.length}');
+      log('📊 Request fields count: ${request.fields.length}');
       //For Treatment Prescribed Tab
     /*  for (int i = 0; i < _medNameControllers.length; i++) {
         medications.add({
@@ -1452,69 +1551,83 @@ class _OnboardingFormState extends State<OnboardingForm> {
         final responseData = jsonDecode(responseBody);
         final patientProvider = Provider.of<PatientProvider>(context, listen: false);
         patientProvider.markForRefresh();
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return Dialog(
-              shape: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppColors.primary),
-              ),
-              child: Container(
-                width:  ResponsiveUtils.scaleWidth(context, 400),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // GIF Animation
-                    SizedBox(
-                      height: ResponsiveUtils.scaleHeight(context, 100), // Adjust height as needed
-                      child: Image.asset('assets/list.gif'),
-                    ),
 
 
-                    const SizedBox(height: 16),
-                    // Message
-                     Text(
-                      'Patient record saved successfully.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize:  ResponsiveUtils.fontSize(context, 20),
-
+        if (showSuccessDialog) {
+          // Show the success dialog popup
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return Dialog(
+                shape: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
+                child: Container(
+                  width:  ResponsiveUtils.scaleWidth(context, 400),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // GIF Animation
+                      SizedBox(
+                        height: ResponsiveUtils.scaleHeight(context, 100), // Adjust height as needed
+                        child: Image.asset('assets/list.gif'),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // OK Button
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
 
-                        },
-                        child:  Text(
-                          'OK',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontSize:  ResponsiveUtils.fontSize(context, 16),
+
+                      const SizedBox(height: 16),
+                      // Message
+                      Text(
+                        'Patient record saved successfully.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize:  ResponsiveUtils.fontSize(context, 20),
+
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // OK Button
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+
+                          },
+                          child:  Text(
+                            'OK',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                              fontSize:  ResponsiveUtils.fontSize(context, 16),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        );
+              );
+            },
+          );
+        } else {
+          // Show normal snackbar for intermediate saves
+          showTopRightToast(
+            context,
+            'Patient information saved successfully.',
+            backgroundColor: Colors.green,
+          );
+        }
+
       } else {
         showTopRightToast(context, '❌ Failed to save patient record. Status code: ${response.statusCode}', backgroundColor: Colors.green);
 
       }
     } catch (e, stackTrace) {
       // Navigator.of(context).pop();s
+      Navigator.of(context).pop();
       log('🚨 Submission Error: $e');
       log('Stack Trace: $stackTrace');
       showTopRightToast(context, 'Error occurred: ${e.toString()}', backgroundColor: Colors.green);
@@ -1525,7 +1638,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
 
   String? _mapDocTypeToField(String docType) {
     switch (docType) {
-      case 'blood_reports':
+      case 'miscellaneous_report':
         return 'blood_report';
       case 'xray_report':
         return 'xray_report';
@@ -1543,6 +1656,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
         return 'pr_rectum_image';
       case 'pa_abdomen_image':
         return 'pa_abdomen_image';
+      case 'patient_treatment': // Add this case
+        return 'patient_treatment';
       default:
         return null;
     }
@@ -1850,11 +1965,15 @@ class _OnboardingFormState extends State<OnboardingForm> {
                         inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
                       ],),
-                      FormInput(label: 'PH ID',hintlabel: "Enter PH ID",controller: _phIdController,    fillColor: Colors.grey.shade100,
-                        readOnly: true,),
-
+                      FormInput(
+                        label: 'PH ID',
+                        hintlabel: "Enter PH ID",
+                        value: _fullPhId, // Pass the value directly
+                        fillColor: Colors.grey.shade100,
+                        readOnly: true,
+                      ),
                       FormInput(label: 'Occupation',hintlabel: "Enter Occupation",  controller: _OccupationController,),
-                      FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,),
+                      FormInput(label: 'Address',hintlabel: "Enter Address",controller: _addressController,maxlength: 1,),
                       FormInput(label: 'Pin Code',hintlabel: "Enter Pin Code",controller: _pincodeController,
                         maxcount: 6,
                         onChanged: (value) {
@@ -2310,7 +2429,16 @@ class _OnboardingFormState extends State<OnboardingForm> {
                                             fontWeight: FontWeight.w600, color: AppColors.primary)),
                                     SizedBox(height: 8),
                                     Row(
-                                      children: [
+                                      children: [      CustomRadioButton<String>(
+                                        value: 'Afebrile',
+                                        groupValue: _tempStatus,
+                                        onChanged: (value) {
+                                          _tempController.text="0";
+                                          setState(() => _tempStatus = value!);
+                                        },
+                                        label: 'Afebrile',
+                                      ),
+                                        SizedBox(width: 8),
                                         CustomRadioButton<String>(
                                           value: 'Febrile',
                                           groupValue: _tempStatus,
@@ -2319,16 +2447,8 @@ class _OnboardingFormState extends State<OnboardingForm> {
                                           },
                                           label: 'Febrile',
                                         ),
-                                        SizedBox(width: 8),
-                                        CustomRadioButton<String>(
-                                          value: 'Afebrile',
-                                          groupValue: _tempStatus,
-                                          onChanged: (value) {
-                                            _tempController.text="0";
-                                            setState(() => _tempStatus = value!);
-                                          },
-                                          label: 'Afebrile',
-                                        ),
+
+
                                       ],
                                     ),
                                   ],
@@ -2342,6 +2462,7 @@ class _OnboardingFormState extends State<OnboardingForm> {
                               FormInput(label: 'Pulse (BPM)',controller: _pulseController,maxcount: 5, useCamelCase: false,  inputFormatters: [
                                 FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
                               ],),
+                              FormInput(label: 'RBS(Random Blood Sugar)',controller: _RBSController,maxcount: 5, useCamelCase: false,),
 
 
                               Container(
@@ -2660,7 +2781,7 @@ SizedBox(height: 16,),
                           width: double.infinity,
                           child:    DocumentUploadWidget(
                             docType: 'ct_scan_report', // This should match one of your map keys
-                            label: "Media History",
+                            label: "Miscellaneous Uploads",
                             onFilesSelected: (files) {
                               setState(() {
                                 _uploadedFiles['ct_scan_report'] = files;
@@ -2790,23 +2911,41 @@ SizedBox(height: 16,),
             child: SizedBox(
               width: ResponsiveUtils.scaleWidth(context, 150),
               child: Animatedbutton(
-
-                onPressed: () {
+              onPressed: () async {
+              if (!isLastStep) {
+              // For medical info step (step 1), just validate and save
+              bool medicalValid = _medicalInfoFormKey.currentState?.validate() ?? false;
+              if (medicalValid) {
+              // Save without showing success dialog
+              await _submitForm(showSuccessDialog: false);
+              setState(() => _currentStep++);
+              _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              );
+              }
+              } else {
+              // For final step, show success dialog
+              await _submitForm(showSuccessDialog: true);
+              }
+              },
+           /*     onPressed: () {
                   if (!isLastStep) {
-                    setState(() => _currentStep++);
+              *//*      setState(() => _currentStep++);
                     _scrollController.animateTo(
                       0,
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                    );
+                    );*//*
                   } else {
-                    _submitForm();
-                  }
-                },
+                    _submitForm(showSuccessDialog: false);
+                 }
+                },*/
                 shadowColor: Colors.white,
                 backgroundColor: AppColors.secondary,
                 isLoading: _isLoading,
-                title: isLastStep ? 'SUBMIT' : 'NEXT',
+                title: isLastStep ? 'SUBMIT' : 'NEXT/SAVE',
               ),
             ),
           ),
@@ -2862,7 +3001,7 @@ SizedBox(height: 16,),
                     '1. Reports',
                     style: TextStyle(fontSize:    ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
                   ),
-                  SizedBox(height: 20,),
+       /*           SizedBox(height: 20,),
                   Row(children: [
                     Text(
                       'Blood Report',
@@ -2979,7 +3118,8 @@ SizedBox(height: 16,),
                     },
                     initialFiles: _uploadedFiles['ct_scan_report'],
                   ),
-               /*   Row(
+               */
+                  /*   Row(
                     spacing: 10,
                     children: [
 
@@ -2990,6 +3130,7 @@ SizedBox(height: 16,),
                           child: FormInput(label: 'Media History',)),
                     ],
                   ),*/
+                  /*
                   SizedBox(height: 10,),
                   Wrap(
                     spacing: 16,
@@ -3014,7 +3155,8 @@ SizedBox(height: 16,),
 
                   SizedBox(height: 10,),
 
-                /*  Row(children: [
+                */
+                  /*  Row(children: [
                     Text(
                       'MRI Report',
                       style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
@@ -3049,6 +3191,7 @@ SizedBox(height: 16,),
                       width: double.infinity,
                       child: FormInput(label: 'Findings',controller: _petscanFindingController,)),
                   SizedBox(height: 10,),*/
+                  /*
                   Row(
 
                     children: [
@@ -3063,7 +3206,8 @@ SizedBox(height: 16,),
                         ),
                       ),
                     ],),
-            /*      SizedBox(height: 10,),
+            */
+                  /*      SizedBox(height: 10,),
                   DocumentUploadWidget(
                     docType: 'ecg_report', // This should match one of your map keys
                     label: "Upload ECG Reports",
@@ -3075,7 +3219,9 @@ SizedBox(height: 16,),
                     initialFiles: _uploadedFiles['ecg_report'],
                   ),
 */
+/*
                   SizedBox(height: 10,),
+
                   SizedBox(
             width: double.infinity,
                       child: FormInput(label: 'Findings',controller: _ecgFindingController,maxlength: 2,)),
@@ -3099,7 +3245,8 @@ SizedBox(height: 16,),
                   SizedBox(
                       width: double.infinity,
                       child: FormInput(label: 'Findings',controller:_a2dFindingController,maxlength: 2,)),
-               /*   SizedBox(height: 10,),
+               */
+                  /*   SizedBox(height: 10,),
                   Row(
 
                     children: [
@@ -3118,8 +3265,8 @@ SizedBox(height: 16,),
                   SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*/
-             /*     SizedBox(height: 10,),
+                      child: FormInput(label: 'Findings',controller: _echoFindingsController,)),*//*
+             *//*     SizedBox(height: 10,),
                   Row(
 
                     children: [
@@ -3133,30 +3280,44 @@ SizedBox(height: 16,),
                           thickness: 1,
                         ),
                       ),
-                    ],),*/
-             /*     SizedBox(height: 10,),
+                    ],),*//*
+             *//*     SizedBox(height: 10,),
                   SizedBox(
                       width: double.infinity,
-                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),*/
+                      child: FormInput(label: 'Findings',controller: _pftFindingController,)),*//*
                   SizedBox(height: 10),
+                  Row(
 
-                 /* DocumentUploadWidget(
-                    docType: 'misc_report', // This should match one of your map keys
-                    label: "Upload MISC",
+                    children: [
+                      Text(
+                        'Miscellaneous',
+                        style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16), fontWeight: FontWeight.w600,color: AppColors.hinttext),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: AppColors.backgroundcolor,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],),*/
+                  SizedBox(height: 10,),
+                  DocumentUploadWidget(
+                    docType: 'miscellaneous_report', // This should match one of your map keys
+                    label: "Upload Reports",
                     onFilesSelected: (files) async {
 
 
 
                       setState(() {
-                        _uploadedFiles['misc_report'] = files;
+                        _uploadedFiles['miscellaneous_report'] = files;
 
                       });
                     },
-                    initialFiles: _uploadedFiles['misc_report'],
+                    initialFiles: _uploadedFiles['miscellaneous_report'],
                   ),
 
                   SizedBox(height: 10,),
-                  SizedBox(
+         /*         SizedBox(
                       width: double.infinity,
                       child: FormInput(label: 'Findings',controller: _miscFindingController,)),
                   SizedBox(height: 10,),*/
@@ -3186,7 +3347,7 @@ SizedBox(height: 16,),
                   SizedBox(
                     width: double.infinity,
                     child: FormInput(
-                      label: 'Diagnosis',
+                      label: 'Final Diagnosis',
                       hintlabel: "Text",
                       maxlength: 5,
                       controller: _doctorNotesController,
@@ -3197,7 +3358,21 @@ SizedBox(height: 16,),
 
 
 
-                  // Medication Table
+                  DocumentUploadWidget(
+                    docType: 'patient_treatment',
+                    label: "Prescription Upload",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['patient_treatment'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['patient_treatment'],
+                  ),
+
+                  SizedBox(height: 16),
+
+
+             /*     // Medication Table
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -3462,7 +3637,7 @@ SizedBox(height: 16,),
                     ],
                   ),
 
-
+*/
 
                   SizedBox(height: 20),
                   DatePickerInput(
@@ -3493,14 +3668,14 @@ SizedBox(height: 16,),
                 style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.w800),
               ),
               SizedBox(height: 20,),
-              SizedBox(
+            /*  SizedBox(
                   width: double.infinity,
                   child: FormInput(label: 'Text',hintlabel: "Text",maxlength: 5,controller: _miscLaboratoryController,)),
 
-                SizedBox(height: 10,),
+                SizedBox(height: 10,),*/
                 DocumentUploadWidget(
                   docType: 'misc_report',
-                  label: "MISC Upload",
+                  label: "Miscellaneous Upload",
                   onFilesSelected: (files) {
                     setState(() async {
                       _uploadedFiles['misc_report'] = files;
@@ -3562,6 +3737,7 @@ class FormInput extends StatelessWidget {
   final int maxcount;
   final Color fillColor;
   final TextEditingController? controller;
+  final String? value; // Add this
   final List<TextInputFormatter>? inputFormatters;
   final bool readOnly;
   final Function(String)? onChanged;
@@ -3576,6 +3752,7 @@ class FormInput extends StatelessWidget {
     this.hintlabel = "",
     this.fillColor = Colors.white,
     this.controller,
+    this.value, // Add this
     this.inputFormatters,
     this.readOnly = false,
     this.onChanged,
@@ -3615,7 +3792,7 @@ class FormInput extends StatelessWidget {
     }
 
     return SizedBox(
-     width: fieldWidth,
+      width: fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3628,28 +3805,50 @@ class FormInput extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          CustomTextField(
-            fillColor: fillColor,
-            enabled: !readOnly,
-            maxLines: maxlength,
-            multiline: true,
-            maxLength: maxcount,
-            controller: controller ?? TextEditingController(),
-            hintText: hintlabel,
-            keyboardType: TextInputType.text,
-            inputFormatters: inputFormatters,
-            textInputAction: TextInputAction.next,
-            validator: (value) => null,
-            readOnly: readOnly,
-            onChanged: onChanged,
-            useCamelCase: useCamelCase,
-          ),
+
+          // If value is provided, show as display field
+          if (value != null && readOnly)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+
+                border: Border.all(  color: AppColors.textSecondary.withOpacity(0.3),  width: 1.5,),
+              ),
+              child: Text(
+                value!,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.fontSize(context, 16),
+                  color: Colors.black87,
+                ),
+              ),
+            )
+          // Otherwise use the CustomTextField
+          else
+            CustomTextField(
+              fillColor: fillColor,
+              enabled: !readOnly,
+              maxLines: maxlength,
+
+              multiline: true,
+              maxLength: maxcount,
+              controller: controller ?? TextEditingController(),
+              hintText: hintlabel,
+              keyboardType: TextInputType.text,
+              inputFormatters: inputFormatters,
+              textInputAction: TextInputAction.next,
+              validator: (value) => null,
+              readOnly: readOnly,
+              onChanged: onChanged,
+              useCamelCase: useCamelCase,
+            ),
         ],
       ),
     );
   }
 }
-
 
 
 

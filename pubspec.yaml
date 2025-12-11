@@ -65,6 +65,9 @@ dependencies:
   printing: ^5.14.2
   table_calendar: ^3.0.9
   fl_chart: ^0.66.0
+  js: ^0.6.7
+  heic_to_png_jpg: ^0.0.5
+  clipboard:
 
 
 

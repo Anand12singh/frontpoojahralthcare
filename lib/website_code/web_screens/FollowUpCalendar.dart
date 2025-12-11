@@ -92,7 +92,7 @@ class _FollowUpCalendarState extends State<FollowUpCalendar> with SingleTickerPr
       try {
         final followUp = FollowUp.fromJson(item);
 
-        // Add to follow-ups map
+        // Add to follow-ups map (ONLY THIS ONE WILL BE USED FOR CALENDAR EVENTS)
         DateTime followUpDate = DateTime.parse(item['follow_up_dates']).toLocal();
         DateTime followUpKey = DateTime(followUpDate.year, followUpDate.month, followUpDate.day);
 
@@ -101,7 +101,7 @@ class _FollowUpCalendarState extends State<FollowUpCalendar> with SingleTickerPr
         }
         _followUpsMap[followUpKey]!.add(followUp);
 
-        // Add to next follow-ups map
+        // Add to next follow-ups map (FOR TAB VIEW ONLY)
         DateTime nextFollowUpDate = DateTime.parse(item['next_follow_up_dates']).toLocal();
         DateTime nextFollowUpKey = DateTime(nextFollowUpDate.year, nextFollowUpDate.month, nextFollowUpDate.day);
 
@@ -187,9 +187,8 @@ class _FollowUpCalendarState extends State<FollowUpCalendar> with SingleTickerPr
               _fetchFollowUpsForMonth(focusedDay);
             },
             eventLoader: (day) {
-              final followUps = _getFollowUpsForDay(day);
-              final nextFollowUps = _getNextFollowUpsForDay(day);
-              return [...followUps, ...nextFollowUps];
+              // ONLY SHOW FOLLOW-UPS, NOT NEXT FOLLOW-UPS
+              return _getFollowUpsForDay(day);
             },
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
@@ -246,7 +245,7 @@ class _FollowUpCalendarState extends State<FollowUpCalendar> with SingleTickerPr
               ),
               tabs: const [
                 Tab(text: 'Follow Ups'),
-             //   Tab(text: 'Next Follow Ups'),
+                //   Tab(text: 'Next Follow Ups'),
               ],
             ),
           ),

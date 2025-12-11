@@ -80,7 +80,8 @@ class CustomTextField extends StatefulWidget {
   final Duration? obscureTextToggleDelay;
   final List<TextInputFormatter>? inputFormatters;
   final bool useCamelCase;
-  final bool multiline; // New property to enable multiline
+  final bool multiline; // New: control if field should support multiple lines
+  final bool wrapText; // New: enable text wrapping to new lines
 
   const CustomTextField({
     Key? key,
@@ -155,7 +156,8 @@ class CustomTextField extends StatefulWidget {
     this.obscureTextAutoToggle = false,
     this.obscureTextToggleDelay,
     this.useCamelCase = true,
-    this.multiline = false, // Default to false
+    this.multiline = false,
+    this.wrapText = true, // Default to wrapping text
   }) : super(key: key);
 
   @override
@@ -167,7 +169,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
   late bool _obscureText;
   Timer? _obscureTextToggleTimer;
   late bool _isHovered;
-  int? _dynamicMaxLines; // Tracks adjusted maxLines
+  double _textFieldHeight = 56.0; // Default height
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -176,28 +179,66 @@ class _CustomTextFieldState extends State<CustomTextField> {
         widget.controller ?? TextEditingController(text: widget.initialValue);
     _obscureText = widget.obscureText;
     _isHovered = false;
-    _dynamicMaxLines = widget.maxLines; // Initialize with widget's maxLines
 
     if (widget.obscureTextAutoToggle && widget.obscureTextToggleDelay != null) {
       _startObscureTextToggleTimer();
     }
 
-    // Listen for text changes to adjust maxLines
-    _controller.addListener(_adjustMaxLines);
+    // Listen to text changes to adjust height for wrapped text
+    _controller.addListener(_updateTextFieldHeight);
   }
 
-  void _adjustMaxLines() {
-    if (!widget.multiline || widget.maxLines == null) return;
+  void _updateTextFieldHeight() {
+    if (!widget.wrapText || widget.maxLines == 1) return;
 
-    final lineCount = '\n'.allMatches(_controller.text).length + 1;
-    if (lineCount > _dynamicMaxLines!) {
+    // Calculate text height based on content
+    final textSpan = TextSpan(
+      text: _controller.text,
+      style: widget.style ??
+          TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
+          ),
+    );
+
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+      maxLines: widget.maxLines,
+      ellipsis: '...',
+    );
+
+    // Layout the text
+    textPainter.layout(maxWidth: _getMaxTextWidth(context));
+
+    // Calculate required height (text height + padding)
+    final textHeight = textPainter.size.height;
+    final padding = widget.contentPadding ??
+        EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        );
+    final verticalPadding = (padding as EdgeInsets).vertical;
+
+    final newHeight = textHeight + verticalPadding + 20; // Add some buffer
+
+    if (newHeight != _textFieldHeight && mounted) {
       setState(() {
-        _dynamicMaxLines = lineCount; // Expand to match content
+        _textFieldHeight = newHeight.clamp(56.0, 200.0); // Min 56, max 200
       });
-    } else if (lineCount < widget.maxLines!) {
-      setState(() {
-        _dynamicMaxLines = widget.maxLines; // Reset to original
-      });
+    }
+  }
+
+  double _getMaxTextWidth(BuildContext context) {
+    // Estimate the max width for text within the text field
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (screenWidth < 600) {
+      return screenWidth - 48; // Account for padding
+    } else if (screenWidth < 1200) {
+      return 250 - 32; // Account for typical field width minus padding
+    } else {
+      return 275 - 32; // Account for typical field width minus padding
     }
   }
 
@@ -240,6 +281,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void dispose() {
     _obscureTextToggleTimer?.cancel();
+    _controller.removeListener(_updateTextFieldHeight);
+    _focusNode.dispose();
     if (widget.controller == null) {
       _controller.dispose();
     }
@@ -248,6 +291,18 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if this is a multiline field
+    final isMultilineField = widget.multiline || (widget.maxLines ?? 1) > 1;
+
+    // Define text style - NO overflow for wrapped text
+    final effectiveStyle = widget.style ??
+        TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: ResponsiveUtils.fontSize(context, 16),
+          overflow: widget.wrapText ? null : TextOverflow.ellipsis,
+        );
+
+    // Define borders
     final effectiveBorder = widget.border ??
         OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -293,9 +348,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
         );
 
+    // Define content padding
     final effectiveContentPadding = widget.contentPadding ??
-        const EdgeInsets.symmetric(
-          vertical: 16,
+        EdgeInsets.symmetric(
+          vertical: isMultilineField ? 12 : 16,
           horizontal: 16,
         );
 
@@ -314,12 +370,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           fontSize: ResponsiveUtils.fontSize(context, 16),
         );
 
-    final effectiveStyle = widget.style ??
-        TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: ResponsiveUtils.fontSize(context, 16),
-        );
-
+    // Suffix icon for password fields
     final effectiveSuffixIcon = widget.obscureText
         ? IconButton(
       icon: Icon(
@@ -348,14 +399,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
           .join(' ');
     }
 
-    // Determine keyboard type and text input action based on multiline flag
-    final effectiveKeyboardType = widget.multiline
+    // Determine keyboard type and text input action
+    final effectiveKeyboardType = isMultilineField
         ? TextInputType.multiline
         : widget.keyboardType;
 
-    final effectiveTextInputAction = widget.multiline
+    final effectiveTextInputAction = isMultilineField
         ? TextInputAction.newline
-        : widget.textInputAction ?? TextInputAction.done;
+        : widget.textInputAction ?? TextInputAction.next;
 
     return MouseRegion(
       onEnter: (_) {
@@ -368,96 +419,103 @@ class _CustomTextFieldState extends State<CustomTextField> {
           _isHovered = false;
         });
       },
-      child: TextFormField(
-        controller: _controller,
-        focusNode: widget.focusNode,
-        obscureText: _obscureText,
-        readOnly: widget.readOnly,
-        enabled: widget.enabled,
-        //keyboardType: effectiveKeyboardType,
-//        textInputAction: effectiveTextInputAction,
-        textCapitalization: widget.textCapitalization,
-        style: effectiveStyle,
-        textAlign: widget.textAlign,
-        textAlignVertical: widget.textAlignVertical ?? TextAlignVertical.center,
-        autofocus: widget.autofocus,
-        maxLines: _dynamicMaxLines, // Use dynamic value
-        keyboardType: widget.multiline ? TextInputType.multiline : widget.keyboardType,
-        textInputAction: widget.multiline ? TextInputAction.newline : widget.textInputAction,
-        minLines: widget.minLines,
-        maxLength: widget.maxLength,
-        expands: widget.expands,
-        showCursor: widget.showCursor,
-        autocorrect: widget.autocorrect,
-        enableSuggestions: widget.enableSuggestions,
-        decoration: InputDecoration(
-          labelText: widget.label,
-          hintText: widget.useCamelCase
-              ? _toCamelCase(widget.hintText)
-              : widget.hintText,
-          helperText: widget.helperText,
-          errorText: widget.errorText,
-          labelStyle: effectiveLabelStyle,
-          hintStyle: effectiveHintStyle,
-          helperStyle: widget.helperStyle,
-          errorStyle: widget.errorStyle,
-          prefixIcon: widget.prefixIcon != null
-              ? Icon(
-            widget.prefixIcon,
-            color: AppColors.primary.withOpacity(0.8),
-            size: ResponsiveUtils.fontSize(context, 20),
-          )
-              : null,
-          prefixIconConstraints: widget.prefixIconConstraints,
-          suffixIcon: effectiveSuffixIcon,
-          suffixIconConstraints: widget.suffixIconConstraints,
-          suffix: widget.suffix,
-          icon: widget.icon,
-          isDense: widget.isDense,
-          isCollapsed: widget.isCollapsed,
-          border: _buildBorder(effectiveBorder),
-          hoverColor: Colors.white,
-          enabledBorder: _buildBorder(effectiveEnabledBorder),
-          focusedBorder: effectiveFocusedBorder,
-          errorBorder: effectiveErrorBorder,
-          focusedErrorBorder: effectiveFocusedErrorBorder,
-          contentPadding: effectiveContentPadding,
-          filled: effectiveFilled,
-          fillColor: effectiveFillColor,
-          counterText: '',
-          counterStyle: widget.errorStyle,
-          alignLabelWithHint: true,
-          floatingLabelBehavior: FloatingLabelBehavior.auto,
-          floatingLabelAlignment: FloatingLabelAlignment.start,
-          floatingLabelStyle: effectiveLabelStyle.copyWith(
-            color: AppColors.primary,
-          ),
-          errorMaxLines: 2,
-          helperMaxLines: 2,
-          hintMaxLines: 1,
+      child: Container(
+        constraints: BoxConstraints(
+          minHeight: 56,
+          maxHeight: isMultilineField ? _textFieldHeight : 70,//56,
         ),
-        validator: widget.validator,
-        onChanged: widget.onChanged,
-        onTap: widget.onTap,
-        onFieldSubmitted: widget.onFieldSubmitted,
-        onEditingComplete: widget.onEditingComplete,
-        keyboardAppearance: widget.keyboardAppearance,
-        buildCounter: widget.buildCounter,
-        scrollPhysics: widget.scrollPhysics,
-        autofillHints: widget.autofillHints,
-        mouseCursor: widget.mouseCursor,
-        scrollController: widget.scrollController,
-        restorationId: widget.restorationId,
-        enableInteractiveSelection: widget.enableInteractiveSelection,
-        selectionControls: widget.selectionControls,
-        cursorWidth: widget.cursorWidth,
-        cursorHeight: widget.cursorHeight,
-        cursorRadius: widget.cursorRadius,
-        cursorColor: widget.cursorColor ?? AppColors.primary,
-        selectionHeightStyle: widget.selectionHeightStyle,
-        selectionWidthStyle: widget.selectionWidthStyle,
-        strutStyle: widget.strutStyle,
-        inputFormatters: widget.inputFormatters,
+        child:  TextFormField(
+          controller: _controller,
+          focusNode: widget.focusNode ?? _focusNode,
+          obscureText: _obscureText,
+          readOnly: widget.readOnly,
+          enabled: widget.enabled,
+          keyboardType: effectiveKeyboardType,
+          textInputAction: effectiveTextInputAction,
+          textCapitalization: widget.textCapitalization,
+          style: effectiveStyle,
+          textAlign: widget.textAlign,
+          textAlignVertical: TextAlignVertical.top, // Always align to top
+          autofocus: widget.autofocus,
+          maxLines: widget.multiline ? null : widget.maxLines,
+          minLines: widget.multiline ? 1 : (widget.minLines ?? 1),
+
+          maxLength: widget.maxLength,
+          expands: widget.expands,
+          showCursor: widget.showCursor,
+          autocorrect: widget.autocorrect,
+          enableSuggestions: widget.enableSuggestions,
+          decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: widget.useCamelCase
+                ? _toCamelCase(widget.hintText)
+                : widget.hintText,
+            helperText: widget.helperText,
+            errorText: widget.errorText,
+            labelStyle: effectiveLabelStyle,
+            hintStyle: effectiveHintStyle,
+            helperStyle: widget.helperStyle,
+            errorStyle: widget.errorStyle,
+            prefixIcon: widget.prefixIcon != null
+                ? Icon(
+              widget.prefixIcon,
+              color: AppColors.primary.withOpacity(0.8),
+              size: ResponsiveUtils.fontSize(context, 20),
+            )
+                : null,
+            prefixIconConstraints: widget.prefixIconConstraints,
+            suffixIcon: effectiveSuffixIcon,
+            suffixIconConstraints: widget.suffixIconConstraints,
+            suffix: widget.suffix,
+            icon: widget.icon,
+            isDense: widget.isDense ?? false,
+            isCollapsed: widget.isCollapsed ?? false,
+            border: _buildBorder(effectiveBorder),
+            hoverColor: Colors.white,
+            enabledBorder: _buildBorder(effectiveEnabledBorder),
+            focusedBorder: effectiveFocusedBorder,
+            errorBorder: effectiveErrorBorder,
+            focusedErrorBorder: effectiveFocusedErrorBorder,
+            contentPadding: effectiveContentPadding,
+            filled: effectiveFilled,
+            fillColor: effectiveFillColor,
+            counterText: '',
+            counterStyle: widget.errorStyle,
+            alignLabelWithHint: true,
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            floatingLabelAlignment: FloatingLabelAlignment.start,
+            floatingLabelStyle: effectiveLabelStyle.copyWith(
+              color: AppColors.primary,
+            ),
+            errorMaxLines: 2,
+            helperMaxLines: 2,
+            hintMaxLines: 1,
+          ),
+          validator: widget.validator,
+          onChanged: (value) {
+            widget.onChanged?.call(value);
+          },
+          onTap: widget.onTap,
+          onFieldSubmitted: widget.onFieldSubmitted,
+          onEditingComplete: widget.onEditingComplete,
+          keyboardAppearance: widget.keyboardAppearance,
+          buildCounter: widget.buildCounter,
+          scrollPhysics: widget.scrollPhysics,
+          autofillHints: widget.autofillHints,
+          mouseCursor: widget.mouseCursor,
+          scrollController: widget.scrollController,
+          restorationId: widget.restorationId,
+          enableInteractiveSelection: widget.enableInteractiveSelection,
+          selectionControls: widget.selectionControls,
+          cursorWidth: widget.cursorWidth,
+          cursorHeight: widget.cursorHeight,
+          cursorRadius: widget.cursorRadius,
+          cursorColor: widget.cursorColor ?? AppColors.primary,
+          selectionHeightStyle: widget.selectionHeightStyle,
+          selectionWidthStyle: widget.selectionWidthStyle,
+          strutStyle: widget.strutStyle,
+          inputFormatters: widget.inputFormatters,
+        ),
       ),
     );
   }

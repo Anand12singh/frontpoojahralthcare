@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.2"
+  clipboard:
+    dependency: "direct main"
+    description:
+      name: clipboard
+      sha256: b6029bd3257f67890cac0fd57c1bbe7b7f2ee324079e2232197b0f23140aef3f
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.5"
   clock:
     dependency: transitive
     description:
@@ -448,6 +456,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.2.1"
+  heic_to_png_jpg:
+    dependency: "direct main"
+    description:
+      name: heic_to_png_jpg
+      sha256: cd4038a1b194c70d0a665e85a8d32a7b7a0d554baa5f0fe833f8cafbb0c7b792
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.5"
+  heif_converter:
+    dependency: transitive
+    description:
+      name: heif_converter
+      sha256: a2fbbf3f795b19753d84a52223c60d3bcf3cf2261d6c0d41857f0ec198e6eef3
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   html:
     dependency: "direct main"
     description:
@@ -561,7 +585,7 @@ packages:
     source: hosted
     version: "0.20.2"
   js:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: js
       sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3

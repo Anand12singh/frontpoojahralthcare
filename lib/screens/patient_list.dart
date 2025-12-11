@@ -225,6 +225,7 @@ print(response.request);
         'phone': patient['mobile_no'] ?? 'N/A',
         'lastVisit': _formatLastVisitDate(patient['date'] ?? ''),
         'gender': patient['gender'] ?? 1,
+        'created_at': patient['created_at'] ?? '', // Add this line
       };
     }).toList();
   }
@@ -662,7 +663,7 @@ print(response.request);
                                           padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
                                           child: Row(
                                             children: [
-                                              Expanded(flex: 1, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
+                                              Expanded(flex: 2, child: Text("PHID", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary,fontSize:  ResponsiveUtils.fontSize(context, 16)))),
                                               Expanded(flex: 3, child: Row(
                                                 children: [
                                                   Text(
@@ -759,12 +760,19 @@ print(response.request);
                                           itemBuilder: (context, index) {
                                             final patient = filteredPatients[index];
                                             final _gender = patient?['gender'] == 1 ? 'Male' : 'Female';
+                                            print('patient');
+                                            print(patient['created_at']);
                                             return Padding(
                                               padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
                                               child: Row(
                                                 children: [
-                                                  Expanded(flex: 1, child: Text(patient['phid'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
-                                                  Expanded(flex: 3, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                  Expanded(
+                                                    flex: 2,
+                                                    child: Text(
+                                                      _formatPhid(patient['phid'], patient['created_at']),
+                                                      style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 14)),
+                                                    ),
+                                                  ),    Expanded(flex: 3, child: Text(patient['name'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(patient['age'].toString() ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(_gender ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                   Expanded(flex: 2, child: Text(patient['phone'] ?? '',style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
@@ -945,7 +953,21 @@ print(response.request);
 
     );
   }
+  String _formatPhid(String? phid, String? createdAt) {
+    if (phid == null || phid == 'N/A') return 'N/A';
 
+    String year = '';
+    if (createdAt != null) {
+      try {
+        final date = DateTime.parse(createdAt);
+        year = date.year.toString();
+      } catch (e) {
+        year = 'N/A';
+      }
+    }
+
+    return '$phid/$year';
+  }
   int get totalPages {
     if (_totalRecords == 0) return 1;
     if (_rowsPerPage == 0) return 1; // When showing ALL, there's only 1 page

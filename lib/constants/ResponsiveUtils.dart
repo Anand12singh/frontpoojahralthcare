@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
 
+enum ScreenSize { small, medium, large }
+
+// Chart dimensions based on screen size
+class ChartDimensions {
+  final double containerHeight;
+  final double centerSpaceRadius;
+  final double touchedRadius;
+  final double normalRadius;
+  final double titleFontSize;
+  final double smallFontSize;
+
+  ChartDimensions({
+    required this.containerHeight,
+    required this.centerSpaceRadius,
+    required this.touchedRadius,
+    required this.normalRadius,
+    required this.titleFontSize,
+    required this.smallFontSize,
+  });
+}
+
 /// Enum describing device sizes
 enum DeviceType {
   mobile,

@@ -264,6 +264,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   }
 
+  ScreenSize get screenSize {
+    final mediaQuery = MediaQuery.of(context);
+    final width = mediaQuery.size.width;
+    final height = mediaQuery.size.height;
+
+    if (width <= 1366 || height <= 768) {
+      return ScreenSize.small;
+    } else if (width <= 1920 || height <= 1080) {
+      return ScreenSize.medium;
+    } else {
+      return ScreenSize.large;
+    }
+  }
+
+  // Get chart dimensions based on screen size
+  ChartDimensions get chartDimensions {
+    switch (screenSize) {
+      case ScreenSize.small:
+        return ChartDimensions(
+          containerHeight: 230,
+          centerSpaceRadius: 20,
+          touchedRadius: 62,
+          normalRadius: 50,
+          titleFontSize: 12,
+          smallFontSize: 8,
+        );
+      case ScreenSize.medium:
+        return ChartDimensions(
+          containerHeight: 250,
+          centerSpaceRadius: 30,
+          touchedRadius: 72,
+          normalRadius: 60,
+          titleFontSize: 13,
+          smallFontSize: 10,
+        );
+      case ScreenSize.large:
+        return ChartDimensions(
+          containerHeight: 280,
+          centerSpaceRadius: 40,
+          touchedRadius: 82,
+          normalRadius: 70,
+          titleFontSize: 14,
+          smallFontSize: 12,
+        );
+    }
+  }
+
 
   Future<void> _handleSuccessResponse(Map<String, dynamic> responseData) async {
     try {
@@ -342,6 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
+    final dimensions = chartDimensions;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FC),
       body: Row(
@@ -455,18 +503,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),  const SizedBox(width: 16),
                                             _buildStatCard("Todays Follow Ups", "42", 'assets/Dashboardicon5.png'),
                                             const SizedBox(width: 16),
-                                            _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
+                                          /*  _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Pending Reports", "12", 'assets/Dashboardicon3.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Total Appointment", "879", 'assets/Dashboardicon2.png'),
-                                            const SizedBox(width: 16),
+                                            const SizedBox(width: 16),*/
                                             _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon1.png'),
                                           ],
                                         ),
                                       ),
 
-                                      const SizedBox(height: 20),
+                                 /*     const SizedBox(height: 20),
 
                                       // Bookmarks Section
                                       Container(
@@ -545,252 +593,322 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                         ),
                                       ),
-
+*/
                                       const SizedBox(height: 20),
 
                                       // Pie Chart + Legend Section
-                                  Row(
-                                    spacing: 20,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      /// ----------- PIE CHART (Locations) ----------
-                                      Expanded(
-                                        flex: 5,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.05),
-                                                blurRadius: 8,
-                                                offset: Offset(2, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.center,
-                                            children: [
-                                              /// Pie Chart
-                                              Expanded(
-                                                flex: 5,
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: Offset(2, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                         Text(
+                                          "Total Patients Operated - ${dashboard?.data.totalOperations ??0}",
+                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Row(
+                                          spacing: 10,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            /// ----------- PIE CHART (Locations) ----------
+                                            Expanded(
+                                              flex: 5,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.05),
+                                                      blurRadius: 8,
+                                                      offset: Offset(2, 4),
+                                                    ),
+                                                  ],
+                                                ),
+                                                padding: const EdgeInsets.all(16.0),
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     const Text(
-                                                      "Location Distribution",
-                                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                                      "Location-wise Operations",
+                                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    Row(
+                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                      children: [
+                                                        /// Pie Chart
+                                                        Expanded(
+                                                          flex: 5,
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                       
+                                                              SizedBox(
+                                                                height: dimensions.containerHeight,
+                                                                child: dashboard != null
+                                                                    ? PieChart(
+                                                                  PieChartData(
+                                                                    sectionsSpace: 0,
+                                                                    centerSpaceRadius: dimensions.centerSpaceRadius,
+                                                                    pieTouchData: PieTouchData(
+                                                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                                                        setState(() {
+                                                                          if (event is FlTapUpEvent || event is FlPanEndEvent) {
+                                                                            _touchedIndex = -1;
+                                                                          } else if (event is FlLongPressStart || event is FlPanStartEvent) {
+                                                                            if (pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
+                                                                              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                                                            }
+                                                                          }
+                                                                        });
+                                                                      },
+                                                                    ),
+                                                                    sections: List.generate(
+                                                                      dashboard!.data.surgeryByLocation.length,
+                                                                          (i) {
+                                                                        final loc = dashboard!.data.surgeryByLocation[i];
+                                                                        final isTouched = i == _touchedIndex;
+                                                                        final double radius = isTouched
+                                                                            ? dimensions.touchedRadius
+                                                                            : dimensions.normalRadius;
+                                                                        final value = loc.totalNumber.toDouble();
+                                                                        final title = value.toInt().toString();
+                                                    
+                                                                        // assign colors dynamically
+                                                                        final colors = [
+                                                                          [Colors.orange.shade200, Colors.orange.shade700],
+                                                                          [Colors.blue.shade200, Colors.blue.shade700],
+                                                                          [Colors.green.shade200, Colors.green.shade700],
+                                                                          [Colors.purple.shade200, Colors.purple.shade700],
+                                                                          [Colors.red.shade200, Colors.red.shade700],
+                                                                          [Colors.teal.shade200, Colors.teal.shade700],
+                                                                          [Colors.pink.shade200, Colors.pink.shade700],
+                                                                          [Colors.indigo.shade200, Colors.indigo.shade700],
+                                                                          [Colors.cyan.shade200, Colors.cyan.shade700],
+                                                                          [Colors.amber.shade200, Colors.amber.shade700],
+                                                    
+                                                                        ];
+                                                    
+                                                                        final colorPair = colors[i % colors.length];
+                                                    
+                                                                        return PieChartSectionData(
+                                                                          value: value,
+                                                                          title: title,
+                                                                          radius: radius,
+                                                                          gradient: LinearGradient(
+                                                                            colors: colorPair,
+                                                                            begin: Alignment.topLeft,
+                                                                            end: Alignment.bottomRight,
+                                                                          ),
+                                                                          borderSide: isTouched
+                                                                              ? BorderSide(color: AppColors.primary, width: 1)
+                                                                              : BorderSide(color: Colors.transparent, width: 0),
+                                                                          titleStyle: TextStyle(
+                                                                            fontSize: dimensions.titleFontSize,
+                                                                            fontWeight: FontWeight.bold,
+                                                                            color: Colors.white,
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                                )
+                                                                    : Center(child: CircularProgressIndicator()),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                    
+                                                        /// Legenddashboard != null
+                                                        //
+                                                        dashboard != null
+                                                            ? Center(
+                                                          child: Padding(
+                                                            padding: const EdgeInsets.only(left: 20),
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: List.generate(
+                                                                dashboard!.data.surgeryByLocation.length,
+                                                                    (i) {
+                                                                  final loc = dashboard!.data.surgeryByLocation[i];
+                                                                  final colors = [
+                                                                    Colors.orange,
+                                                                    Colors.blue,
+                                                                    Colors.green,
+                                                                    Colors.purple,
+                                                                    Colors.red,
+                                                                    Colors.teal,
+                                                                    Colors.pink,
+                                                                    Colors.indigo,
+                                                                    Colors.cyan,
+                                                                    Colors.amber,
+                                                                  ];
+                                                                  return buildLegendItem(colors[i % colors.length], loc.location,dimensions.titleFontSize);
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        )
+                                                            : Center(child: CircularProgressIndicator()),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+
+                                            /// ----------- BAR CHART (Types) ----------
+                                            Expanded(
+                                              flex: 5,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.05),
+                                                      blurRadius: 8,
+                                                      offset: Offset(2, 4),
+                                                    ),
+                                                  ],
+                                                ),
+                                                padding: const EdgeInsets.all(16.0),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    const Text(
+                                                      "Surgery Type Overview",
+                                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                                     ),
                                                     const SizedBox(height: 20),
                                                     SizedBox(
-                                                      height: 250,
-                                                      child: dashboard != null
-                                                          ? PieChart(
-                                                        PieChartData(
-                                                          sectionsSpace: 0,
-                                                          centerSpaceRadius: 40,
-                                                          pieTouchData: PieTouchData(
-                                                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                                              setState(() {
-                                                                if (event is FlTapUpEvent || event is FlPanEndEvent) {
-                                                                  _touchedIndex = -1;
-                                                                } else if (event is FlLongPressStart || event is FlPanStartEvent) {
-                                                                  if (pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
-                                                                    _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                                                  }
-                                                                }
-                                                              });
-                                                            },
+                                                      height: dimensions.containerHeight,
+                                             
+                                                      child:dashboard != null
+                                                          ?  BarChart(
+                                                        BarChartData(
+                                                          alignment: BarChartAlignment.spaceEvenly,
+                                                          maxY: 1000,
+
+
+                                                          barTouchData: BarTouchData(
+                                                            enabled: true,
+                                                            touchTooltipData: BarTouchTooltipData(
+                                                              tooltipBgColor: Colors.white,
+                                                              tooltipPadding: const EdgeInsets.all(8),
+                                                              tooltipMargin: 8,
+                                                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                                                return BarTooltipItem(
+                                                                  '${rod.toY.toInt()}',
+                                                                  const TextStyle(
+                                                                    color: Colors.black,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    fontSize: 14,
+                                                                  ),
+                                                                );
+                                                              },
+                                                            ),
                                                           ),
-                                                          sections: List.generate(
-                                                            dashboard!.data.surgeryByLocation.length,
-                                                                (i) {
-                                                              final loc = dashboard!.data.surgeryByLocation[i];
-                                                              final isTouched = i == _touchedIndex;
-                                                              final double radius = isTouched ? 82 : 70;
-                                                              final value = loc.totalNumber.toDouble();
-                                                              final title = value.toInt().toString();
+                                                          titlesData: FlTitlesData(
 
-                                                              // assign colors dynamically
-                                                              final colors = [
-                                                                [Colors.orange.shade200, Colors.orange.shade700],
-                                                                [Colors.blue.shade200, Colors.blue.shade700],
-                                                                [Colors.green.shade200, Colors.green.shade700],
-                                                                [Colors.purple.shade200, Colors.purple.shade700],
-                                                                [Colors.red.shade200, Colors.red.shade700],
-                                                                [Colors.teal.shade200, Colors.teal.shade700],
-                                                              ];
+                                                            leftTitles: AxisTitles(
+                                                              
 
-                                                              final colorPair = colors[i % colors.length];
-
-                                                              return PieChartSectionData(
-                                                                value: value,
-                                                                title: title,
-                                                                radius: radius,
-                                                                gradient: LinearGradient(
-                                                                  colors: colorPair,
-                                                                  begin: Alignment.topLeft,
-                                                                  end: Alignment.bottomRight,
+                                                              
+                                                              axisNameWidget: Container(
+                                                                padding: const EdgeInsets.only(bottom:5,), // Add space between title and axis labels
+                                                                child: Text(
+                                                                  'Number of Patients',
+                                                                  style: TextStyle(
+                                                                    fontSize: 10  ,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    color: Colors.black,
+                                                                  ),
                                                                 ),
-                                                                borderSide: isTouched
-                                                                    ? BorderSide(color: AppColors.primary, width: 1)
-                                                                    : BorderSide(color: Colors.transparent, width: 0),
-                                                                titleStyle: const TextStyle(
-                                                                  fontSize: 14,
+                                                              ),
+
+                                                              sideTitles: SideTitles(
+                                                                showTitles: true,
+                                                                interval: 200,
+                                                                getTitlesWidget: (value, meta) {
+                                                                  return Text(value.toInt().toString(), style: TextStyle(fontSize: 10));
+                                                                },
+                                                                reservedSize: 30, // Increase reserved size to accommodate the title
+                                                              ),
+                                                            ),
+                                                            bottomTitles: AxisTitles(
+                                                              axisNameWidget: Text(
+                                                                'Surgery Types',
+                                                                style: TextStyle(
+                                                                  fontSize: 10,
                                                                   fontWeight: FontWeight.bold,
-                                                                  color: Colors.white,
+                                                                  color: Colors.black,
                                                                 ),
+                                                              ),
+                                                              sideTitles: SideTitles(
+                                                                showTitles: true,
+                                                                getTitlesWidget: (value, meta) {
+                                                                  final types = dashboard!.data.surgeryByType;
+                                                                  if (value.toInt() < types.length) {
+                                                                    return Text(types[value.toInt()].name,style: TextStyle(fontSize: dimensions.smallFontSize),);
+                                                                  }
+                                                                  return const Text("");
+                                                                },
+                                                                reservedSize: 30,
+                                                              ),
+                                                            ),
+                                                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                                          ),
+                                                          gridData: FlGridData(show: true),
+                                                          borderData: FlBorderData(show: false),
+                                                          barGroups: List.generate(
+                                                            dashboard!.data.surgeryByType.length,
+                                                                (i) {
+                                                              final type = dashboard!.data.surgeryByType[i];
+                                                              return BarChartGroupData(
+                                                                x: i,
+                                                                barRods: [
+                                                                  BarChartRodData(
+                                                                    toY: type.totalCount.toDouble(),
+                                                                    width: 50,
+                                                                    borderRadius: const BorderRadius.only(
+                                                                      topLeft: Radius.circular(8),
+                                                                      topRight: Radius.circular(8),
+                                                                    ),
+                                                                    color: AppColors.secondary,
+                                                                  ),
+                                                                ],
                                                               );
                                                             },
                                                           ),
                                                         ),
-                                                      )
-                                                          : Center(child: CircularProgressIndicator()),
-                                                    )
+                                                      )  : Center(child: CircularProgressIndicator()),
+                                                    ),
                                                   ],
                                                 ),
                                               ),
-
-                                              /// Legenddashboard != null
-                                              //
-                                              dashboard != null
-                                                  ? Center(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.only(left: 20),
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: List.generate(
-                                                      dashboard!.data.surgeryByLocation.length,
-                                                          (i) {
-                                                        final loc = dashboard!.data.surgeryByLocation[i];
-                                                        final colors = [
-                                                          Colors.orange,
-                                                          Colors.blue,
-                                                          Colors.green,
-                                                          Colors.purple,
-                                                          Colors.red,
-                                                          Colors.teal,
-                                                        ];
-                                                        return buildLegendItem(colors[i % colors.length], loc.location);
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                                  : Center(child: CircularProgressIndicator()),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-
-                                      /// ----------- BAR CHART (Types) ----------
-                                      Expanded(
-                                        flex: 5,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.05),
-                                                blurRadius: 8,
-                                                offset: Offset(2, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                "Hernia Types Distribution",
-                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                              ),
-                                              const SizedBox(height: 20),
-                                              SizedBox(
-                                                height: 250,
-                                                child:dashboard != null
-                                                    ?  BarChart(
-                                                  BarChartData(
-                                                    alignment: BarChartAlignment.spaceEvenly,
-                                                    maxY: 1000,
-                                                    barTouchData: BarTouchData(
-                                                      enabled: true,
-                                                      touchTooltipData: BarTouchTooltipData(
-                                                        tooltipBgColor: Colors.white,
-                                                        tooltipPadding: const EdgeInsets.all(8),
-                                                        tooltipMargin: 8,
-                                                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                                          return BarTooltipItem(
-                                                            '${rod.toY.toInt()}',
-                                                            const TextStyle(
-                                                              color: Colors.black,
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 14,
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
-                                                    titlesData: FlTitlesData(
-                                                      leftTitles: AxisTitles(
-                                                        sideTitles: SideTitles(
-                                                          showTitles: true,
-                                                          interval: 200,
-                                                          getTitlesWidget: (value, meta) {
-                                                            return Text(value.toInt().toString());
-                                                          },
-                                                          reservedSize: 40,
-                                                        ),
-                                                      ),
-                                                      bottomTitles: AxisTitles(
-                                                        sideTitles: SideTitles(
-                                                          showTitles: true,
-                                                          getTitlesWidget: (value, meta) {
-                                                            final types = dashboard!.data.surgeryByType;
-                                                            if (value.toInt() < types.length) {
-                                                              return Text(types[value.toInt()].name);
-                                                            }
-                                                            return const Text("");
-                                                          },
-                                                        ),
-                                                      ),
-                                                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                                    ),
-                                                    gridData: FlGridData(show: true),
-                                                    borderData: FlBorderData(show: false),
-                                                    barGroups: List.generate(
-                                                      dashboard!.data.surgeryByType.length,
-                                                          (i) {
-                                                        final type = dashboard!.data.surgeryByType[i];
-                                                        return BarChartGroupData(
-                                                          x: i,
-                                                          barRods: [
-                                                            BarChartRodData(
-                                                              toY: type.totalCount.toDouble(),
-                                                              width: 50,
-                                                              borderRadius: const BorderRadius.only(
-                                                                topLeft: Radius.circular(8),
-                                                                topRight: Radius.circular(8),
-                                                              ),
-                                                              color: AppColors.secondary,
-                                                            ),
-                                                          ],
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                )  : Center(child: CircularProgressIndicator()),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   )
 
 
@@ -1015,7 +1133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  Widget buildLegendItem(Color color, String text) {
+  Widget buildLegendItem(Color color, String text, dynamic fontsize) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -1029,7 +1147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           SizedBox(width: 8),
-          Text(text, style: TextStyle(fontSize: 14)),
+          Text(text, style: TextStyle(fontSize: fontsize)),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -44,7 +45,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   bool _isEditing = false;
   int? _existingDischargeId;
   final Map<String, List<Map<String, dynamic>>> _uploadedFiles = {
-    "investigation_discharge_image": []
+    "investigation_discharge_image": [],
+    "discharge_images": [] // Add this line
   };
   // Information Controllers
   final TextEditingController _consultantController = TextEditingController();
@@ -57,7 +59,13 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
   final TextEditingController _chiefComplaintsController = TextEditingController();
   final TextEditingController _SincewhenController = TextEditingController();
   final TextEditingController _hypertensionSinceController = TextEditingController();
-
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _phidController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _genderController = TextEditingController();
+  final TextEditingController _referralByController = TextEditingController();
+  final TextEditingController _registrationNumberController = TextEditingController();
   final TextEditingController _copdDescriptionController = TextEditingController();
   final TextEditingController _ihdDescriptionController = TextEditingController();
   // Date/Time fields
@@ -149,6 +157,9 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       print("data");
       print(data);
       // Basic Info
+
+      final formattedPhId = _getFormattedPhId(data);
+
       _consultantController.text = data['consultant']?.toString() ?? '';
       _contactController.text = data['contact']?.toString() ?? '';
       _qualificationsController.text = data['qualifications']?.toString() ?? '';
@@ -161,7 +172,14 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 
       _hypertensionSinceController.text =
           data['hypertension_description']?.toString() ?? '';
-
+      _firstNameController.text = data['first_name']?.toString() ?? '';
+      _lastNameController.text = data['last_name']?.toString() ?? '';
+     // _phidController.text = data['patient_id']?.toString() ?? ''; // Using uh_id as PHID
+      _phidController.text = formattedPhId; // Use formatted PH ID here // Using uh_id as PHID
+      _ageController.text = data['age']?.toString() ?? '';
+      _genderController.text = data['gender']?.toString() ?? '';
+      _referralByController.text = data['referral_by']?.toString() ?? '';
+      _registrationNumberController.text = data['registration_number']?.toString() ?? '';
 
       _ihdDescriptionController.text =
           data['IHD_description']?.toString() ?? '';
@@ -213,6 +231,21 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         print( "_uploadedFiles");
         print( _uploadedFiles['investigation_discharge_image']);
         _uploadedFiles['investigation_discharge_image'] = (data['investigation_discharge_image'] as List).map((file) {
+          return {
+            'id': file['id'],
+            'path': file['image_path'],
+            'name': path.basename(file['image_path']?.toString() ?? 'unknown'),
+            'type': path.extension(file['image_path']?.toString() ?? '').replaceAll('.', '').toUpperCase(),
+            'size': '',
+            'isExisting': true,
+          };
+        }).toList();
+      }
+
+      if (data['discharge_images'] != null && data['discharge_images'] is List) {
+        print("Loading discharge_images");
+        print(data['discharge_images']);
+        _uploadedFiles['discharge_images'] = (data['discharge_images'] as List).map((file) {
           return {
             'id': file['id'],
             'path': file['image_path'],
@@ -293,6 +326,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         "family_history": _familyHistoryController.text,
         "on_examination": _onExaminationController.text,
         "treatment_given": _treatmentGivenController.text,
+        "registration_number": _registrationNumberController.text,
         "course_during_hospitalization": _hospitalizationCourseController.text,
         "history_of_dm_status": _hasDM ? '1' : '0',
         "hypertension_status": _ensureStatus(_hasHypertension),
@@ -331,10 +365,18 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
 
       request.fields.addAll(fields);
 
+// Add debug logging
+      log('📋 Uploaded files to process:');
+      for (var key in _uploadedFiles.keys) {
+        log('   - $key: ${_uploadedFiles[key]?.length ?? 0} files');
+      }
 
-      // Add file uploads
-      List<String> existingFileIds = [];
+// Add file uploads
+      var existingFileIds = [];
+
+// Process investigation_discharge_image
       for (var file in _uploadedFiles['investigation_discharge_image'] ?? []) {
+        log('🔍 Processing investigation_discharge_image: ${file['name']}, isExisting: ${file['isExisting']}');
         if (!file['isExisting']) {
           if (kIsWeb && file['bytes'] != null) {
             request.files.add(http.MultipartFile.fromBytes(
@@ -342,22 +384,61 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
               file['bytes']!,
               filename: file['name'],
             ));
+            log('✅ Added new investigation_discharge_image: ${file['name']}');
           } else if (!kIsWeb && file['path'] != null) {
             request.files.add(await http.MultipartFile.fromPath(
               'investigation_discharge_image',
               file['path']!,
               filename: file['name'],
             ));
+            log('✅ Added new investigation_discharge_image: ${file['name']}');
           }
         } else {
           existingFileIds.add(file['id'].toString());
+          log('💾 Keeping existing investigation_discharge_image ID: ${file['id']}');
         }
       }
-      if (existingFileIds.isNotEmpty) {
-        request.fields['existing_file'] = existingFileIds.join(',');
-      }
-      log("existingFileIds $existingFileIds");
 
+// Process discharge_images - THIS IS THE KEY PART YOU'RE MISSING
+      for (var file in _uploadedFiles['discharge_images'] ?? []) {
+        log('🔍 Processing discharge_images: ${file['name']}, isExisting: ${file['isExisting']}');
+        if (!file['isExisting']) {
+          if (kIsWeb && file['bytes'] != null) {
+            request.files.add(http.MultipartFile.fromBytes(
+              'discharge_images', // Field name must match what your API expects
+              file['bytes']!,
+              filename: file['name'],
+            ));
+            log('✅ Added new discharge_images: ${file['name']}');
+          } else if (!kIsWeb && file['path'] != null) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'discharge_images', // Field name must match what your API expects
+              file['path']!,
+              filename: file['name'],
+            ));
+            log('✅ Added new discharge_images: ${file['name']}');
+          }
+        } else {
+          existingFileIds.add(file['id'].toString());
+          log('💾 Keeping existing discharge_images ID: ${file['id']}');
+        }
+      }
+
+      if (existingFileIds.isNotEmpty) {
+        log('🆔 Existing file IDs to preserve: ${existingFileIds.join(',')}');
+        request.fields['existing_file'] = existingFileIds.join(',');
+      } else {
+        request.fields['existing_file'] = "0";
+        log('ℹ️ No existing files to preserve');
+      }
+
+
+      print("existingFileIds");
+      print(existingFileIds);
+
+// Log final request info
+      log('📦 Total files in request: ${request.files.length}');
+      log('📊 Total form fields: ${request.fields.length}');
       log('Sending discharge data: ${request.fields}');
       // Send request
       final response = await request.send();
@@ -392,7 +473,28 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
       });
     }
   }
+  String _getFormattedPhId(Map<String, dynamic> data) {
+    final phid =  data['phid']?.toString() ?? '';
 
+    if (phid.isEmpty) return 'Not specified';
+
+    // Extract year from created_at
+    String year = '';
+    if (data['created_at'] != null) {
+      try {
+        final createdAt = DateTime.parse(data['created_at'].toString());
+        year = createdAt.year.toString();
+      } catch (e) {
+        print('Error parsing created_at: $e');
+        year = DateTime.now().year.toString(); // fallback to current year
+      }
+    } else {
+      year = DateTime.now().year.toString(); // fallback to current year
+    }
+
+
+    return '$phid/$year';
+  }
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
@@ -405,6 +507,7 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Information
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -416,8 +519,154 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text('1. Information', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
+                  Text('1. Upload Discharge Documents', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
+                  DocumentUploadWidget(
+                    label: "Upload Discharge Documents",
+                    docType: "discharge_images",
+                    onFilesSelected: (files) {
+                      setState(() {
+                        _uploadedFiles['discharge_images'] = files;
+                      });
+                    },
+                    initialFiles: _uploadedFiles['discharge_images'],
+                  ),
+                  /*      const SizedBox(height: 16),
+
+                  LayoutBuilder(
+                      builder: (context,constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          children: [
+                            DatePickerInput(
+                              label: 'Follow Up Date',
+                              hintlabel: 'Follow Up Date',
+                              initialDate: _followUpDate,
+                              onDateSelected: (date) {
+                                setState(() => _followUpDate = date);
+                              },
+                            ),
+Container(),Container()
+                          ].map((child) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: child,
+                            );
+                          }).toList(),
+                        );
+                      }
+                  ),*/
+                  // Follow Up Date
+
+
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.Offwhitebackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.Containerbackground),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text('2. Information', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+
+                  LayoutBuilder(
+                      builder: (context, constraints) {
+                        double screenWidth = constraints.maxWidth;
+                        int itemsPerRow;
+
+                        if (screenWidth < 600) {
+                          itemsPerRow = 1; // mobile
+                        } else if (screenWidth < 1200) {
+                          itemsPerRow = 3; // tablet
+                        } else if (screenWidth < 1500) {
+                          itemsPerRow = 3; // small desktop
+                        } else {
+                          itemsPerRow = 4; // large desktop
+                        }
+
+                        double itemWidth = (screenWidth / itemsPerRow) - 16;
+
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: [
+                            FormInput(
+                              controller: _firstNameController,
+                              label: 'First Name',
+                              hintlabel: 'Enter first name',
+                              readOnly: true, // Read-only since it's from patient data
+
+                            ),
+                            FormInput(
+                              controller: _lastNameController,
+                              label: 'Last Name',
+                              hintlabel: 'Enter last name',
+                              readOnly: true,
+
+                            ),
+                            FormInput(
+                              controller: _phidController,
+                              label: 'PHID',
+                              hintlabel: 'Patient Hospital ID',
+                              readOnly: true,
+
+                            ),
+                            FormInput(
+                              controller: _ageController,
+                              label: 'Age',
+                              hintlabel: 'Enter age',
+                              readOnly: true,
+
+                            ),
+                            FormInput(
+                              controller: _genderController,
+                              label: 'Gender',
+                              hintlabel: 'Select gender',
+                              readOnly: true,
+
+                            ),
+                            FormInput(
+                              controller: _referralByController,
+                              label: 'Referral By',
+                              hintlabel: 'Referral source',
+                              readOnly: true,
+
+                            ),
+                          ].map((child) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: child,
+                            );
+                          }).toList(),
+                        );
+                      }
+                  ),
+
+
+            const SizedBox(height: 22),
                   LayoutBuilder(
                       builder: (context,constraints) {
                         double screenWidth = constraints.maxWidth;
@@ -448,6 +697,14 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
                               controller: _qualificationsController,
                               label: 'Qualifications',
                               hintlabel: 'Enter qualifications'
+                          ),
+                          FormInput(
+                            controller: _registrationNumberController,
+                            label: 'Medical Registration Number',
+                            hintlabel: 'Enter registration number',
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')), // Allow letters and numbers
+                            ],
                           ),
                           FormInput(
                               controller: _indoorRegNoController,
@@ -603,7 +860,7 @@ maxlength: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text('2. Past History', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
+                   Text('3. Past History', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                 //  isMobile ?
                   LayoutBuilder(
@@ -874,78 +1131,10 @@ maxlength: 4,
               ),
             ),
 
-          /*  const SizedBox(height: 32),
+
 
             // 3. Upload Documents
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.Offwhitebackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.Containerbackground),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Text('3. Upload Documents', style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  DocumentUploadWidget(
-                    label: "Upload Documents",
-                    docType: "discharge_images",
-                    onFilesSelected: (files) {
-                      setState(() {
-                        _uploadedFiles['discharge_images'] = files;
-                      });
-                    },
-                    initialFiles: _uploadedFiles['discharge_images'],
-                  ),
-                  const SizedBox(height: 16),
 
-                  LayoutBuilder(
-                      builder: (context,constraints) {
-                        double screenWidth = constraints.maxWidth;
-                        int itemsPerRow;
-
-                        if (screenWidth < 600) {
-                          itemsPerRow = 1; // mobile
-                        } else if (screenWidth < 1200) {
-                          itemsPerRow = 3; // tablet
-                        } else if (screenWidth < 1500) {
-                          itemsPerRow = 3; // small desktop
-                        } else {
-                          itemsPerRow = 4; // large desktop
-                        }
-
-                        double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
-                        return Wrap(
-                          spacing: 16,
-                          runSpacing: 12,
-                          children: [
-                            DatePickerInput(
-                              label: 'Follow Up Date',
-                              hintlabel: 'Follow Up Date',
-                              initialDate: _followUpDate,
-                              onDateSelected: (date) {
-                                setState(() => _followUpDate = date);
-                              },
-                            ),
-Container(),Container()
-                          ].map((child) {
-                            return SizedBox(
-                              width: itemWidth,
-                              child: child,
-                            );
-                          }).toList(),
-                        );
-                      }
-                  ),
-                  // Follow Up Date
-
-
-                ],
-              ),
-            ),*/
 
            // const SizedBox(height: 32),
 
@@ -1088,6 +1277,7 @@ Container(),Container()
     _treatmentGivenController.dispose();
     _hospitalizationCourseController.dispose();
     _testController.dispose();
+    _registrationNumberController.dispose();
     _positiveFindingsController.dispose();
     for (var inv in _investigations) {
       inv.dispose();

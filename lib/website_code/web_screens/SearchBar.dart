@@ -66,6 +66,7 @@ class _SearchbarState extends State<Searchbar> {
         'phone': patient['mobile_no'] ?? 'N/A',
         'lastVisit': _formatLastVisitDate(patient['date'] ?? ''),
         'gender': patient['gender'] ?? 1,
+        'created_at': patient['created_at'] ?? '', // Add this line
       };
     }).toList();
   }
@@ -189,6 +190,20 @@ class _SearchbarState extends State<Searchbar> {
         _showSearchResults = true;
       });
     });
+  }  String _formatPhid(String? phid, String? createdAt) {
+    if (phid == null || phid == 'N/A') return 'N/A';
+
+    String year = '';
+    if (createdAt != null) {
+      try {
+        final date = DateTime.parse(createdAt);
+        year = date.year.toString();
+      } catch (e) {
+        year = 'N/A';
+      }
+    }
+
+    return '$phid/$year';
   }
 
   @override
@@ -320,7 +335,7 @@ class _SearchbarState extends State<Searchbar> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('PHID: ${patient['phid'] ?? 'N/A'}'),
+                            Text('PHID: ${_formatPhid(patient['phid'], patient['created_at'])}'),
                             Text('Phone: ${patient['phone'] ?? 'N/A'}'),
                             if (patient['lastVisit'] != null)
                               Text('Last Visit: ${patient['lastVisit']}'),

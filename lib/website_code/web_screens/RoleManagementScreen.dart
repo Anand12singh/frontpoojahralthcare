@@ -1,14 +1,11 @@
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
 import '../../constants/ResponsiveUtils.dart';
 import '../../provider/PermissionService.dart';
 import '../../provider/Role_management_provider.dart';
 import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
-import '../../widgets/DropdownInput.dart';
 import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
@@ -96,6 +93,164 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<RoleManagementProvider>(context, listen: false);
+        final isMobile = ResponsiveUtils.isMobile(context);
+       if (isMobile) {
+  final provider = Provider.of<RoleManagementProvider>(context);
+
+  return Scaffold(
+    backgroundColor: const Color(0xFFEAF2FF),
+    appBar: AppBar(
+      title: const Text('Role Management'),
+    ),
+    drawer: Drawer(child: Sidebar()),
+    body: provider.isLoading
+        ? const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          )
+        : ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              // Role Form
+              Visibility(
+                visible: PermissionService().canAddRoles ||
+                    PermissionService().canEditRoles,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.hinttext.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Role Name",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      CustomTextField(
+                        controller: provider.roleController,
+                        hintText: 'Enter Role',
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Animatedbutton(
+                              shadowColor: Colors.transparent,
+                              title:
+                                  provider.isEditing ? 'Update' : 'Save',
+                              backgroundColor: AppColors.secondary,
+                              onPressed: () async {
+                                await provider.saveRole(context: context);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Animatedbutton(
+                              shadowColor: Colors.transparent,
+                              title: 'Cancel',
+                              backgroundColor: Colors.white,
+                              borderColor: AppColors.red,
+                              titlecolor: AppColors.red,
+                              onPressed: provider.cancelEditing,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Search
+              CustomTextField(
+                controller: provider.searchController,
+                hintText: "Search Roles",
+                prefixIcon: Icons.search_rounded,
+                onChanged: (v) {
+                  provider.fetchRoleData(context, showLoader: false);
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Role List
+              ...provider.roles.map((role) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.hinttext.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _toCamelCase(role.roleName ?? ''),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Created: ${_formatDate(role.createdAt.toString())}",
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (PermissionService().canEditRoles)
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined,
+                                  color: AppColors.primary),
+                              onPressed: () {
+                                Provider.of<RoleManagementProvider>(
+                                        context,
+                                        listen: false)
+                                    .startEditing(role);
+                              },
+                            ),
+                          if (PermissionService().canDeleteRoles)
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.red),
+                              onPressed: () {
+                                _showDeleteConfirmation(
+                                    context, role.id);
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+
+              const SizedBox(height: 16),
+
+              // Pagination
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: _buildPageButtons(),
+              // ),
+            ],
+          ),
+  );
+}
+
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
       body: Row(
@@ -161,9 +316,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
-                                          // Show Save/Update button when:
-                                          // 1. Can add roles AND not editing (new role)
-                                          // 2. Can edit roles AND is editing (existing role)
+                                       
                                           if ((PermissionService().canAddRoles && !provider.isEditing) ||
                                               (PermissionService().canEditRoles && provider.isEditing))
                                             SizedBox(
@@ -237,23 +390,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                           Row(
 
                                             children: [
-                                          /*    const Text('Show '),
-                                              const SizedBox(width: 8),
-                                              DropdownButton2<dynamic>(
-                                                dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
-                                                value: _rowsPerPage,
-                                                items: _rowsPerPageOptions.map((dynamic value) {
-                                                  return DropdownMenuItem<dynamic>(
-                                                    value: value,
-                                                    child: Text(value.toString()),
-                                                  );
-                                                }).toList(),
-                                                onChanged: (value) {
-                                                  setState(() {
-
-                                                  });
-                                                },
-                                              ),*/
+                                         
                                             ],
                                           ),
 
@@ -370,76 +507,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                   ),
                                 ),
 
-                        /*        Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Showing 1 to 20 of $_totalRecords records'),   Row(
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              // FIRST PAGE
-                                              IconButton(
-                                                icon: const Icon(Icons.first_page),
-                                                onPressed: (){}
-                                              ),
-                                              // PREVIOUS
-                                              IconButton(
-                                                icon: const Icon(Icons.chevron_left),
-                                                onPressed: (){}
-                                              ),
-
-                                              // PAGE NUMBERS
-                                              ..._buildPageButtons(),
-
-                                              // NEXT
-                                              IconButton(
-                                                icon: const Icon(Icons.chevron_right),
-                                                onPressed:(){}
-                                              ),
-
-                                              // LAST PAGE
-                                              IconButton(
-                                                icon: const Icon(Icons.last_page),
-                                                onPressed:() {
-
-                                                },
-                                              ),
-
-                                              const SizedBox(width: 16),
-
-                                              // Jump-to-page box
-                                              SizedBox(
-                                                width: 50,
-                                                height: 30,
-                                                child: TextFormField(
-                                                  initialValue:"1",
-                                                  textAlign: TextAlign.center,
-                                                  keyboardType: TextInputType.number,
-                                                  decoration: InputDecoration(
-                                                    isDense: true,
-                                                    contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                                                    border: OutlineInputBorder(),
-                                                  ),
-                                                  onFieldSubmitted: (value) {
-
-                                                  },
-                                                ),
-                                              ),
-
-                                              SizedBox(width: 8),
-
-                                              Text("of 10 pages"),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),*/
-
+                       
                               ],
                             ),
                           ),

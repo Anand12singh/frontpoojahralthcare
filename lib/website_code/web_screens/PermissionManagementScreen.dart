@@ -12,7 +12,6 @@ import '../../utils/colors.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/CustomCheckbox.dart';
 import '../../widgets/DropdownInput.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/showTopSnackBar.dart';
 import 'CustomSidebar.dart';
 import 'SearchBar.dart';
@@ -66,9 +65,21 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserManagementProvider>(context);
+   
     final roleProvider = Provider.of<RoleManagementProvider>(context);
     final permissionProvider = Provider.of<PermissoinManagementProvider>(context);
+    final isMobile = ResponsiveUtils.isMobile(context);
+
+    if (isMobile) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Permission Management'),
+        ),
+        body: const Center(
+          child: Text('Permission Management is not available on mobile devices. Please use a desktop or tablet for full functionality.'),
+        ),
+      );
+    }
 
 
     return Scaffold(
@@ -402,17 +413,6 @@ class _PermissionmanagementscreenState extends State<Permissionmanagementscreen>
                     ),
                   ),
 
-                  // Count display
-              /*    Expanded(
-                    flex: 1,
-                    child: Text(
-                      "$moduleSelectedCount / ${permissions.length}",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: ResponsiveUtils.fontSize(context, 14),
-                      ),
-                    ),
-                  ),*/
                 ],
               ),
             );

@@ -13,12 +13,13 @@ import '../../constants/base_url.dart';
 import '../../constants/global_variable.dart';
 import '../../models/DashboardResponseModel.dart';
 import '../../provider/PermissionService.dart';
-import '../../screens/olddpatientfom.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/api_services.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/AnimatedButton.dart';
 import '../../widgets/custom_text_field.dart';
 import 'CustomSidebar.dart';
+import 'FORMOBFollowUpCalendar.dart';
 import 'FollowUpCalendar.dart';
 import 'PatientDataTabsScreen.dart';
 import 'SearchBar.dart';
@@ -31,7 +32,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lastnameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -50,6 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchFollowUps(); // Fetch follow-ups on init
     fetchDashboardData(); // Fetch follow-ups on init
   }
+
   Future<void> fetchDashboardData() async {
     try {
       setState(() {
@@ -65,25 +66,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final data = json.decode(responseBody);
             if (data['status'] == true) {
               setState(() {
-                dashboard = DashboardResponse.fromJson(data); // Use already decoded data
+                dashboard = DashboardResponse.fromJson(
+                    data); // Use already decoded data
               });
             } else {
               // Handle API success but false status
               print('API returned false status: ${data['message']}');
-              _showErrorSnackbar(data['message'] ?? 'Failed to load dashboard data');
+              _showErrorSnackbar(
+                  data['message'] ?? 'Failed to load dashboard data');
             }
           } catch (e) {
-          
             _showErrorSnackbar('Error parsing dashboard data');
           }
         },
         onFailure: (error) {
-         
           _showErrorSnackbar('Failed to load dashboard data: $error');
         },
       );
     } catch (e) {
- 
       _showErrorSnackbar('Unexpected error loading dashboard');
     } finally {
       setState(() {
@@ -91,8 +91,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
   }
-
-
 
   Future<void> _fetchFollowUps() async {
     setState(() {
@@ -102,7 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       String? token = await AuthService.getToken();
       if (token == null || token.isEmpty) {
-        showTopRightToast(context, 'Authentication token not found. Please login again.');
+        showTopRightToast(
+            context, 'Authentication token not found. Please login again.');
         return;
       }
 
@@ -131,11 +130,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           });
         } else {
           print(responseData['message']);
-         // showTopRightToast(context, responseData['message'] ?? 'Failed to fetch follow-ups');
+          // showTopRightToast(context, responseData['message'] ?? 'Failed to fetch follow-ups');
         }
       } else {
         print('API Error: ${response.statusCode}');
-       // showTopRightToast(context, 'API Error: ${response.statusCode}');
+        // showTopRightToast(context, 'API Error: ${response.statusCode}');
       }
     } catch (e) {
       print('Error: ${e.toString()}');
@@ -148,10 +147,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _initializeData() async {
-
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
   }
+
   final List<Map<String, String>> bookmarksData = const [
     {
       'patientName': 'Gretchen O\'Kon, M/31',
@@ -193,8 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
 
-
- void _AddPatientsubmit() async {
+  void _AddPatientsubmit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
@@ -215,7 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
         'Cookie':
-        'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
+            'connect.sid=s%3AuEDYQI5oGhq5TztFK-F_ivqibtXxbspe.L65SiGdo4p4ZZY01Vnqd9tb4d64NFnzksLXndIK5zZA'
       };
 
       final response = await http.post(
@@ -237,7 +235,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _handleSuccessResponse(responseData);
         } else {
           _isLoading = false;
-          _showErrorSnackbar(responseData['message'] ?? 'Patient already exists.');
+          _showErrorSnackbar(
+              responseData['message'] ?? 'Patient already exists.');
         }
       } else {
         _isLoading = false;
@@ -258,9 +257,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
   }
-  void _showErrorSnackbar(String message) {
-    showTopRightToast(context,message,backgroundColor: Colors.red);
 
+  void _showErrorSnackbar(String message) {
+    showTopRightToast(context, message, backgroundColor: Colors.red);
   }
 
   ScreenSize get screenSize {
@@ -309,7 +308,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
     }
   }
-
 
   Future<void> _handleSuccessResponse(Map<String, dynamic> responseData) async {
     try {
@@ -370,9 +368,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               lastNameController: _lastnameController,
               phoneController: _phoneController,
               isLoading: _isLoading,
-
               onPressed: () {
-            /*    Navigator.push(
+                /*    Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => PatientDataTabsScreen(),
@@ -386,70 +383,610 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
     final dimensions = chartDimensions;
 
-   if (isMobile) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFF5F8FC),
-    drawer: const Sidebar(),
-
-    appBar: AppBar(
-      backgroundColor: AppColors.primary,
-      elevation: 3,
-      titleSpacing: 0,
-      iconTheme: const IconThemeData(color: Colors.white),
-      title: const Text(
-        'Dashboard',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 18,
-        ),
-      ),
-    ),
-
-    body: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            const SizedBox(height: 6),
-
-            // HEADER CARD
-            Text(
-              "Welcome Back,\nDr. Pooja",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    if (isMobile) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F8FC),
+        drawer: const Sidebar(),
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 3,
+          titleSpacing: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text(
+            'Dashboard',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
             ),
-            const SizedBox(height: 16),
-
-            // Your existing dashboard widgets safely go here
-            Column(
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Your original dashboard data/widgets come here.
+                const SizedBox(height: 6),
+
+                // HEADER CARD
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Welcome Back,\nDr. Pooja",
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    Column(
+                      children: [
+                        Visibility(
+                          visible: PermissionService().canAddPatients,
+                          child: Container(
+                            width: ResponsiveUtils.scaleWidth(context, 160),
+                            child: Animatedbutton(
+                              title: '+ Add Patient',
+                              isLoading: _isLoading,
+                              onPressed: () {
+                                _showAddPatientModal(context);
+                              },
+                              backgroundColor: AppColors.secondary,
+                              shadowColor: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10)
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 5),
+                Text(
+                  "Here's what's happening with your patients today.",
+                  style: TextStyle(fontSize: 14, color: AppColors.greycolor),
+                ),
+
+                // Your existing dashboard widgets safely go here
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 20),
+                    Container(
+                      // height: 140,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                    "Total Operations",
+                                    dashboard?.data.totalOperations ?? "0",
+                                    'assets/Dashboardicon1.png'),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildStatCard("Today's Follow Ups",
+                                    "42", 'assets/Dashboardicon5.png'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                // width: 180,
+                                child: _buildStatCard("Total Patients", "122",
+                                    'assets/Dashboardicon4.png'),
+                              ),
+                               const SizedBox(width: 16),
+                               Expanded(
+                                // width: 180,
+                                child: _buildStatCard("Total Patients", "122",
+                                    'assets/Dashboardicon4.png'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Container(
+                      // padding: const EdgeInsets.all(16.0),
+                      // margin: const EdgeInsets.only(left: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.hinttext.withOpacity(0.2)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Quick Actions",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Replace the old content with the calendar
+                            SingleChildScrollView(
+                              child: Formobfollowupcalendar(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                   
+                    SizedBox(height: 10),
+                    Text(
+                      "Total Patients Operated - ${dashboard?.data.totalOperations ?? 0}",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: AppColors.hinttext.withOpacity(0.2)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: Offset(2, 4),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Location-wise Operations",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    /// Pie Chart
+                                    Expanded(
+                                      flex: 5,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          SizedBox(
+                                            height: dimensions.containerHeight,
+                                            child: dashboard != null
+                                                ? PieChart(
+                                                    PieChartData(
+                                                      sectionsSpace: 0,
+                                                      centerSpaceRadius:
+                                                          dimensions
+                                                              .centerSpaceRadius,
+                                                      pieTouchData:
+                                                          PieTouchData(
+                                                        touchCallback:
+                                                            (FlTouchEvent event,
+                                                                pieTouchResponse) {
+                                                          setState(() {
+                                                            if (event
+                                                                    is FlTapUpEvent ||
+                                                                event
+                                                                    is FlPanEndEvent) {
+                                                              _touchedIndex =
+                                                                  -1;
+                                                            } else if (event
+                                                                    is FlLongPressStart ||
+                                                                event
+                                                                    is FlPanStartEvent) {
+                                                              if (pieTouchResponse !=
+                                                                      null &&
+                                                                  pieTouchResponse
+                                                                          .touchedSection !=
+                                                                      null) {
+                                                                _touchedIndex =
+                                                                    pieTouchResponse
+                                                                        .touchedSection!
+                                                                        .touchedSectionIndex;
+                                                              }
+                                                            }
+                                                          });
+                                                        },
+                                                      ),
+                                                      sections: List.generate(
+                                                        dashboard!
+                                                            .data
+                                                            .surgeryByLocation
+                                                            .length,
+                                                        (i) {
+                                                          final loc = dashboard!
+                                                              .data
+                                                              .surgeryByLocation[i];
+                                                          final isTouched = i ==
+                                                              _touchedIndex;
+                                                          final double radius =
+                                                              isTouched
+                                                                  ? dimensions
+                                                                      .touchedRadius
+                                                                  : dimensions
+                                                                      .normalRadius;
+                                                          final value = loc
+                                                              .totalNumber
+                                                              .toDouble();
+                                                          final title = value
+                                                              .toInt()
+                                                              .toString();
+
+                                                          // assign colors dynamically
+                                                          final colors = [
+                                                            [
+                                                              Colors.orange
+                                                                  .shade200,
+                                                              Colors.orange
+                                                                  .shade700
+                                                            ],
+                                                            [
+                                                              Colors.blue
+                                                                  .shade200,
+                                                              Colors
+                                                                  .blue.shade700
+                                                            ],
+                                                            [
+                                                              Colors.green
+                                                                  .shade200,
+                                                              Colors.green
+                                                                  .shade700
+                                                            ],
+                                                            [
+                                                              Colors.purple
+                                                                  .shade200,
+                                                              Colors.purple
+                                                                  .shade700
+                                                            ],
+                                                            [
+                                                              Colors
+                                                                  .red.shade200,
+                                                              Colors
+                                                                  .red.shade700
+                                                            ],
+                                                            [
+                                                              Colors.teal
+                                                                  .shade200,
+                                                              Colors
+                                                                  .teal.shade700
+                                                            ],
+                                                            [
+                                                              Colors.pink
+                                                                  .shade200,
+                                                              Colors
+                                                                  .pink.shade700
+                                                            ],
+                                                            [
+                                                              Colors.indigo
+                                                                  .shade200,
+                                                              Colors.indigo
+                                                                  .shade700
+                                                            ],
+                                                            [
+                                                              Colors.cyan
+                                                                  .shade200,
+                                                              Colors
+                                                                  .cyan.shade700
+                                                            ],
+                                                            [
+                                                              Colors.amber
+                                                                  .shade200,
+                                                              Colors.amber
+                                                                  .shade700
+                                                            ],
+                                                          ];
+
+                                                          final colorPair =
+                                                              colors[i %
+                                                                  colors
+                                                                      .length];
+
+                                                          return PieChartSectionData(
+                                                            value: value,
+                                                            title: title,
+                                                            radius: radius,
+                                                            gradient:
+                                                                LinearGradient(
+                                                              colors: colorPair,
+                                                              begin: Alignment
+                                                                  .topLeft,
+                                                              end: Alignment
+                                                                  .bottomRight,
+                                                            ),
+                                                            borderSide: isTouched
+                                                                ? BorderSide(
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    width: 1)
+                                                                : BorderSide(
+                                                                    color: Colors
+                                                                        .transparent,
+                                                                    width: 0),
+                                                            titleStyle:
+                                                                TextStyle(
+                                                              fontSize: dimensions
+                                                                  .titleFontSize,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Center(
+                                                    child:
+                                                        CircularProgressIndicator()),
+                                          )
+                                        ],
+                                      ),
+                                    ),
+
+                                    /// Legenddashboard != null
+                                    //
+                                    dashboard != null
+                                        ? Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 20),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: List.generate(
+                                                  dashboard!.data
+                                                      .surgeryByLocation.length,
+                                                  (i) {
+                                                    final loc = dashboard!.data
+                                                        .surgeryByLocation[i];
+                                                    final colors = [
+                                                      Colors.orange,
+                                                      Colors.blue,
+                                                      Colors.green,
+                                                      Colors.purple,
+                                                      Colors.red,
+                                                      Colors.teal,
+                                                      Colors.pink,
+                                                      Colors.indigo,
+                                                      Colors.cyan,
+                                                      Colors.amber,
+                                                    ];
+                                                    return buildLegendItem(
+                                                        colors[
+                                                            i % colors.length],
+                                                        loc.location,
+                                                        dimensions
+                                                            .titleFontSize);
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Center(
+                                            child: CircularProgressIndicator()),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: AppColors.hinttext.withOpacity(0.2)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: Offset(2, 4),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Surgery Type Overview",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  height: dimensions.containerHeight,
+                                  child: dashboard != null
+                                      ? BarChart(
+                                          BarChartData(
+                                            alignment:
+                                                BarChartAlignment.spaceEvenly,
+                                            maxY: 1000,
+                                            barTouchData: BarTouchData(
+                                              enabled: true,
+                                              touchTooltipData:
+                                                  BarTouchTooltipData(
+                                                tooltipBgColor: Colors.white,
+                                                tooltipPadding:
+                                                    const EdgeInsets.all(8),
+                                                tooltipMargin: 8,
+                                                getTooltipItem: (group,
+                                                    groupIndex, rod, rodIndex) {
+                                                  return BarTooltipItem(
+                                                    '${rod.toY.toInt()}',
+                                                    const TextStyle(
+                                                      color: Colors.black,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            titlesData: FlTitlesData(
+                                              leftTitles: AxisTitles(
+                                                axisNameWidget: Container(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    bottom: 5,
+                                                  ), // Add space between title and axis labels
+                                                  child: Text(
+                                                    'Number of Patients',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ),
+                                                sideTitles: SideTitles(
+                                                  showTitles: true,
+                                                  interval: 200,
+                                                  getTitlesWidget:
+                                                      (value, meta) {
+                                                    return Text(
+                                                        value
+                                                            .toInt()
+                                                            .toString(),
+                                                        style: TextStyle(
+                                                            fontSize: 10));
+                                                  },
+                                                  reservedSize:
+                                                      30, // Increase reserved size to accommodate the title
+                                                ),
+                                              ),
+                                              bottomTitles: AxisTitles(
+                                                axisNameWidget: Text(
+                                                  'Surgery Types',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black,
+                                                  ),
+                                                ),
+                                                sideTitles: SideTitles(
+                                                  showTitles: true,
+                                                  getTitlesWidget:
+                                                      (value, meta) {
+                                                    final types = dashboard!
+                                                        .data.surgeryByType;
+                                                    if (value.toInt() <
+                                                        types.length) {
+                                                      return Text(
+                                                        types[value.toInt()]
+                                                            .name,
+                                                        style: TextStyle(
+                                                            fontSize: dimensions
+                                                                .smallFontSize),
+                                                      );
+                                                    }
+                                                    return const Text("");
+                                                  },
+                                                  reservedSize: 30,
+                                                ),
+                                              ),
+                                              rightTitles: AxisTitles(
+                                                  sideTitles: SideTitles(
+                                                      showTitles: false)),
+                                              topTitles: AxisTitles(
+                                                  sideTitles: SideTitles(
+                                                      showTitles: false)),
+                                            ),
+                                            gridData: FlGridData(show: true),
+                                            borderData:
+                                                FlBorderData(show: false),
+                                            barGroups: List.generate(
+                                              dashboard!
+                                                  .data.surgeryByType.length,
+                                              (i) {
+                                                final type = dashboard!
+                                                    .data.surgeryByType[i];
+                                                return BarChartGroupData(
+                                                  x: i,
+                                                  barRods: [
+                                                    BarChartRodData(
+                                                      toY: type.totalCount
+                                                          .toDouble(),
+                                                      width: 50,
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .only(
+                                                        topLeft:
+                                                            Radius.circular(8),
+                                                        topRight:
+                                                            Radius.circular(8),
+                                                      ),
+                                                      color:
+                                                          AppColors.secondary,
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: CircularProgressIndicator()),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
-}
+      );
+    }
 
-   
-   
-   
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FC),
       body: Row(
         children: [
-
           Sidebar(),
           Expanded(
             child: Stack(
@@ -461,89 +998,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        isMobile ?   Row(
-
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Welcome Back,\nDr. Pooja",
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "Here's what's happening\nwith your patients today.",
-                                  style: TextStyle(fontSize: 16, color: AppColors.greycolor),
-                                ),
-                                SizedBox(height: 20),
-                              ],
-                            ),
-
-                            Container(
-                              width:ResponsiveUtils.scaleWidth(context, 160),
-
-                              child:Animatedbutton(
-                                title: '+ Add Patient',
-                                isLoading: _isLoading,
-                                onPressed: () {
-                                  _showAddPatientModal(context);
-                                },
-                                backgroundColor: AppColors.secondary,
-                                shadowColor: AppColors.primary,
+                        isMobile
+                            ? Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Welcome Back,\nDr. Pooja",
+                                        style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        "Here's what's happening\nwith your patients today.",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.greycolor),
+                                      ),
+                                      SizedBox(height: 20),
+                                    ],
+                                  ),
+                                  Container(
+                                    width: ResponsiveUtils.scaleWidth(
+                                        context, 160),
+                                    child: Animatedbutton(
+                                      title: '+ Add Patient',
+                                      isLoading: _isLoading,
+                                      onPressed: () {
+                                        _showAddPatientModal(context);
+                                      },
+                                      backgroundColor: AppColors.secondary,
+                                      shadowColor: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Welcome Back, Dr. Ramesh Punjani",
+                                        style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        "Here's what's happening with your patients today.",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            color: AppColors.greycolor),
+                                      ),
+                                      SizedBox(height: 20),
+                                    ],
+                                  ),
+                                  Visibility(
+                                    visible: PermissionService().canAddPatients,
+                                    child: Container(
+                                      width: ResponsiveUtils.scaleWidth(
+                                          context, 160),
+                                      child: Animatedbutton(
+                                        title: '+ Add Patient',
+                                        isLoading: _isLoading,
+                                        onPressed: () {
+                                          _showAddPatientModal(context);
+                                        },
+                                        backgroundColor: AppColors.secondary,
+                                        shadowColor: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ):
-                         Row(
-                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                           children: [
-                             Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Welcome Back, Dr. Ramesh Punjani",
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "Here's what's happening with your patients today.",
-                                  style: TextStyle(fontSize: 16, color: AppColors.greycolor),
-                                ),
-                                SizedBox(height: 20),
-                              ],
-                             ),
-
-                             Visibility(
-                               visible: PermissionService().canAddPatients,
-                               child: Container(
-                                 width:ResponsiveUtils.scaleWidth(context, 160),
-
-                                 child:Animatedbutton(
-                                   title: '+ Add Patient',
-                                   isLoading: _isLoading,
-                                   onPressed: () {
-                                     _showAddPatientModal(context);
-                                   },
-                                   backgroundColor: AppColors.secondary,
-                                   shadowColor: AppColors.primary,
-                                 ),
-                               ),
-                             ),
-                           ],
-                         ),
-
                         Expanded(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-
                               Expanded(
                                 flex: 7,
                                 child: SingleChildScrollView(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       // Stats Cards - Horizontal Scroll
 
@@ -555,30 +1101,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             Expanded(
                                               child: _buildStatCard(
                                                   "Total Operations",
-                                                  dashboard?.data.totalOperations ?? "0",
-                                                  'assets/Dashboardicon1.png'
-                                              ),
+                                                  dashboard?.data
+                                                          .totalOperations ??
+                                                      "0",
+                                                  'assets/Dashboardicon1.png'),
                                             ),
                                             const SizedBox(width: 16),
                                             Expanded(
                                               child: _buildStatCard(
                                                   "Today's Follow Ups",
                                                   "42",
-                                                  'assets/Dashboardicon5.png'
-                                              ),
+                                                  'assets/Dashboardicon5.png'),
                                             ),
                                             const SizedBox(width: 16),
                                             Expanded(
                                               child: _buildStatCard(
                                                   "Total Patients",
                                                   "122",
-                                                  'assets/Dashboardicon4.png'
-                                              ),
+                                                  'assets/Dashboardicon4.png'),
                                             ),
                                           ],
                                         ),
                                       ),
-                                  /*    SizedBox(
+                                      /*    SizedBox(
                                         height: 120,
                                         child: ListView(
                                           scrollDirection: Axis.horizontal,
@@ -590,18 +1135,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),  const SizedBox(width: 16),
                                             _buildStatCard("Todays Follow Ups", "42", 'assets/Dashboardicon5.png'),
                                             const SizedBox(width: 16),
-                                          *//*  _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
+                                          */ /*  _buildStatCard("New Patients", "210", 'assets/Dashboardicon4.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Pending Reports", "12", 'assets/Dashboardicon3.png'),
                                             const SizedBox(width: 16),
                                             _buildStatCard("Total Appointment", "879", 'assets/Dashboardicon2.png'),
-                                            const SizedBox(width: 16),*//*
+                                            const SizedBox(width: 16),*/ /*
                                             _buildStatCard("Total Patients", "1222", 'assets/Dashboardicon4.png'),
                                           ],
                                         ),
                                       ),
 */
-                                 /*     const SizedBox(height: 20),
+                                      /*     const SizedBox(height: 20),
 
                                       // Bookmarks Section
                                       Container(
@@ -684,327 +1229,469 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       const SizedBox(height: 20),
 
                                       // Pie Chart + Legend Section
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: Offset(2, 4),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: AppColors.hinttext
+                                                  .withOpacity(0.2)),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.05),
+                                              blurRadius: 8,
+                                              offset: Offset(2, 4),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                         Text(
-                                          "Total Patients Operated - ${dashboard?.data.totalOperations ??0}",
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Row(
-                                          spacing: 10,
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            /// ----------- PIE CHART (Locations) ----------
-                                            Expanded(
-                                              flex: 5,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.05),
-                                                      blurRadius: 8,
-                                                      offset: Offset(2, 4),
+                                            Text(
+                                              "Total Patients Operated - ${dashboard?.data.totalOperations ?? 0}",
+                                              style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            Row(
+                                              spacing: 10,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                /// ----------- PIE CHART (Locations) ----------
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      border: Border.all(
+                                                          color: AppColors
+                                                              .hinttext
+                                                              .withOpacity(
+                                                                  0.2)),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black
+                                                              .withOpacity(
+                                                                  0.05),
+                                                          blurRadius: 8,
+                                                          offset: Offset(2, 4),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
-                                                ),
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    const Text(
-                                                      "Location-wise Operations",
-                                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                                    ),
-                                                    const SizedBox(height: 20),
-                                                    Row(
-                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
-                                                        /// Pie Chart
-                                                        Expanded(
-                                                          flex: 5,
-                                                          child: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                       
-                                                              SizedBox(
-                                                                height: dimensions.containerHeight,
-                                                                child: dashboard != null
-                                                                    ? PieChart(
-                                                                  PieChartData(
-                                                                    sectionsSpace: 0,
-                                                                    centerSpaceRadius: dimensions.centerSpaceRadius,
-                                                                    pieTouchData: PieTouchData(
-                                                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                                                        setState(() {
-                                                                          if (event is FlTapUpEvent || event is FlPanEndEvent) {
-                                                                            _touchedIndex = -1;
-                                                                          } else if (event is FlLongPressStart || event is FlPanStartEvent) {
-                                                                            if (pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
-                                                                              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                                                            }
-                                                                          }
-                                                                        });
-                                                                      },
-                                                                    ),
-                                                                    sections: List.generate(
-                                                                      dashboard!.data.surgeryByLocation.length,
+                                                        const Text(
+                                                          "Location-wise Operations",
+                                                          style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 20),
+                                                        Row(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            /// Pie Chart
+                                                            Expanded(
+                                                              flex: 5,
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                children: [
+                                                                  SizedBox(
+                                                                    height: dimensions
+                                                                        .containerHeight,
+                                                                    child: dashboard !=
+                                                                            null
+                                                                        ? PieChart(
+                                                                            PieChartData(
+                                                                              sectionsSpace: 0,
+                                                                              centerSpaceRadius: dimensions.centerSpaceRadius,
+                                                                              pieTouchData: PieTouchData(
+                                                                                touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                                                                  setState(() {
+                                                                                    if (event is FlTapUpEvent || event is FlPanEndEvent) {
+                                                                                      _touchedIndex = -1;
+                                                                                    } else if (event is FlLongPressStart || event is FlPanStartEvent) {
+                                                                                      if (pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
+                                                                                        _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                                                                      }
+                                                                                    }
+                                                                                  });
+                                                                                },
+                                                                              ),
+                                                                              sections: List.generate(
+                                                                                dashboard!.data.surgeryByLocation.length,
+                                                                                (i) {
+                                                                                  final loc = dashboard!.data.surgeryByLocation[i];
+                                                                                  final isTouched = i == _touchedIndex;
+                                                                                  final double radius = isTouched ? dimensions.touchedRadius : dimensions.normalRadius;
+                                                                                  final value = loc.totalNumber.toDouble();
+                                                                                  final title = value.toInt().toString();
+
+                                                                                  // assign colors dynamically
+                                                                                  final colors = [
+                                                                                    [
+                                                                                      Colors.orange.shade200,
+                                                                                      Colors.orange.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.blue.shade200,
+                                                                                      Colors.blue.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.green.shade200,
+                                                                                      Colors.green.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.purple.shade200,
+                                                                                      Colors.purple.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.red.shade200,
+                                                                                      Colors.red.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.teal.shade200,
+                                                                                      Colors.teal.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.pink.shade200,
+                                                                                      Colors.pink.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.indigo.shade200,
+                                                                                      Colors.indigo.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.cyan.shade200,
+                                                                                      Colors.cyan.shade700
+                                                                                    ],
+                                                                                    [
+                                                                                      Colors.amber.shade200,
+                                                                                      Colors.amber.shade700
+                                                                                    ],
+                                                                                  ];
+
+                                                                                  final colorPair = colors[i % colors.length];
+
+                                                                                  return PieChartSectionData(
+                                                                                    value: value,
+                                                                                    title: title,
+                                                                                    radius: radius,
+                                                                                    gradient: LinearGradient(
+                                                                                      colors: colorPair,
+                                                                                      begin: Alignment.topLeft,
+                                                                                      end: Alignment.bottomRight,
+                                                                                    ),
+                                                                                    borderSide: isTouched ? BorderSide(color: AppColors.primary, width: 1) : BorderSide(color: Colors.transparent, width: 0),
+                                                                                    titleStyle: TextStyle(
+                                                                                      fontSize: dimensions.titleFontSize,
+                                                                                      fontWeight: FontWeight.bold,
+                                                                                      color: Colors.white,
+                                                                                    ),
+                                                                                  );
+                                                                                },
+                                                                              ),
+                                                                            ),
+                                                                          )
+                                                                        : Center(
+                                                                            child:
+                                                                                CircularProgressIndicator()),
+                                                                  )
+                                                                ],
+                                                              ),
+                                                            ),
+
+                                                            /// Legenddashboard != null
+                                                            //
+                                                            dashboard != null
+                                                                ? Center(
+                                                                    child:
+                                                                        Padding(
+                                                                      padding: const EdgeInsets
+                                                                          .only(
+                                                                          left:
+                                                                              20),
+                                                                      child:
+                                                                          Column(
+                                                                        crossAxisAlignment:
+                                                                            CrossAxisAlignment.start,
+                                                                        children:
+                                                                            List.generate(
+                                                                          dashboard!
+                                                                              .data
+                                                                              .surgeryByLocation
+                                                                              .length,
                                                                           (i) {
-                                                                        final loc = dashboard!.data.surgeryByLocation[i];
-                                                                        final isTouched = i == _touchedIndex;
-                                                                        final double radius = isTouched
-                                                                            ? dimensions.touchedRadius
-                                                                            : dimensions.normalRadius;
-                                                                        final value = loc.totalNumber.toDouble();
-                                                                        final title = value.toInt().toString();
-                                                    
-                                                                        // assign colors dynamically
-                                                                        final colors = [
-                                                                          [Colors.orange.shade200, Colors.orange.shade700],
-                                                                          [Colors.blue.shade200, Colors.blue.shade700],
-                                                                          [Colors.green.shade200, Colors.green.shade700],
-                                                                          [Colors.purple.shade200, Colors.purple.shade700],
-                                                                          [Colors.red.shade200, Colors.red.shade700],
-                                                                          [Colors.teal.shade200, Colors.teal.shade700],
-                                                                          [Colors.pink.shade200, Colors.pink.shade700],
-                                                                          [Colors.indigo.shade200, Colors.indigo.shade700],
-                                                                          [Colors.cyan.shade200, Colors.cyan.shade700],
-                                                                          [Colors.amber.shade200, Colors.amber.shade700],
-                                                    
-                                                                        ];
-                                                    
-                                                                        final colorPair = colors[i % colors.length];
-                                                    
-                                                                        return PieChartSectionData(
-                                                                          value: value,
-                                                                          title: title,
-                                                                          radius: radius,
-                                                                          gradient: LinearGradient(
-                                                                            colors: colorPair,
-                                                                            begin: Alignment.topLeft,
-                                                                            end: Alignment.bottomRight,
+                                                                            final loc =
+                                                                                dashboard!.data.surgeryByLocation[i];
+                                                                            final colors =
+                                                                                [
+                                                                              Colors.orange,
+                                                                              Colors.blue,
+                                                                              Colors.green,
+                                                                              Colors.purple,
+                                                                              Colors.red,
+                                                                              Colors.teal,
+                                                                              Colors.pink,
+                                                                              Colors.indigo,
+                                                                              Colors.cyan,
+                                                                              Colors.amber,
+                                                                            ];
+                                                                            return buildLegendItem(
+                                                                                colors[i % colors.length],
+                                                                                loc.location,
+                                                                                dimensions.titleFontSize);
+                                                                          },
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  )
+                                                                : Center(
+                                                                    child:
+                                                                        CircularProgressIndicator()),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                /// ----------- BAR CHART (Types) ----------
+                                                Expanded(
+                                                  flex: 5,
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      border: Border.all(
+                                                          color: AppColors
+                                                              .hinttext
+                                                              .withOpacity(
+                                                                  0.2)),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black
+                                                              .withOpacity(
+                                                                  0.05),
+                                                          blurRadius: 8,
+                                                          offset: Offset(2, 4),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const Text(
+                                                          "Surgery Type Overview",
+                                                          style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 20),
+                                                        SizedBox(
+                                                          height: dimensions
+                                                              .containerHeight,
+                                                          child: dashboard !=
+                                                                  null
+                                                              ? BarChart(
+                                                                  BarChartData(
+                                                                    alignment:
+                                                                        BarChartAlignment
+                                                                            .spaceEvenly,
+                                                                    maxY: 1000,
+                                                                    barTouchData:
+                                                                        BarTouchData(
+                                                                      enabled:
+                                                                          true,
+                                                                      touchTooltipData:
+                                                                          BarTouchTooltipData(
+                                                                        tooltipBgColor:
+                                                                            Colors.white,
+                                                                        tooltipPadding: const EdgeInsets
+                                                                            .all(
+                                                                            8),
+                                                                        tooltipMargin:
+                                                                            8,
+                                                                        getTooltipItem: (group,
+                                                                            groupIndex,
+                                                                            rod,
+                                                                            rodIndex) {
+                                                                          return BarTooltipItem(
+                                                                            '${rod.toY.toInt()}',
+                                                                            const TextStyle(
+                                                                              color: Colors.black,
+                                                                              fontWeight: FontWeight.bold,
+                                                                              fontSize: 14,
+                                                                            ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                    ),
+                                                                    titlesData:
+                                                                        FlTitlesData(
+                                                                      leftTitles:
+                                                                          AxisTitles(
+                                                                        axisNameWidget:
+                                                                            Container(
+                                                                          padding:
+                                                                              const EdgeInsets.only(
+                                                                            bottom:
+                                                                                5,
+                                                                          ), // Add space between title and axis labels
+                                                                          child:
+                                                                              Text(
+                                                                            'Number of Patients',
+                                                                            style:
+                                                                                TextStyle(
+                                                                              fontSize: 10,
+                                                                              fontWeight: FontWeight.bold,
+                                                                              color: Colors.black,
+                                                                            ),
                                                                           ),
-                                                                          borderSide: isTouched
-                                                                              ? BorderSide(color: AppColors.primary, width: 1)
-                                                                              : BorderSide(color: Colors.transparent, width: 0),
-                                                                          titleStyle: TextStyle(
-                                                                            fontSize: dimensions.titleFontSize,
-                                                                            fontWeight: FontWeight.bold,
-                                                                            color: Colors.white,
+                                                                        ),
+                                                                        sideTitles:
+                                                                            SideTitles(
+                                                                          showTitles:
+                                                                              true,
+                                                                          interval:
+                                                                              200,
+                                                                          getTitlesWidget:
+                                                                              (value, meta) {
+                                                                            return Text(value.toInt().toString(),
+                                                                                style: TextStyle(fontSize: 10));
+                                                                          },
+                                                                          reservedSize:
+                                                                              30, // Increase reserved size to accommodate the title
+                                                                        ),
+                                                                      ),
+                                                                      bottomTitles:
+                                                                          AxisTitles(
+                                                                        axisNameWidget:
+                                                                            Text(
+                                                                          'Surgery Types',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                10,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color:
+                                                                                Colors.black,
                                                                           ),
+                                                                        ),
+                                                                        sideTitles:
+                                                                            SideTitles(
+                                                                          showTitles:
+                                                                              true,
+                                                                          getTitlesWidget:
+                                                                              (value, meta) {
+                                                                            final types =
+                                                                                dashboard!.data.surgeryByType;
+                                                                            if (value.toInt() <
+                                                                                types.length) {
+                                                                              return Text(
+                                                                                types[value.toInt()].name,
+                                                                                style: TextStyle(fontSize: dimensions.smallFontSize),
+                                                                              );
+                                                                            }
+                                                                            return const Text("");
+                                                                          },
+                                                                          reservedSize:
+                                                                              30,
+                                                                        ),
+                                                                      ),
+                                                                      rightTitles:
+                                                                          AxisTitles(
+                                                                              sideTitles: SideTitles(showTitles: false)),
+                                                                      topTitles:
+                                                                          AxisTitles(
+                                                                              sideTitles: SideTitles(showTitles: false)),
+                                                                    ),
+                                                                    gridData:
+                                                                        FlGridData(
+                                                                            show:
+                                                                                true),
+                                                                    borderData:
+                                                                        FlBorderData(
+                                                                            show:
+                                                                                false),
+                                                                    barGroups: List
+                                                                        .generate(
+                                                                      dashboard!
+                                                                          .data
+                                                                          .surgeryByType
+                                                                          .length,
+                                                                      (i) {
+                                                                        final type = dashboard!
+                                                                            .data
+                                                                            .surgeryByType[i];
+                                                                        return BarChartGroupData(
+                                                                          x: i,
+                                                                          barRods: [
+                                                                            BarChartRodData(
+                                                                              toY: type.totalCount.toDouble(),
+                                                                              width: 50,
+                                                                              borderRadius: const BorderRadius.only(
+                                                                                topLeft: Radius.circular(8),
+                                                                                topRight: Radius.circular(8),
+                                                                              ),
+                                                                              color: AppColors.secondary,
+                                                                            ),
+                                                                          ],
                                                                         );
                                                                       },
                                                                     ),
                                                                   ),
                                                                 )
-                                                                    : Center(child: CircularProgressIndicator()),
-                                                              )
-                                                            ],
-                                                          ),
+                                                              : Center(
+                                                                  child:
+                                                                      CircularProgressIndicator()),
                                                         ),
-                                                    
-                                                        /// Legenddashboard != null
-                                                        //
-                                                        dashboard != null
-                                                            ? Center(
-                                                          child: Padding(
-                                                            padding: const EdgeInsets.only(left: 20),
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: List.generate(
-                                                                dashboard!.data.surgeryByLocation.length,
-                                                                    (i) {
-                                                                  final loc = dashboard!.data.surgeryByLocation[i];
-                                                                  final colors = [
-                                                                    Colors.orange,
-                                                                    Colors.blue,
-                                                                    Colors.green,
-                                                                    Colors.purple,
-                                                                    Colors.red,
-                                                                    Colors.teal,
-                                                                    Colors.pink,
-                                                                    Colors.indigo,
-                                                                    Colors.cyan,
-                                                                    Colors.amber,
-                                                                  ];
-                                                                  return buildLegendItem(colors[i % colors.length], loc.location,dimensions.titleFontSize);
-                                                                },
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        )
-                                                            : Center(child: CircularProgressIndicator()),
                                                       ],
                                                     ),
-                                                  ],
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-
-                                            /// ----------- BAR CHART (Types) ----------
-                                            Expanded(
-                                              flex: 5,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.05),
-                                                      blurRadius: 8,
-                                                      offset: Offset(2, 4),
-                                                    ),
-                                                  ],
-                                                ),
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    const Text(
-                                                      "Surgery Type Overview",
-                                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                                    ),
-                                                    const SizedBox(height: 20),
-                                                    SizedBox(
-                                                      height: dimensions.containerHeight,
-                                             
-                                                      child:dashboard != null
-                                                          ?  BarChart(
-                                                        BarChartData(
-                                                          alignment: BarChartAlignment.spaceEvenly,
-                                                          maxY: 1000,
-
-
-                                                          barTouchData: BarTouchData(
-                                                            enabled: true,
-                                                            touchTooltipData: BarTouchTooltipData(
-                                                              tooltipBgColor: Colors.white,
-                                                              tooltipPadding: const EdgeInsets.all(8),
-                                                              tooltipMargin: 8,
-                                                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                                                return BarTooltipItem(
-                                                                  '${rod.toY.toInt()}',
-                                                                  const TextStyle(
-                                                                    color: Colors.black,
-                                                                    fontWeight: FontWeight.bold,
-                                                                    fontSize: 14,
-                                                                  ),
-                                                                );
-                                                              },
-                                                            ),
-                                                          ),
-                                                          titlesData: FlTitlesData(
-
-                                                            leftTitles: AxisTitles(
-                                                              
-
-                                                              
-                                                              axisNameWidget: Container(
-                                                                padding: const EdgeInsets.only(bottom:5,), // Add space between title and axis labels
-                                                                child: Text(
-                                                                  'Number of Patients',
-                                                                  style: TextStyle(
-                                                                    fontSize: 10  ,
-                                                                    fontWeight: FontWeight.bold,
-                                                                    color: Colors.black,
-                                                                  ),
-                                                                ),
-                                                              ),
-
-                                                              sideTitles: SideTitles(
-                                                                showTitles: true,
-                                                                interval: 200,
-                                                                getTitlesWidget: (value, meta) {
-                                                                  return Text(value.toInt().toString(), style: TextStyle(fontSize: 10));
-                                                                },
-                                                                reservedSize: 30, // Increase reserved size to accommodate the title
-                                                              ),
-                                                            ),
-                                                            bottomTitles: AxisTitles(
-                                                              axisNameWidget: Text(
-                                                                'Surgery Types',
-                                                                style: TextStyle(
-                                                                  fontSize: 10,
-                                                                  fontWeight: FontWeight.bold,
-                                                                  color: Colors.black,
-                                                                ),
-                                                              ),
-                                                              sideTitles: SideTitles(
-                                                                showTitles: true,
-                                                                getTitlesWidget: (value, meta) {
-                                                                  final types = dashboard!.data.surgeryByType;
-                                                                  if (value.toInt() < types.length) {
-                                                                    return Text(types[value.toInt()].name,style: TextStyle(fontSize: dimensions.smallFontSize),);
-                                                                  }
-                                                                  return const Text("");
-                                                                },
-                                                                reservedSize: 30,
-                                                              ),
-                                                            ),
-                                                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                                          ),
-                                                          gridData: FlGridData(show: true),
-                                                          borderData: FlBorderData(show: false),
-                                                          barGroups: List.generate(
-                                                            dashboard!.data.surgeryByType.length,
-                                                                (i) {
-                                                              final type = dashboard!.data.surgeryByType[i];
-                                                              return BarChartGroupData(
-                                                                x: i,
-                                                                barRods: [
-                                                                  BarChartRodData(
-                                                                    toY: type.totalCount.toDouble(),
-                                                                    width: 50,
-                                                                    borderRadius: const BorderRadius.only(
-                                                                      topLeft: Radius.circular(8),
-                                                                      topRight: Radius.circular(8),
-                                                                    ),
-                                                                    color: AppColors.secondary,
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            },
-                                                          ),
-                                                        ),
-                                                      )  : Center(child: CircularProgressIndicator()),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
+                                              ],
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
-                                  )
-
-
-
-                                  ],
+                                      )
+                                    ],
                                   ),
                                 ),
                               ),
-
 
                               // Sidebar Column (20% width)
                               // In your DashboardScreen class, replace the Quick Actions section with:
@@ -1016,10 +1703,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+                                    border: Border.all(
+                                        color: AppColors.hinttext
+                                            .withOpacity(0.2)),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Quick Actions",
@@ -1054,9 +1744,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-
-
   }
+
   Widget buildPieChart(List<SurgeryType> surgeryByType) {
     return PieChart(
       PieChartData(
@@ -1070,6 +1759,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
   Widget buildBarChart(List<SurgeryLocation> surgeryByLocation) {
     return BarChart(
       BarChartData(
@@ -1095,7 +1785,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= surgeryByLocation.length) return const SizedBox();
+                if (value.toInt() >= surgeryByLocation.length)
+                  return const SizedBox();
                 return Text(
                   surgeryByLocation[value.toInt()].location,
                   style: const TextStyle(fontSize: 10),
@@ -1113,10 +1804,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required TextEditingController firstNameController,
     required TextEditingController lastNameController,
     required TextEditingController phoneController,
-    required bool isLoading,  // Added this parameter
-    required VoidCallback onPressed,  // Added this parameter
-  })
-  {
+    required bool isLoading, // Added this parameter
+    required VoidCallback onPressed, // Added this parameter
+  }) {
     return Container(
       width: ResponsiveUtils.scaleWidth(context, 500),
       padding: const EdgeInsets.all(24),
@@ -1150,37 +1840,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(color: AppColors.secondary),
             ),
             const SizedBox(height: 24),
-            _buildField('First Name', 'Enter first name',   [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
-            ],firstNameController,    validator: (value) => value?.isEmpty ?? true
-                ? 'Please enter patient name'
-                : null,),
+            _buildField(
+              'First Name',
+              'Enter first name',
+              [
+                FilteringTextInputFormatter.allow(
+                    RegExp(r'[a-zA-Z]')), // Only letters allowed
+              ],
+              firstNameController,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter patient name' : null,
+            ),
             const SizedBox(height: 16),
-            _buildField('Last Name', 'Enter last name', [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')), // Only letters allowed
-            ], lastNameController,validator: (value) => value?.isEmpty ?? true
-                ? 'Please enter patient name'
-                : null,),
+            _buildField(
+              'Last Name',
+              'Enter last name',
+              [
+                FilteringTextInputFormatter.allow(
+                    RegExp(r'[a-zA-Z]')), // Only letters allowed
+              ],
+              lastNameController,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter patient name' : null,
+            ),
             const SizedBox(height: 16),
-            _buildField('Phone Number', 'Enter Phone Number', [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Only letters allowed
-            ], phoneController,    validator: (value) {
-              if (value?.isEmpty ?? true)
-                return 'Please enter phone number';
+            _buildField(
+                'Phone Number',
+                'Enter Phone Number',
+                [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'[0-9]')), // Only letters allowed
+                ],
+                phoneController, validator: (value) {
+              if (value?.isEmpty ?? true) return 'Please enter phone number';
               if (!RegExp(r'^[0-9]{10}$').hasMatch(value!))
                 return 'Enter a valid 10-digit number';
               return null;
-            },
-              isMobileNumber: true
-            ),
+            }, isMobileNumber: true),
             const SizedBox(height: 24),
             Row(
               spacing: 10,
               children: [
                 Expanded(
-
                   child: Animatedbutton(
-
                     title: 'Discard',
                     isLoading: isLoading,
                     onPressed: () {
@@ -1189,25 +1891,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _phoneController.clear();
                       Navigator.pop(context);
                     },
-                    titlecolor:AppColors.red,
+                    titlecolor: AppColors.red,
                     backgroundColor: Colors.white,
                     borderColor: AppColors.red,
-
                     shadowColor: AppColors.primary,
                   ),
                 ),
-
-
                 Visibility(
-                   visible: PermissionService().canAddPatients,
+                  visible: PermissionService().canAddPatients,
                   child: Expanded(
                     child: Animatedbutton(
                       title: 'Add Patient',
                       isLoading: isLoading,
-                      onPressed: _isSubmitting ? null : () => _AddPatientsubmit(),
-
-
-
+                      onPressed:
+                          _isSubmitting ? null : () => _AddPatientsubmit(),
                       backgroundColor: AppColors.secondary,
                       shadowColor: AppColors.primary,
                     ),
@@ -1220,6 +1917,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
   Widget buildLegendItem(Color color, String text, dynamic fontsize) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -1239,16 +1937,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
 // Example of the _buildField method (you should have this implemented)
   Widget _buildField(
-      String label,
-      String hint,
-
-  final List<TextInputFormatter>? inputFormatters,
-      TextEditingController controller, {
-        String? Function(String?)? validator,
-        bool isMobileNumber = false, // Add this parameter
-      }) {
+    String label,
+    String hint,
+    final List<TextInputFormatter>? inputFormatters,
+    TextEditingController controller, {
+    String? Function(String?)? validator,
+    bool isMobileNumber = false, // Add this parameter
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1263,73 +1961,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
         CustomTextField(
           controller: controller,
           hintText: hint,
-          maxLength: isMobileNumber ? 10 : 100, // Set length based on field type
-          inputFormatters:inputFormatters,
+          maxLength:
+              isMobileNumber ? 10 : 100, // Set length based on field type
+          inputFormatters: inputFormatters,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           validator: validator,
-
         ),
       ],
     );
   }
 
-
-
-
-
   Widget _buildStatCard(String title, String count, String assetPath) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // First row: Icon + Title
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Image.asset(
-                assetPath,
-                height: 60, // Adjusted height
-                width: 60, // Added width for consistency
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isMobile = constraints.maxWidth < 600;
 
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        return Container(
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.hinttext.withOpacity(0.2)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    assetPath,
+                    height: isMobile ? 40 : 60,
+                    width: isMobile ? 40 : 60,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: isMobile
+                        ? Text(
+                            count,
+                            style: TextStyle(
+                              fontSize: isMobile ? 18 : 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: isMobile ? 14 : 18,
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ],
               ),
+
+              SizedBox(height: isMobile ? 10 : 12),
+
+              // Count
+              isMobile
+                  ? Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isMobile ? 12 : 18,
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : Text(
+                      count,
+                      style: TextStyle(
+                        fontSize: isMobile ? 20 : 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Second row: Count/Number
-          Text(
-            count,
-            style: const TextStyle(
-              fontSize: 24, // Increased font size for emphasis
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+
   Widget _buildTableRow(String patientName, String diagnosis, String summary) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0,horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
       child: Row(
         children: [
           Expanded(
@@ -1360,7 +2084,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
 
   List<DropdownMenuItem<String>> _generateMonthOptions() {
     List<DropdownMenuItem<String>> items = [];
@@ -1393,8 +2116,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 5),
-            Text("Follow-up: ${DateFormat('MMM dd, yyyy').format(followUp.followUpDate)}"),
-            Text("Next: ${DateFormat('MMM dd, yyyy').format(followUp.nextFollowUpDate)}"),
+            Text(
+                "Follow-up: ${DateFormat('MMM dd, yyyy').format(followUp.followUpDate)}"),
+            Text(
+                "Next: ${DateFormat('MMM dd, yyyy').format(followUp.nextFollowUpDate)}"),
           ],
         ),
       ),
@@ -1403,10 +2128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDivider() {
     return const Divider(
-      height: 1,
-      thickness: 1,
-      color: AppColors.backgroundColor
-    );
+        height: 1, thickness: 1, color: AppColors.backgroundColor);
   }
 }
 
@@ -1472,17 +2194,16 @@ class _FollowUpItemState extends State<FollowUpItem> {
                   textAlign: TextAlign.center,
                   widget.date,
                   style: TextStyle(
-
                     fontWeight: FontWeight.bold,
-                    color: isHovered
-                        ? AppColors.primary
-                        : AppColors.secondary,
+                    color: isHovered ? AppColors.primary : AppColors.secondary,
                     fontSize: ResponsiveUtils.fontSize(context, 12),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 4,),
+            SizedBox(
+              height: 4,
+            ),
             Text(
               widget.name,
               style: TextStyle(
@@ -1491,16 +2212,13 @@ class _FollowUpItemState extends State<FollowUpItem> {
                 color: AppColors.primary,
               ),
             ),
-
             const SizedBox(height: 4),
             Text(
               widget.condition,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: ResponsiveUtils.fontSize(context, 12),
-                color: isHovered
-                    ? AppColors.primary
-                    : AppColors.secondary,
+                color: isHovered ? AppColors.primary : AppColors.secondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1528,6 +2246,7 @@ class _FollowUpItemState extends State<FollowUpItem> {
     );
   }
 }
+
 class FollowUp {
   final int id;
   final int patientId;
@@ -1553,9 +2272,7 @@ class FollowUp {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is FollowUp &&
-              runtimeType == other.runtimeType &&
-              id == other.id;
+      other is FollowUp && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

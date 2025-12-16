@@ -1,11 +1,9 @@
 // provider/permission_management_provider.dart
 import 'dart:convert';
-import 'dart:js_interop';
+
 import 'package:flutter/material.dart';
-import '../models/Permission_model.dart';
-import '../models/UserModel.dart';
+
 import '../models/UserPermission.dart';
-import '../models/permission_model.dart';
 import '../services/api_services.dart';
 import '../services/auth_service.dart';
 import '../widgets/showTopSnackBar.dart';

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
-import 'dart:html' as html;
-import 'dart:ui' as ui; // for platformViewRegistry
+// import 'dart:html' as html;
+// import 'dart:ui' as ui; // for platformViewRegistry
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
@@ -27,29 +27,29 @@ class _WebVideoPlayerState extends State<WebVideoPlayer> {
     super.initState();
 
     // Create a blob URL from file bytes
-    final blob = html.Blob([widget.fileBytes]);
-    _videoUrl = html.Url.createObjectUrlFromBlob(blob);
+    // final blob = html.Blob([widget.fileBytes]);
+    // _videoUrl = html.Url.createObjectUrlFromBlob(blob);
 
     // Generate a unique viewType
     _viewType = 'video_${DateTime.now().millisecondsSinceEpoch}_${widget.filePath.hashCode}';
 
     // Register the VideoElement
     // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
-      _viewType,
-          (int viewId) => html.VideoElement()
-        ..src = _videoUrl
-        ..controls = true
-        ..autoplay = false
-        ..style.width = '100%'
-        ..style.height = '100%',
-    );
+    // ui.platformViewRegistry.registerViewFactory(
+    //   _viewType,
+    //       (int viewId) => html.VideoElement()
+    //     ..src = _videoUrl
+    //     ..controls = true
+    //     ..autoplay = false
+    //     ..style.width = '100%'
+    //     ..style.height = '100%',
+    // );
   }
 
   @override
   void dispose() {
     // Revoke blob URL to free memory
-    html.Url.revokeObjectUrl(_videoUrl);
+    // html.Url.revokeObjectUrl(_videoUrl);
     super.dispose();
   }
 

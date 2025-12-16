@@ -7,9 +7,7 @@ import 'package:poojaheakthcare/provider/Permissoin_management_provider.dart';
 import 'package:poojaheakthcare/provider/Role_management_provider.dart';
 import 'package:poojaheakthcare/provider/User_management_provider.dart';
 import 'package:poojaheakthcare/screens/login_screen.dart';
-import 'package:poojaheakthcare/screens/patient_info_screen.dart';
 import 'package:poojaheakthcare/screens/patient_list.dart';
-import 'package:poojaheakthcare/screens/splash_screen.dart';
 import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:poojaheakthcare/website_code/web_screens/DashboardScreen.dart';
 import 'package:poojaheakthcare/website_code/web_screens/Home_Screen.dart';
@@ -89,7 +87,6 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),
-       // '/patientInfo': (context) => const PatientInfoScreen(),
         '/HomeScreen': (context) => const HomeScreen(),
         '/addPatient': (context) => const PatientRegistrationPage(),
         '/userManagement': (context) => const Usermanagementscreen(),

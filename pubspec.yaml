@@ -68,6 +68,7 @@ dependencies:
   js: ^0.6.7
   heic_to_png_jpg: ^0.0.5
   clipboard:
+  webview_flutter:
 
 
 

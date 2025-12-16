@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui_web';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -16,10 +17,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/ResponsiveUtils.dart';
 import '../utils/colors.dart';
 import 'VideoPlayerWidget.dart';
-// import 'dart:html' as html; // For web-specific functionality
+import 'dart:html' as html; // For web-specific functionality
 import 'dart:typed_data'; // For Uint8List
-
-// import 'dart:ui' as ui;
+import 'package:http/http.dart' as http;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'WebVideoPlayer.dart';
 import 'confirmation_dialog.dart'; // Alternative if needed
@@ -68,7 +69,6 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       });
     }
   }
-
 
 // Update the _pickFiles method to include size validation
   Future<void> _pickFiles() async {
@@ -219,56 +219,29 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         ? '${widget.baseUrl}$filePath'
         : filePath;
 
-
-
     _showPreviewDialog(context, file, isNetwork: isNetwork);
   }
 
   void _showVideoPreviewDialog(BuildContext context, String filePath, {bool isNetwork = false, Map<String, dynamic>? file}) {
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: Stack(
-          children: [
-            AspectRatio(
-              aspectRatio: 16/9,
-              child: isNetwork
-                  ? _buildNetworkVideoPlayer(filePath)
-                  : (kIsWeb
-                  ?WebVideoPlayer(
-                filePath: filePath,
-                fileBytes: file?['bytes'],
-              )
-                  : _buildFileVideoPlayer(filePath)),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.secondary,
-                    child: IconButton(
-                      icon: const Icon(Icons.download, color: Colors.white),
-                      onPressed: () => _downloadFile(filePath, 'mp4', isNetwork),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  CircleAvatar(
-                    backgroundColor: Colors.red,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      builder: (context) => _PreviewDialogFrame(
+        title: 'Video Preview',
+        content: AspectRatio(
+          aspectRatio: 16/9,
+          child: isNetwork
+              ? _buildNetworkVideoPlayer(filePath)
+              : (kIsWeb
+              ? WebVideoPlayer(
+            filePath: filePath,
+            fileBytes: file?['bytes'],
+          )
+              : _buildFileVideoPlayer(filePath)),
         ),
+        onDownload: () => _downloadFile(filePath, 'mp4', isNetwork),
+        file: file,
+        filePath: filePath,
+        isNetwork: isNetwork,
       ),
     );
   }
@@ -277,11 +250,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     return VideoPlayerWidget(url: url, isNetwork: true);
   }
 
-
-
-
   Widget _buildFileVideoPlayer(String filePath) {
-
     print("_buildFileVideoPlayer");
     print(filePath);
     return VideoPlayerWidget(filePath: filePath);
@@ -307,7 +276,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     if (imageTypes.contains(fileExtension)) {
       _showImagePreview(context, file, isNetwork);
     } else if (videoTypes.contains(fileExtension)) {
-      _showVideoPreviewDialog(context,file:file , filePath, isNetwork: isNetwork);
+      _showVideoPreviewDialog(context, file: file, filePath, isNetwork: isNetwork);
     } else if (pdfTypes.contains(fileExtension)) {
       print('pdf file');
       _showPdfPreview(context, file, isNetwork: isNetwork);
@@ -325,22 +294,21 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: Stack(
-          children: [
-            Container(
-              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
-              child: InteractiveViewer(
-                panEnabled: true,
-                minScale: 0.5,
-                maxScale: 3.0,
-                child: _buildImagePreview(file, isNetwork),
-              ),
-            ),
-            _buildPreviewActionButtons(context, filePath, 'image', isNetwork),
-          ],
+      builder: (context) => _PreviewDialogFrame(
+        title: 'Image Preview',
+        content: Container(
+          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
+          child: InteractiveViewer(
+            panEnabled: true,
+            minScale: 0.5,
+            maxScale: 3.0,
+            child: _buildImagePreview(file, isNetwork),
+          ),
         ),
+        onDownload: () => _downloadFile(filePath, 'image', isNetwork),
+        file: file,
+        filePath: filePath,
+        isNetwork: isNetwork,
       ),
     );
   }
@@ -450,64 +418,56 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: Stack(
-          children: [
-            Container(
-              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
-              child: Builder(
-                builder: (_) {
-                  if (isNetwork) {
-                    // Network PDF - use iframe with proper URL
-                    return PdfIframe(pdfUrl: pdfUrl);
+      builder: (context) => _PreviewDialogFrame(
+        title: 'PDF Preview',
+        content: Container(
+          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
+          child: Builder(
+            builder: (_) {
+              if (isNetwork) {
+                // Network PDF - use iframe with proper URL
+                return PdfIframe(pdfUrl: pdfUrl);
+              } else {
+                // Local PDF - handle both web and mobile
+                if (kIsWeb) {
+                  // For web, ensure we have proper bytes
+                  if (fileBytes != null && fileBytes is Uint8List) {
+                    return _buildWebPdfPreview(fileBytes, fileName);
                   } else {
-                    // Local PDF - handle both web and mobile
-                    if (kIsWeb) {
-                      // For web, ensure we have proper bytes
-                      if (fileBytes != null && fileBytes is Uint8List) {
-                        return _buildWebPdfPreview(fileBytes, fileName);
-                      } else {
-                        return _buildPdfErrorWidget('No PDF data available for web preview');
-                      }
-                    } else {
-                      // For mobile, use SfPdfViewer with bytes
-                      try {
-                        if (fileBytes != null && fileBytes is Uint8List) {
-                          return SfPdfViewer.memory(
-                            fileBytes,
-                            canShowScrollHead: true,
-                            canShowScrollStatus: true,
-                          );
-                        } else if (filePath.isNotEmpty) {
-                          // Fallback to file path if bytes not available
-                          return SfPdfViewer.file(
-                            File(filePath),
-                            canShowScrollHead: true,
-                            canShowScrollStatus: true,
-                          );
-                        } else {
-                          return _buildPdfErrorWidget('No PDF data available');
-                        }
-                      } catch (e) {
-                        debugPrint('PDF viewer error: $e');
-                        return _buildPdfErrorWidget('Failed to load PDF: $e');
-                      }
-                    }
+                    return _buildPdfErrorWidget('No PDF data available for web preview');
                   }
-                },
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ],
+                } else {
+                  // For mobile, use SfPdfViewer with bytes
+                  try {
+                    if (fileBytes != null && fileBytes is Uint8List) {
+                      return SfPdfViewer.memory(
+                        fileBytes,
+                        canShowScrollHead: true,
+                        canShowScrollStatus: true,
+                      );
+                    } else if (filePath.isNotEmpty) {
+                      // Fallback to file path if bytes not available
+                      return SfPdfViewer.file(
+                        File(filePath),
+                        canShowScrollHead: true,
+                        canShowScrollStatus: true,
+                      );
+                    } else {
+                      return _buildPdfErrorWidget('No PDF data available');
+                    }
+                  } catch (e) {
+                    debugPrint('PDF viewer error: $e');
+                    return _buildPdfErrorWidget('Failed to load PDF: $e');
+                  }
+                }
+              }
+            },
+          ),
         ),
+        onDownload: () => _downloadFile(filePath, 'pdf', isNetwork),
+        file: file,
+        filePath: filePath,
+        isNetwork: isNetwork,
       ),
     );
   }
@@ -523,15 +483,15 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
 
       // Register iframe view
       // ignore: undefined_prefixed_name
-      // ui.platformViewRegistry.registerViewFactory(
-      //   viewType,
-      //       (int viewId) => html.IFrameElement()
-      //     ..src = dataUrl
-      //     ..style.width = '100%'
-      //     ..style.height = '100%'
-      //     ..style.border = 'none'
-      //     ..setAttribute('type', 'application/pdf'),
-      // );
+      ui.platformViewRegistry.registerViewFactory(
+        viewType,
+            (int viewId) => html.IFrameElement()
+          ..src = dataUrl
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.border = 'none'
+          ..setAttribute('type', 'application/pdf'),
+      );
 
       return HtmlElementView(
         viewType: viewType,
@@ -569,276 +529,194 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     final fileName = file['name'] ?? 'Document';
     final fileExtension = (file['type'] ?? '').toLowerCase();
     final isNetwork = file['isExisting'] ?? false;
-
-    // Build viewer URLs
-    Map<String, String> viewerUrls = {};
-
-    if (isNetwork) {
-      String fileUrl = filePath;
-      if (widget.baseUrl != null && !filePath.startsWith('http')) {
-        fileUrl = '${widget.baseUrl}$filePath';
-      }
-
-      final encodedUrl = Uri.encodeComponent(fileUrl);
-
-      // Google Docs Viewer (for PDF and some document types)
-      viewerUrls['Google Docs'] = 'https://docs.google.com/viewer?url=$encodedUrl&embedded=true';
-
-
-    }
+    final fileBytes = file['bytes'];
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getFileIcon(fileExtension),
-                      size: 80,
-                      color: _getFileIconColor(fileExtension),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      fileName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${fileExtension.toUpperCase()} Document',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Viewer Options (for network files)
-                    if (viewerUrls.isNotEmpty) ...[
-                      const Text(
-                        'Open with:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ...viewerUrls.entries.map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _getViewerButtonColor(entry.key),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 48),
-                            ),
-                            onPressed: () async {
-                              try {
-                                if (await canLaunchUrl(Uri.parse(entry.value))) {
-                                  await launchUrl(
-                                    Uri.parse(entry.value),
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                }
-                              } catch (e) {
-                                debugPrint('Error launching ${entry.key}: $e');
-                                showTopRightToast(
-                                  context,
-                                  'Failed to open with ${entry.key}',
-                                  backgroundColor: Colors.red,
-                                );
-                              }
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _getViewerIcon(entry.key),
-                                const SizedBox(width: 8),
-                                Text(entry.key),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      const SizedBox(height: 20),
-                    ],
-
-                    // Download Button
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                      onPressed: () => _downloadFile(filePath, fileExtension, isNetwork),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.download),
-                          SizedBox(width: 8),
-                          Text('Download Document'),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // System Viewer (for mobile)
-                    if (!kIsWeb && filePath.isNotEmpty)
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                        onPressed: () async {
-                          try {
-                            await OpenFile.open(filePath);
-                          } catch (e) {
-                            debugPrint('Error opening file: $e');
-                            showTopRightToast(
-                              context,
-                              'Failed to open document',
-                              backgroundColor: Colors.red,
-                            );
-                          }
-                        },
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.open_in_new),
-                            SizedBox(width: 8),
-                            Text('Open with System Viewer'),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: CircleAvatar(
-                backgroundColor: Colors.red,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-            ),
-          ],
-        ),
+      builder: (context) => _PreviewDialogFrame(
+        title: 'Document Preview',
+        content: _buildDocumentPreview(file, isNetwork),
+        onDownload: () => _downloadFile(filePath, fileExtension, isNetwork),
+        file: file,
+        filePath: filePath,
+        isNetwork: isNetwork,
       ),
     );
   }
 
-// Helper methods for viewer buttons
-  Color _getViewerButtonColor(String viewerName) {
-    switch (viewerName) {
-      case 'Google Docs':
-        return Colors.blue;
-      case 'Office Online':
-        return Colors.orange;
-      case 'PDF Viewer':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
-  }
+  Widget _buildDocumentPreview(Map<String, dynamic> file, bool isNetwork) {
+    final filePath = file['path'] ?? '';
+    final fileName = file['name'] ?? 'Document';
+    final fileExtension = (file['type'] ?? '').toLowerCase();
+    final fileBytes = file['bytes'];
 
-  Widget _getViewerIcon(String viewerName) {
-    switch (viewerName) {
-      case 'Google Docs':
-        return const Icon(Icons.document_scanner);
-      case 'Office Online':
-        return const Icon(Icons.business_center);
-      case 'PDF Viewer':
-        return const Icon(Icons.picture_as_pdf);
+    // For web platform: use iframe to show preview
+    if (kIsWeb) {
+      try {
+        String viewerUrl = '';
+
+        // Get the actual file URL
+        String fileUrl = filePath;
+        if (isNetwork && widget.baseUrl != null && !filePath.startsWith('http')) {
+          fileUrl = '${widget.baseUrl}$filePath';
+        }
+
+        // For local files on web, create data URL from bytes
+        if (!isNetwork && fileBytes != null && fileBytes is Uint8List) {
+          final base64String = base64Encode(fileBytes);
+          final mimeType = _getMimeType(fileExtension);
+          fileUrl = 'data:$mimeType;base64,$base64String';
+        }
+
+        // Build viewer URL
+        if (fileUrl.isNotEmpty) {
+          // Use Google Docs Viewer for better compatibility
+          final encodedUrl = Uri.encodeComponent(fileUrl);
+          viewerUrl = 'https://docs.google.com/viewer?url=$encodedUrl&embedded=true';
+
+          final viewType = 'doc_preview_${fileName.hashCode}';
+
+          platformViewRegistry.registerViewFactory(
+            viewType,
+                (int viewId) => html.IFrameElement()
+              ..src = viewerUrl
+              ..style.width = '100%'
+              ..style.height = '100%'
+              ..style.border = 'none'
+              ..allowFullscreen = true
+              ..setAttribute('frameborder', '0'),
+          );
+
+          return SizedBox(
+            width: double.infinity,
+            height: 500,
+            child: HtmlElementView(viewType: viewType),
+          );
+        }
+      } catch (e) {
+        debugPrint('Document preview error: $e');
+      }
+    }
+
+    // For mobile or if web preview fails, show file info
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getFileIcon(fileExtension),
+            size: 80,
+            color: _getFileIconColor(fileExtension),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            fileName,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${fileExtension.toUpperCase()} Document',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // For mobile: show open options
+          if (!kIsWeb)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+              ),
+              onPressed: () async {
+                try {
+                  await OpenFile.open(filePath);
+                } catch (e) {
+                  debugPrint('Error opening file: $e');
+                  showTopRightToast(
+                    context,
+                    'Failed to open document',
+                    backgroundColor: Colors.red,
+                  );
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.open_in_new),
+                  SizedBox(width: 8),
+                  Text('Open with System Viewer'),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  String _getMimeType(String fileExtension) {
+    switch (fileExtension.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt':
+        return 'application/vnd.ms-powerpoint';
+      case 'pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
       default:
-        return const Icon(Icons.open_in_browser);
+        return 'application/octet-stream';
     }
   }
   void _showGenericPreview(BuildContext context, String fileName, String fileType) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.insert_drive_file, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  Text(
-                    fileName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('$fileType file preview not available'),
-                ],
+      builder: (context) => _PreviewDialogFrame(
+        title: 'File Preview',
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.insert_drive_file, size: 80, color: Colors.grey),
+              const SizedBox(height: 20),
+              Text(
+                fileName,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text('$fileType file preview not available'),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewActionButtons(BuildContext context, String filePath, String? fileType, bool isNetwork) {
-    return Positioned(
-      top: 10,
-      right: 10,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Tooltip(
-            decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
-            message: 'Download',
-            child: CircleAvatar(
-              backgroundColor: AppColors.secondary,
-              child: IconButton(
-                icon: const Icon(Icons.download, color: Colors.white),
-                onPressed: () => _downloadFile(filePath, fileType ?? '', isNetwork),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Tooltip(
-            decoration: BoxDecoration(color: AppColors.secondary,borderRadius: BorderRadius.circular( 8)),
-            message: 'Close',
-            child: CircleAvatar(
-              backgroundColor: Colors.red,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
-        ],
+        onDownload: () {
+          // Find the file in selected files
+          final file = _selectedFiles.firstWhere(
+                (f) => f['name'] == fileName,
+            orElse: () => {},
+          );
+          if (file.isNotEmpty) {
+            final filePath = file['path'] ?? '';
+            final isNetwork = file['isExisting'] ?? false;
+            _downloadFile(filePath, fileType, isNetwork);
+          }
+        },
+        fileName: fileName,
+        fileType: fileType,
       ),
     );
   }
@@ -862,26 +740,63 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     }
   }
 
-  Future<void> _downloadFileWeb(String filePath, String fileType, bool isNetwork) async {
-    if (isNetwork) {
-      // For network files on web, let the browser handle the download
-      await launchUrl(Uri.parse(filePath), mode: LaunchMode.externalApplication);
-    } else {
-      // For local files selected in web
-      final file = _selectedFiles.firstWhere(
-            (f) => f['path'] == filePath || f['name'] == path.basename(filePath),
-        orElse: () => {},
-      );
 
-      // if (file.isNotEmpty && file['bytes'] != null) {
-      //   final bytes = file['bytes'] as Uint8List;
-      //   final blob = html.Blob([bytes]);
-      //   final url = html.Url.createObjectUrlFromBlob(blob);
-      //   final anchor = html.AnchorElement(href: url)
-      //     ..setAttribute('download', file['name'])
-      //     ..click();
-      //   html.Url.revokeObjectUrl(url);
-      // }
+  Future<void> _downloadFileWeb(
+      String filePath,
+      String fileType,
+      bool isNetwork,
+      ) async {
+    try {
+      if (isNetwork) {
+        /// 🔹 Download NETWORK file to system
+        final response = await http.get(Uri.parse(filePath));
+
+        if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
+          final fileName = path.basename(filePath);
+
+          final blob = html.Blob([bytes]);
+          final url = html.Url.createObjectUrlFromBlob(blob);
+
+          final anchor = html.AnchorElement(href: url)
+            ..setAttribute('download', fileName)
+            ..style.display = 'none';
+
+          html.document.body!.children.add(anchor);
+          anchor.click();
+
+          html.document.body!.children.remove(anchor);
+          html.Url.revokeObjectUrl(url);
+        }
+      } else {
+        /// 🔹 Download LOCAL (picked) file to system
+        final file = _selectedFiles.firstWhere(
+              (f) =>
+          f['path'] == filePath ||
+              f['name'] == path.basename(filePath),
+          orElse: () => {},
+        );
+
+        if (file.isNotEmpty && file['bytes'] != null) {
+          final Uint8List bytes = file['bytes'];
+          final fileName = file['name'];
+
+          final blob = html.Blob([bytes]);
+          final url = html.Url.createObjectUrlFromBlob(blob);
+
+          final anchor = html.AnchorElement(href: url)
+            ..setAttribute('download', fileName)
+            ..style.display = 'none';
+
+          html.document.body!.children.add(anchor);
+          anchor.click();
+
+          html.document.body!.children.remove(anchor);
+          html.Url.revokeObjectUrl(url);
+        }
+      }
+    } catch (e) {
+      debugPrint('Download failed: $e');
     }
   }
 
@@ -1067,10 +982,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                           ),
                         )
                             : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _selectedFiles.length,
-                          // In the DocumentUploadWidget's build method, update the file list item:
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _selectedFiles.length,
+                            // In the DocumentUploadWidget's build method, update the file list item:
 
 // In your build method, update the file list item to show loading indicators
 // Replace the file list item builder with this:
@@ -1124,13 +1039,16 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
                                             child: Row(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  file['name'],
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                    color: isUploading ? Colors.grey : Colors.black,
+                                                Expanded(
+                                                  child: Text(
+                                                    file['name'],
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w500,
+                                                      color: isUploading ? Colors.grey : Colors.black,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                    maxLines: 1, // Add this to ensure single line
                                                   ),
-                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                                 // Display tags if they exist
                                               ],
@@ -1264,6 +1182,193 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   }
 }
 
+// Unified Preview Dialog Frame Component
+// Unified Preview Dialog Frame Component
+class _PreviewDialogFrame extends StatelessWidget {
+  final String title;
+  final Widget content;
+  final VoidCallback? onDownload;
+  final Map<String, dynamic>? file;
+  final String? filePath;
+  final bool? isNetwork;
+  final String? fileName;
+  final String? fileType;
+
+  const _PreviewDialogFrame({
+    Key? key,
+    required this.title,
+    required this.content,
+    this.onDownload,
+    this.file,
+    this.filePath,
+    this.isNetwork,
+    this.fileName,
+    this.fileType,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Responsive width calculation
+    final maxDialogWidth = screenWidth * 0.7; // 90% of screen width
+    final maxDialogHeight = screenHeight * 0.8; // 80% of screen height
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth < 600 ? 10 : 20, // Less padding on small screens
+        vertical: 10,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxDialogWidth,
+          maxHeight: maxDialogHeight,
+        ),
+        child: Stack(
+          children: [
+            // Main Content
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with title
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _getFileIcon(file?['type'] ?? fileType),
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16, // Reduced font size
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content Area
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    child: content,
+                  ),
+                ),
+              ],
+            ),
+            // Action Buttons at Top Right
+            Positioned(
+              top: 4, // Moved closer to top
+              right: 4, // Moved closer to edge
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Download Button
+                  if (onDownload != null)
+                    Tooltip(
+                      message: 'Download',
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.download,
+                            color: AppColors.secondary,
+                            size: 18, // Reduced size
+                          ),
+                          onPressed: onDownload,
+                          tooltip: 'Download',
+                          padding: const EdgeInsets.all(6), // Reduced padding
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 6), // Reduced spacing
+                  // Close Button
+                  Tooltip(
+                    message: 'Close',
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 18, // Reduced size
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        tooltip: 'Close',
+                        padding: const EdgeInsets.all(6), // Reduced padding
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String? fileType) {
+    final type = (fileType ?? '').toLowerCase();
+    if (type == 'pdf') return Icons.picture_as_pdf;
+    if (['jpg', 'jpeg', 'png', 'heic', 'heif'].contains(type)) return Icons.image;
+    if (['doc', 'docx'].contains(type)) return Icons.description;
+    if (['mp4', 'mov', 'avi'].contains(type)) return Icons.videocam;
+    return Icons.insert_drive_file;
+  }
+}
+
 class PdfIframe extends StatelessWidget {
   final String pdfUrl;
   final Color headerColor;
@@ -1282,35 +1387,35 @@ class PdfIframe extends StatelessWidget {
     final hexColor = '#${headerColor.value.toRadixString(16).substring(2)}';
 
     // ignore: undefined_prefixed_name
-    // ui.platformViewRegistry.registerViewFactory(
-    //   viewType,
-    //       (int viewId) {
-    //     final container = html.DivElement()
-    //       ..style.width = '100%'
-    //       ..style.height = '100%'
-    //       ..style.display = 'flex'
-    //       ..style.flexDirection = 'column';
+    ui.platformViewRegistry.registerViewFactory(
+      viewType,
+          (int viewId) {
+        final container = html.DivElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.display = 'flex'
+          ..style.flexDirection = 'column';
 
-    //     // Create custom header
-    //     final header = html.DivElement()
-    //       ..style.backgroundColor = hexColor
-    //       ..style.padding = '10px'
-    //       ..style.color = 'white'
-    //       ..style.fontWeight = 'bold'
-    //       ..innerText = 'PDF Document';
+        // Create custom header
+        final header = html.DivElement()
+          ..style.backgroundColor = hexColor
+          ..style.padding = '10px'
+          ..style.color = 'white'
+          ..style.fontWeight = 'bold'
+          ..innerText = 'PDF Document';
 
-    //     // Create iframe
-    //     final iframe = html.IFrameElement()
-    //       ..src = pdfUrl
-    //       ..style.flex = '1'
-    //       ..style.border = 'none';
+        // Create iframe
+        final iframe = html.IFrameElement()
+          ..src = pdfUrl
+          ..style.flex = '1'
+          ..style.border = 'none';
 
-    //     container.append(header);
-    //     container.append(iframe);
+        container.append(header);
+        container.append(iframe);
 
-    //     return container;
-    //   },
-    // );
+        return container;
+      },
+    );
 
     return HtmlElementView(
       viewType: viewType,

@@ -124,8 +124,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       };
-print("widget.patientId");
-print(widget.patientId.toString());
+      print("widget.patientId");
+      print(widget.patientId.toString());
       final request = http.Request('POST', Uri.parse('$localurl/get_discharge'));
       request.body = json.encode({
         "patient_id": widget.patientId.toString(),

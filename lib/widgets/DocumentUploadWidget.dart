@@ -53,6 +53,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   @override
   void initState() {
     super.initState();
+
     _selectedFiles = widget.initialFiles?.where((file) => file['isExisting'] ?? false).toList() ?? [];
   }
 
@@ -311,7 +312,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       print('pdf file');
       _showPdfPreview(context, file, isNetwork: isNetwork);
     } else if (documentTypes.contains(fileExtension)) {
-      _showDocumentPreview(context, fileName);
+      _showDocumentPreview(context, file);
     } else {
       _showGenericPreview(context, fileName, fileExtension);
     }
@@ -563,7 +564,29 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     );
   }
 
-  void _showDocumentPreview(BuildContext context, String fileName) {
+  void _showDocumentPreview(BuildContext context, Map<String, dynamic> file) {
+    final filePath = file['path'] ?? '';
+    final fileName = file['name'] ?? 'Document';
+    final fileExtension = (file['type'] ?? '').toLowerCase();
+    final isNetwork = file['isExisting'] ?? false;
+
+    // Build viewer URLs
+    Map<String, String> viewerUrls = {};
+
+    if (isNetwork) {
+      String fileUrl = filePath;
+      if (widget.baseUrl != null && !filePath.startsWith('http')) {
+        fileUrl = '${widget.baseUrl}$filePath';
+      }
+
+      final encodedUrl = Uri.encodeComponent(fileUrl);
+
+      // Google Docs Viewer (for PDF and some document types)
+      viewerUrls['Google Docs'] = 'https://docs.google.com/viewer?url=$encodedUrl&embedded=true';
+
+
+    }
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -573,31 +596,146 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
             Container(
               padding: const EdgeInsets.all(20),
               constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.description, size: 80, color: Colors.blue),
-                  const SizedBox(height: 20),
-                  Text(
-                    fileName,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Document preview not available'),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => launchUrl(Uri.parse('https://docs.google.com/viewer?url=YOUR_FILE_URL')),
-                    child: const Text('View in Google Docs'),
-                  ),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getFileIcon(fileExtension),
+                      size: 80,
+                      color: _getFileIconColor(fileExtension),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      fileName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${fileExtension.toUpperCase()} Document',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Viewer Options (for network files)
+                    if (viewerUrls.isNotEmpty) ...[
+                      const Text(
+                        'Open with:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...viewerUrls.entries.map((entry) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _getViewerButtonColor(entry.key),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 48),
+                            ),
+                            onPressed: () async {
+                              try {
+                                if (await canLaunchUrl(Uri.parse(entry.value))) {
+                                  await launchUrl(
+                                    Uri.parse(entry.value),
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              } catch (e) {
+                                debugPrint('Error launching ${entry.key}: $e');
+                                showTopRightToast(
+                                  context,
+                                  'Failed to open with ${entry.key}',
+                                  backgroundColor: Colors.red,
+                                );
+                              }
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _getViewerIcon(entry.key),
+                                const SizedBox(width: 8),
+                                Text(entry.key),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Download Button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
+                      onPressed: () => _downloadFile(filePath, fileExtension, isNetwork),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.download),
+                          SizedBox(width: 8),
+                          Text('Download Document'),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // System Viewer (for mobile)
+                    if (!kIsWeb && filePath.isNotEmpty)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                        onPressed: () async {
+                          try {
+                            await OpenFile.open(filePath);
+                          } catch (e) {
+                            debugPrint('Error opening file: $e');
+                            showTopRightToast(
+                              context,
+                              'Failed to open document',
+                              backgroundColor: Colors.red,
+                            );
+                          }
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.open_in_new),
+                            SizedBox(width: 8),
+                            Text('Open with System Viewer'),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             Positioned(
               top: 10,
               right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+              child: CircleAvatar(
+                backgroundColor: Colors.red,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
               ),
             ),
           ],
@@ -606,6 +744,32 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
     );
   }
 
+// Helper methods for viewer buttons
+  Color _getViewerButtonColor(String viewerName) {
+    switch (viewerName) {
+      case 'Google Docs':
+        return Colors.blue;
+      case 'Office Online':
+        return Colors.orange;
+      case 'PDF Viewer':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  Widget _getViewerIcon(String viewerName) {
+    switch (viewerName) {
+      case 'Google Docs':
+        return const Icon(Icons.document_scanner);
+      case 'Office Online':
+        return const Icon(Icons.business_center);
+      case 'PDF Viewer':
+        return const Icon(Icons.picture_as_pdf);
+      default:
+        return const Icon(Icons.open_in_browser);
+    }
+  }
   void _showGenericPreview(BuildContext context, String fileName, String fileType) {
     showDialog(
       context: context,

@@ -5,7 +5,6 @@ import 'package:poojaheakthcare/utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../constants/base_url.dart';
-import '../../constants/ResponsiveUtils.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/showTopSnackBar.dart';
 
@@ -66,7 +65,7 @@ class _FormobfollowupcalendarState extends State<Formobfollowupcalendar> {
         }
       }
     } catch (e) {
-      print('Error fetching follow-ups: $e');
+  
     } finally {
       setState(() {
         _isLoading = false;
@@ -100,7 +99,7 @@ class _FormobfollowupcalendarState extends State<Formobfollowupcalendar> {
         }
         _nextFollowUpsMap[nextFollowUpKey]!.add(followUp);
       } catch (e) {
-        print('Error processing follow-up data: $e');
+      
       }
     }
 
@@ -237,8 +236,8 @@ class _FormobfollowupcalendarState extends State<Formobfollowupcalendar> {
                 const SizedBox(width: 8),
                 Text(
                   'Follow Ups for ${DateFormat('MMM dd, yyyy').format(_selectedDay ?? DateTime.now())}',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style:  TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),

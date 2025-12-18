@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_final_fields, deprecated_member_use, unnecessary_to_list_in_spreads, unused_element
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -195,45 +197,72 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                     border: Border.all(
                         color: AppColors.hinttext.withOpacity(0.2)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _toCamelCase(role.roleName ?? ''),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _toCamelCase(role.roleName),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Created: ${_formatDate(role.createdAt.toString())}",
+                          ),
+                       
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Created: ${_formatDate(role.createdAt.toString())}",
-                      ),
-                      Row(
+                         Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           if (PermissionService().canEditRoles)
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined,
-                                  color: AppColors.primary),
-                              onPressed: () {
-                                Provider.of<RoleManagementProvider>(
-                                        context,
-                                        listen: false)
-                                    .startEditing(role);
-                              },
+                            Container(
+                              height: 36,
+                              width: 36,
+                              decoration: BoxDecoration(
+                              shape: BoxShape.circle, 
+                              color: AppColors.primary.withOpacity(0.1)
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.edit_outlined,
+                                    color: AppColors.primary,
+                                      size: 22),
+                                onPressed: () {
+                                  Provider.of<RoleManagementProvider>(
+                                          context,
+                                          listen: false)
+                                      .startEditing(role);
+                                },
+                              ),
                             ),
+                          
+                          SizedBox(width: 12),
                           if (PermissionService().canDeleteRoles)
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.red),
-                              onPressed: () {
-                                _showDeleteConfirmation(
-                                    context, role.id);
-                              },
+                            Container(
+                              height: 36,
+                              width: 36,
+                              decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.red.withOpacity(0.1)
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.red,
+                                      size: 22,),
+                                onPressed: () {
+                                  _showDeleteConfirmation(
+                                      context, role.id);
+                                },
+                              ),
                             ),
                         ],
                       ),
+                 
                     ],
                   ),
                 );
@@ -241,14 +270,13 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
 
               const SizedBox(height: 16),
 
-              // Pagination
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.center,
-              //   children: _buildPageButtons(),
-              // ),
+          
             ],
           ),
   );
+
+
+
 }
 
     return Scaffold(
@@ -463,7 +491,7 @@ class _RolemanagementscreenState extends State<Rolemanagementscreen> {
                                                     padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12),
                                                     child: Row(
                                                       children: [
-                                                        Expanded(flex: 2, child: Text(_toCamelCase(role.roleName ?? ''),style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
+                                                        Expanded(flex: 2, child: Text(_toCamelCase(role.roleName),style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                         Expanded(flex: 2, child: Text(  _formatDate(role.createdAt.toString())
                                                             ,style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 14)),)),
                                                 if(PermissionService().canEditRoles ||PermissionService().canDeleteRoles )

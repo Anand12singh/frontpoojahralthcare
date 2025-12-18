@@ -23,9 +23,9 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   // final _emailController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _nameController = TextEditingController(text: 'drramesh');
 
-  final _passwordController = TextEditingController();
+  final _passwordController = TextEditingController(text:'123456');
   bool _isLoading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;

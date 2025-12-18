@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:poojaheakthcare/provider/User_management_provider.dart';
@@ -24,7 +23,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
   int _currentPage = 1;
   int _rowsPerPage = 100;
   int _totalRecords = 0;
-    final ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   List<dynamic> _rowsPerPageOptions = [100, 'ALL'];
 
@@ -33,16 +32,17 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
     super.initState();
     _initializeData();
   }
+
   Future<void> _initializeData() async {
     // Ensure widgets binding is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<UserManagementProvider>(context, listen: false);
+      final provider =
+          Provider.of<UserManagementProvider>(context, listen: false);
       provider.fetchUserData(context);
     });
     WidgetsFlutterBinding.ensureInitialized();
     PermissionService().initialize();
   }
-
 
   int get totalPages {
     if (_totalRecords == 0) return 1;
@@ -53,7 +53,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
     await ConfirmationDialog.show(
       context: context,
       title: 'Delete User',
-      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      message:
+          'Are you sure you want to delete this user? This action cannot be undone.',
       confirmText: 'Delete',
       confirmColor: AppColors.secondary,
       onConfirm: () async {
@@ -71,23 +72,23 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       return isoDate; // Return original string if parsing fails
     }
   }
+
   String _toCamelCase(String text) {
     if (text.isEmpty) return text;
 
     return text
         .split(' ')
-        .map((word) =>
-    word.isNotEmpty
-        ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-        : '')
+        .map((word) => word.isNotEmpty
+            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+            : '')
         .join(' ');
   }
+
   @override
   Widget build(BuildContext context) {
-       final isMobile = ResponsiveUtils.isMobile(context);
+    final isMobile = ResponsiveUtils.isMobile(context);
     final provider = Provider.of<UserManagementProvider>(context);
 
-   
     if (isMobile) {
       return Scaffold(
         backgroundColor: const Color(0xFFF5F8FC),
@@ -153,40 +154,52 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
               // User Count and Add Button (Mobile)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Users ${provider.users.length}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.hinttext.withOpacity(0.2),
                     ),
-                    if (PermissionService().canAddUsers)
-                      SizedBox(
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Users :- ${provider.users.length}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        if (PermissionService().canAddUsers)
+                          SizedBox(
+                            height: 50,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const AddUserDialog(),
+                                );
+                              },
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text('Add User'),
                             ),
                           ),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => const AddUserDialog(),
-                            );
-                          },
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add User'),
-                        ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -269,7 +282,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                           ),
                           itemBuilder: (context, index) {
                             final user = provider.users[index];
-                            return _buildMobileUserCard(user, context, provider);
+                            return _buildMobileUserCard(
+                                user, context, provider);
                           },
                         ),
                 ),
@@ -293,143 +307,138 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                   child: Container(
                     child: provider.isLoading
                         ? const Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primary))
-                        :/* provider.errorMessage.isNotEmpty
+                            child: CircularProgressIndicator(
+                                color: AppColors.primary))
+                        : /* provider.errorMessage.isNotEmpty
                         ? Center(
                         child: Text(provider.errorMessage,
                             style: const TextStyle(color: Colors.red)))
-                        :*/ Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.all(12),
-                            margin: const EdgeInsets.fromLTRB(
-                                16, 16, 16, 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: AppColors.hinttext
-                                      .withOpacity(0.2)),
-                            ),
-                            child: Column(
-                              spacing: 10,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      flex: 3,
-                                      child: Row(
+                        :*/
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.all(12),
+                                  margin:
+                                      const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: AppColors.hinttext
+                                            .withOpacity(0.2)),
+                                  ),
+                                  child: Column(
+                                    spacing: 10,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Row(
-                                            children: [
-                                    
-                                            ],
+                                          Flexible(
+                                            flex: 3,
+                                            child: Row(
+                                              children: [
+                                                Row(
+                                                  children: [],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Flexible(
+                                            flex: 1,
+                                            child: CustomTextField(
+                                              controller:
+                                                  provider.searchController,
+                                              onChanged: (p0) {
+                                                provider.fetchUserData(context,
+                                                    showLoader: false);
+                                              },
+                                              hintText: "Search User",
+                                              prefixIcon: Icons.search_rounded,
+                                            ),
+                                          ),
+                                          Visibility(
+                                            visible:
+                                                PermissionService().canAddUsers,
+                                            child: Center(
+                                              child: Container(
+                                                margin: EdgeInsets.only(
+                                                    left: 16, right: 16),
+                                                height: 50,
+                                                width:
+                                                    ResponsiveUtils.scaleWidth(
+                                                        context, 160),
+                                                child: Animatedbutton(
+                                                  title: '+ Add User',
+                                                  isLoading: provider.isLoading,
+                                                  onPressed: () {
+                                                    showDialog(
+                                                      context: context,
+                                                      barrierDismissible: false,
+                                                      builder: (context) =>
+                                                          const AddUserDialog(),
+                                                    );
+                                                  },
+                                                  backgroundColor:
+                                                      AppColors.secondary,
+                                                  shadowColor:
+                                                      AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Flexible(
-                                      flex: 1,
-                                      child: CustomTextField(
-                                        controller: provider.searchController,
-                                        onChanged: (p0) {
-                                          provider.fetchUserData(context,showLoader: false);
-
-                                        },
-                                        hintText: "Search User",
-                                        prefixIcon:
-                                        Icons.search_rounded,
-                                      ),
-                                    ),
-                                    Visibility(
-                                      visible:PermissionService().canAddUsers ,
-                                      child: Center(
+                                      Expanded(
                                         child: Container(
-                                          margin: EdgeInsets.only(
-                                              left: 16, right: 16),
-                                          height: 50,
-                                          width: ResponsiveUtils
-                                              .scaleWidth(context, 160),
-                                          child: Animatedbutton(
-                                            title: '+ Add User',
-                                            isLoading:
-                                            provider.isLoading,
-                                            onPressed: () {
-                                              showDialog(
-                                                context: context,
-                                                barrierDismissible:
-                                                false,
-                                                builder: (context) =>
-                                                const AddUserDialog(),
-                                              );
-                                            },
-                                            backgroundColor:
-                                            AppColors.secondary,
-                                            shadowColor:
-                                            AppColors.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.primary
-                                            .withOpacity(0.1),),
-                                      borderRadius:
-                                      const BorderRadius.only(
-                                        topRight:
-                                        Radius.circular(12),
-                                        topLeft:
-                                        Radius.circular(12),
-                                        bottomRight:
-                                        Radius.circular(12),
-                                        bottomLeft:
-                                        Radius.circular(12),
-                                      ),),
-                                    child: Column(
-                                      children: [
-                                        Container(
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary
-                                                .withOpacity(0.1),
+                                            border: Border.all(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.1),
+                                            ),
                                             borderRadius:
-                                            const BorderRadius
-                                                .only(
-                                              topRight:
-                                              Radius.circular(12),
-                                              topLeft:
-                                              Radius.circular(12),
-                                            ),),
-                                          child: Padding(
-                                            padding: EdgeInsets
-                                                .symmetric(
-                                                vertical: 12.0,
-                                                horizontal: 12),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                        "NAME",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            color: AppColors
-                                                                .primary,
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                16)))),
-                                              /*  Expanded(
+                                                const BorderRadius.only(
+                                              topRight: Radius.circular(12),
+                                              topLeft: Radius.circular(12),
+                                              bottomRight: Radius.circular(12),
+                                              bottomLeft: Radius.circular(12),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      const BorderRadius.only(
+                                                    topRight:
+                                                        Radius.circular(12),
+                                                    topLeft:
+                                                        Radius.circular(12),
+                                                  ),
+                                                ),
+                                                child: Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 12.0,
+                                                      horizontal: 12),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                          flex: 2,
+                                                          child: Text("NAME",
+                                                              style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: AppColors
+                                                                      .primary,
+                                                                  fontSize: ResponsiveUtils
+                                                                      .fontSize(
+                                                                          context,
+                                                                          16)))),
+                                                      /*  Expanded(
                                                     flex: 2,
                                                     child: Row(
                                                       children: [
@@ -446,108 +455,110 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                         ),
                                                       ],
                                                     )),*/
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: Row(
-                                                      children: [
-                                                        Text(
-                                                            "ROLE",
-                                                            style: TextStyle(
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                color: AppColors
-                                                                    .primary,
-                                                                fontSize: ResponsiveUtils.fontSize(
-                                                                    context,
-                                                                    16))),
-                                                      ],
-                                                    )),
-                                                Visibility(
-                                                  visible:PermissionService().canEditUsers ,
-                                                  child: Expanded(
-                                                      flex: 2,
-                                                      child: Text(
-                                                          "STATUS",
-                                                          style: TextStyle(
-                                                              fontWeight:
-                                                              FontWeight
-                                                                  .bold,
-                                                              color: AppColors
-                                                                  .primary,
-                                                              fontSize: ResponsiveUtils
-                                                                  .fontSize(
-                                                                  context,
-                                                                  16)))),
-                                                ),
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                        "CREATED/UPDATED BY",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            color: AppColors
-                                                                .primary,
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                16)))),
-                                                if(   PermissionService().canEditUsers ||      PermissionService().canDeleteUsers )
-                                                Expanded(
-                                                    flex: 1,
-                                                    child: Text(
-                                                        "Actions",
-                                                        style: TextStyle(
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold,
-                                                            color: AppColors
-                                                                .primary,
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                16)))),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        if (provider.users.isNotEmpty)
-                                          Expanded(
-                                            child: ListView.separated(
-                                              itemCount: provider
-                                                  .users.length,
-                                              separatorBuilder:
-                                                  (context, index) =>
-                                              const Divider(
-                                                height: 1,
-                                                thickness: 1,
-                                                color: AppColors
-                                                    .backgroundColor,
-                                              ),
-                                              itemBuilder:
-                                                  (context, index) {
-                                                final user = provider
-                                                    .users[index];
-                                                return Padding(
-                                                  padding:
-                                                  const EdgeInsets
-                                                      .symmetric(
-                                                      vertical:
-                                                      6.0,
-                                                      horizontal:
-                                                      12),
-                                                  child: Row(
-                                                    children: [
+                                                      Expanded(
+                                                          flex: 2,
+                                                          child: Row(
+                                                            children: [
+                                                              Text("ROLE",
+                                                                  style: TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: AppColors
+                                                                          .primary,
+                                                                      fontSize: ResponsiveUtils.fontSize(
+                                                                          context,
+                                                                          16))),
+                                                            ],
+                                                          )),
+                                                      Visibility(
+                                                        visible:
+                                                            PermissionService()
+                                                                .canEditUsers,
+                                                        child: Expanded(
+                                                            flex: 2,
+                                                            child: Text(
+                                                                "STATUS",
+                                                                style: TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    fontSize: ResponsiveUtils
+                                                                        .fontSize(
+                                                                            context,
+                                                                            16)))),
+                                                      ),
                                                       Expanded(
                                                           flex: 2,
                                                           child: Text(
-                                                              user.name,
+                                                              "CREATED/UPDATED BY",
                                                               style: TextStyle(
-                                                                  fontSize:
-                                                                  ResponsiveUtils.fontSize(context, 14)))),
-                                                      /*Expanded(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: AppColors
+                                                                      .primary,
+                                                                  fontSize: ResponsiveUtils
+                                                                      .fontSize(
+                                                                          context,
+                                                                          16)))),
+                                                      if (PermissionService()
+                                                              .canEditUsers ||
+                                                          PermissionService()
+                                                              .canDeleteUsers)
+                                                        Expanded(
+                                                            flex: 1,
+                                                            child: Text(
+                                                                "Actions",
+                                                                style: TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    fontSize: ResponsiveUtils.fontSize(
+                                                                        context,
+                                                                        16)))),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              if (provider.users.isNotEmpty)
+                                                Expanded(
+                                                  child: ListView.separated(
+                                                    itemCount:
+                                                        provider.users.length,
+                                                    separatorBuilder:
+                                                        (context, index) =>
+                                                            const Divider(
+                                                      height: 1,
+                                                      thickness: 1,
+                                                      color: AppColors
+                                                          .backgroundColor,
+                                                    ),
+                                                    itemBuilder:
+                                                        (context, index) {
+                                                      final user =
+                                                          provider.users[index];
+                                                      return Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 6.0,
+                                                                horizontal: 12),
+                                                        child: Row(
+                                                          children: [
+                                                            Expanded(
+                                                                flex: 2,
+                                                                child: Text(
+                                                                    user.name,
+                                                                    style: TextStyle(
+                                                                        fontSize: ResponsiveUtils.fontSize(
+                                                                            context,
+                                                                            14)))),
+                                                            /*Expanded(
                                                           flex: 2,
                                                           child: Text(
                                                               user.email ??
@@ -555,107 +566,134 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                                                               style: TextStyle(
                                                                   fontSize:
                                                                   ResponsiveUtils.fontSize(context, 14)))),*/
-                                                      Expanded(
-                                                          flex: 2,
-                                                          child: Text(
-                                                              _toCamelCase(user.roleName),
-                                                              style: TextStyle(
-                                                                  fontSize:
-                                                                  ResponsiveUtils.fontSize(context, 14)))),
-                                                      Visibility(
-                                                        visible:PermissionService().canEditUsers ,
-                                                        child: Expanded(
-                                                          flex: 2,
-                                                          child: _buildToggle(
-                                                            context: context,
-                                                            value: user.status == 1, // Convert to boolean (1 = true, 0 = false)
-                                                            onChanged: (newValue) async {
-                                                              await Provider.of<UserManagementProvider>(context, listen: false)
-                                                                  .updateUserStatus(
-                                                                  context,
-                                                                  user.id,
-                                                                  newValue ? 1 : 0 // Convert back to 1/0
-                                                              );
-                                                            },
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Expanded(
-                                                        flex: 2,
-                                                        child: Text(
-                                                          DateFormat(
-                                                              'dd-MM-yyyy HH:mm')
-                                                              .format(
-                                                              user.createdAt),
-                                                          style: TextStyle(
-                                                              fontSize:
-                                                              ResponsiveUtils.fontSize(context, 14)),
-                                                        ),
-                                                      ),
-                                                      if(   PermissionService().canEditUsers ||      PermissionService().canDeleteUsers )
-                                                      Expanded(
-                                                        flex: 1,
-                                                        child: Wrap(
-                                                          children: [
+                                                            Expanded(
+                                                                flex: 2,
+                                                                child: Text(
+                                                                    _toCamelCase(user
+                                                                        .roleName),
+                                                                    style: TextStyle(
+                                                                        fontSize: ResponsiveUtils.fontSize(
+                                                                            context,
+                                                                            14)))),
                                                             Visibility(
-                                                              visible:PermissionService().canEditUsers ,
-                                                              child: IconButton(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .edit_outlined,
-                                                                    color:
-                                                                    AppColors.primary,
-                                                                    size: ResponsiveUtils.fontSize(context, 22)),
-                                                                onPressed: () async {
-                                                                  await Provider.of<UserManagementProvider>(context, listen: false)
-                                                                      .getUserById(context, user.id);
-                                                                  showDialog(
-                                                                    context: context,
-                                                                    barrierDismissible: false,
-                                                                    builder: (context) => AddUserDialog(user: user), // Pass the user here
-                                                                  );
-                                                                },
+                                                              visible:
+                                                                  PermissionService()
+                                                                      .canEditUsers,
+                                                              child: Expanded(
+                                                                flex: 2,
+                                                                child:
+                                                                    _buildToggle(
+                                                                  context:
+                                                                      context,
+                                                                  value: user
+                                                                          .status ==
+                                                                      1, // Convert to boolean (1 = true, 0 = false)
+                                                                  onChanged:
+                                                                      (newValue) async {
+                                                                    await Provider.of<UserManagementProvider>(context, listen: false).updateUserStatus(
+                                                                        context,
+                                                                        user.id,
+                                                                        newValue
+                                                                            ? 1
+                                                                            : 0 // Convert back to 1/0
+                                                                        );
+                                                                  },
+                                                                ),
                                                               ),
                                                             ),
-                                                            Visibility(
-                                                              visible:PermissionService().canDeleteUsers ,
-                                                              child: IconButton(
-                                                                icon: Icon(
-                                                                    Icons
-                                                                        .delete_outline,
-                                                                    color:
-                                                                    Colors.red,
-                                                                    size: ResponsiveUtils.fontSize(context, 22)),
-                                                                onPressed: () => _showDeleteConfirmation(context, user.id),
+                                                            Expanded(
+                                                              flex: 2,
+                                                              child: Text(
+                                                                DateFormat(
+                                                                        'dd-MM-yyyy HH:mm')
+                                                                    .format(user
+                                                                        .createdAt),
+                                                                style: TextStyle(
+                                                                    fontSize: ResponsiveUtils
+                                                                        .fontSize(
+                                                                            context,
+                                                                            14)),
                                                               ),
                                                             ),
+                                                            if (PermissionService()
+                                                                    .canEditUsers ||
+                                                                PermissionService()
+                                                                    .canDeleteUsers)
+                                                              Expanded(
+                                                                flex: 1,
+                                                                child: Wrap(
+                                                                  children: [
+                                                                    Visibility(
+                                                                      visible:
+                                                                          PermissionService()
+                                                                              .canEditUsers,
+                                                                      child:
+                                                                          IconButton(
+                                                                        icon: Icon(
+                                                                            Icons
+                                                                                .edit_outlined,
+                                                                            color:
+                                                                                AppColors.primary,
+                                                                            size: ResponsiveUtils.fontSize(context, 22)),
+                                                                        onPressed:
+                                                                            () async {
+                                                                          await Provider.of<UserManagementProvider>(context, listen: false).getUserById(
+                                                                              context,
+                                                                              user.id);
+                                                                          showDialog(
+                                                                            context:
+                                                                                context,
+                                                                            barrierDismissible:
+                                                                                false,
+                                                                            builder: (context) =>
+                                                                                AddUserDialog(user: user), // Pass the user here
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                    ),
+                                                                    Visibility(
+                                                                      visible:
+                                                                          PermissionService()
+                                                                              .canDeleteUsers,
+                                                                      child:
+                                                                          IconButton(
+                                                                        icon: Icon(
+                                                                            Icons
+                                                                                .delete_outline,
+                                                                            color:
+                                                                                Colors.red,
+                                                                            size: ResponsiveUtils.fontSize(context, 22)),
+                                                                        onPressed: () => _showDeleteConfirmation(
+                                                                            context,
+                                                                            user.id),
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
                                                           ],
                                                         ),
-                                                      ),
-                                                    ],
+                                                      );
+                                                    },
                                                   ),
-                                                );
-                                              },
-                                            ),
-                                          )
-                                        else
-                                          const Expanded(
-                                            child: Center(
-                                              child: Text(
-                                                  "No users found"),
-                                            ),
+                                                )
+                                              else
+                                                const Expanded(
+                                                  child: Center(
+                                                    child:
+                                                        Text("No users found"),
+                                                  ),
+                                                ),
+                                            ],
                                           ),
-                                      ],
-                                    ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                    
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
                 const Searchbar(),
@@ -666,6 +704,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       ),
     );
   }
+
   Widget _buildToggle({
     required bool value,
     required ValueChanged<bool> onChanged,
@@ -676,30 +715,32 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       children: [
         Switch(
           value: value,
-          onChanged: isLoading ? null : (newValue) async {
-            // Check permission first
-            if (!PermissionService().canEditUsers) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("No permission to change status")),
-              );
-              return;
-            }
+          onChanged: isLoading
+              ? null
+              : (newValue) async {
+                  // Check permission first
+                  if (!PermissionService().canEditUsers) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("No permission to change status")),
+                    );
+                    return;
+                  }
 
-            bool confirm = false;
-            await ConfirmationDialog.show(
-              context: context,
-              title: 'Confirm Status Change',
-              message: 'Are you sure?',
-              confirmText: 'Confirm',
-              confirmColor: AppColors.secondary,
-              onConfirm: () => confirm = true,
-              onCancel: () => confirm = false,
-            );
+                  bool confirm = false;
+                  await ConfirmationDialog.show(
+                    context: context,
+                    title: 'Confirm Status Change',
+                    message: 'Are you sure?',
+                    confirmText: 'Confirm',
+                    confirmColor: AppColors.secondary,
+                    onConfirm: () => confirm = true,
+                    onCancel: () => confirm = false,
+                  );
 
-            if (confirm) {
-              onChanged(newValue);
-            }
-          },
+                  if (confirm) {
+                    onChanged(newValue);
+                  }
+                },
           activeColor: Colors.green,
           activeTrackColor: Colors.green.shade100,
           inactiveThumbColor: Colors.grey[300],
@@ -715,6 +756,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       ],
     );
   }
+
   List<Widget> _buildPageButtons() {
     int maxButtons = 5;
     int startPage = (_currentPage - (maxButtons ~/ 2)).clamp(1, totalPages);
@@ -732,9 +774,9 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-              i == _currentPage ? AppColors.secondary : Colors.white,
+                  i == _currentPage ? AppColors.secondary : Colors.white,
               foregroundColor:
-              i == _currentPage ? Colors.white : AppColors.secondary,
+                  i == _currentPage ? Colors.white : AppColors.secondary,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               minimumSize: Size(0, 36),
             ),
@@ -751,8 +793,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
     return buttons;
   }
 
-
-  Widget _buildMobileUserCard(dynamic user, BuildContext context, UserManagementProvider provider) {
+  Widget _buildMobileUserCard(
+      dynamic user, BuildContext context, UserManagementProvider provider) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -780,7 +822,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: user.status == 1
                         ? Colors.green.withOpacity(0.1)
@@ -810,13 +853,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
               label: 'Role',
               value: _toCamelCase(user.roleName),
             ),
-            const SizedBox(height: 8),
 
-            _buildMobileDetailRow(
-              icon: Icons.email_outlined,
-              label: 'Email',
-              value: user.email ?? 'N/A',
-            ),
             const SizedBox(height: 8),
 
             _buildMobileDetailRow(
@@ -830,7 +867,7 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
             if (PermissionService().canEditUsers ||
                 PermissionService().canDeleteUsers)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // Status Toggle
                   if (PermissionService().canEditUsers)
@@ -843,7 +880,8 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                           await ConfirmationDialog.show(
                             context: context,
                             title: 'Confirm Status Change',
-                            message: 'Are you sure you want to ${newValue ? 'activate' : 'deactivate'} this user?',
+                            message:
+                                'Are you sure you want to ${newValue ? 'activate' : 'deactivate'} this user?',
                             confirmText: 'Confirm',
                             confirmColor: AppColors.secondary,
                             onConfirm: () => confirm = true,
@@ -864,33 +902,51 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
                   // Edit Button
                   if (PermissionService().canEditUsers)
                     Expanded(
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          color: AppColors.primary,
-                          size: 22,
+                      child: Container(
+                        height: 36,
+                        width: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primary.withOpacity(0.1),
                         ),
-                        onPressed: () async {
-                          await provider.getUserById(context, user.id);
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => AddUserDialog(user: user),
-                          );
-                        },
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                          onPressed: () async {
+                            await provider.getUserById(context, user.id);
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => AddUserDialog(user: user),
+                            );
+                          },
+                        ),
                       ),
                     ),
 
                   // Delete Button
                   if (PermissionService().canDeleteUsers)
                     Expanded(
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                          size: 22,
+                      child: Container(
+                        height: 36,
+                        width: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red.withOpacity(0.1),
                         ),
-                        onPressed: () => _showDeleteConfirmation(context, user.id),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 22,
+                          ),
+                          onPressed: () =>
+                              _showDeleteConfirmation(context, user.id),
+                        ),
                       ),
                     ),
                 ],
@@ -979,5 +1035,4 @@ class _UsermanagementscreenState extends State<Usermanagementscreen> {
       ],
     );
   }
-
 }

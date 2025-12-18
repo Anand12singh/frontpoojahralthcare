@@ -21,8 +21,9 @@ import 'package:path/path.dart' as path;
 
 class FollowUpsTabContent extends StatefulWidget {
   final String patientId;
+  final bool isMobile;
 
-  const FollowUpsTabContent({super.key, required this.patientId});
+  const FollowUpsTabContent({super.key, required this.patientId, required this.isMobile});
 
   @override
   State<FollowUpsTabContent> createState() => _FollowUpsTabContentState();

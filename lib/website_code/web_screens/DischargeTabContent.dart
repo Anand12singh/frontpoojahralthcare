@@ -28,11 +28,11 @@ import 'Patient_Registration.dart';
 class DischargeTabContent extends StatefulWidget {
    var patientId;
    var postOperationId;
-
+   final bool isMobile;
    DischargeTabContent({
   super.key,
   this.patientId,
-  this.postOperationId,
+  this.postOperationId, required this.isMobile,
   });
 
   @override
@@ -308,10 +308,14 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       });
+      final fields = <String, String>{};
 
-      // Add form fields
-      final fields = <String, String>{
-        "id": _existingDischargeId?.toString() ?? '',
+// ONLY add ID if updating
+      if (_existingDischargeId != null) {
+        fields["id"] = _existingDischargeId!.toString();
+      }
+
+      fields.addAll({
         "patient_id": widget.patientId.toString(),
         "post_operation_id": widget.postOperationId?.toString() ?? "0",
         "consultant": _consultantController.text,
@@ -340,7 +344,8 @@ class _DischargeTabContentState extends State<DischargeTabContent> {
         'hypertension_description': _ensureString(_hypertensionSinceController.text),
         'IHD_description': _ensureString(_ihdDescriptionController.text),
         'COPD_description': _ensureString(_copdDescriptionController.text),
-      };
+      });
+
 
       if (_admissionDate != null) {
         fields["admission_date"] =

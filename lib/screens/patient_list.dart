@@ -507,6 +507,450 @@ print(response.request);
         : ((_currentPage - 1) * _rowsPerPage) + filteredPatients.length;
 
     if (isMobile) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFEAF2FF),
+        drawer: const Sidebar(),
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          elevation: 3,
+          titleSpacing: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text(
+            'Patient List',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          ),
+          actions: [
+            // Small Add Patient button in AppBar
+            Visibility(
+              visible: PermissionService().canAddPatients,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: const Icon(Icons.person_add, size: 22),
+                  color: Colors.white,
+                  onPressed: () {
+                    _showAddPatientModal(context);
+                  },
+                  tooltip: 'Add Patient',
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : errorMessage.isNotEmpty
+            ? Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        )
+            : Column(
+          children: [
+            // Enhanced Search Bar - Larger for mobile
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                children: [
+                  // Search Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12.0),
+                          child: Icon(Icons.search, color: Colors.grey[600]),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: searchController,
+                            onChanged: filterPatients,
+                            decoration: const InputDecoration(
+                              hintText: "Search by name, phone, or PHID...",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 16,
+                              ),
+                              hintStyle: TextStyle(fontSize: 16),
+                            ),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        if (searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey[600]),
+                            onPressed: () {
+                              searchController.clear();
+                              filterPatients('');
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Filters Row
+                  Row(
+                    children: [
+                      // Sort dropdown
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton2<String>(
+                              isExpanded: true,
+                              hint: Padding(
+                                padding: const EdgeInsets.only(left: 12.0),
+                                child: Text(
+                                  'Sort by',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              value: _sortBy,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'first_name',
+                                  child: const Text('Name (A-Z)'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'age',
+                                  child: const Text('Age'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'created_at',
+                                  child: const Text('Newest First'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _sortBy = value;
+                                  _fetchPatients();
+                                });
+                              },
+                              buttonStyleData: ButtonStyleData(
+                                height: 40,
+                                padding: const EdgeInsets.only(left: 12, right: 8),
+                              ),
+                              dropdownStyleData: DropdownStyleData(
+                                maxHeight: 200,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Show dropdown
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton2<int>(
+                            hint: Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Text(
+                                'Show: ${_rowsPerPage == 0 ? 'ALL' : _rowsPerPage}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            value: _rowsPerPage,
+                            items: _rowsPerPageOptions.map((int value) {
+                              return DropdownMenuItem<int>(
+                                value: value,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text(value == 0 ? 'ALL' : value.toString()),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _rowsPerPage = value!;
+                                _currentPage = 1;
+                                _fetchPatients();
+                              });
+                            },
+                            buttonStyleData: const ButtonStyleData(
+                              height: 40,
+                              padding: EdgeInsets.only(left: 8, right: 8),
+                            ),
+                            dropdownStyleData: DropdownStyleData(
+                              maxHeight: 200,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Patient Count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Patients (${filteredPatients.length})',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    'Total: $_totalRecords',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Patients List with infinite scrolling
+            Expanded(
+              child: filteredPatients.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      size: 80,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No patients found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (searchController.text.isNotEmpty)
+                      Text(
+                        'Try different search terms',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              )
+                  : RefreshIndicator(
+                onRefresh: () async {
+                  await _fetchPatients();
+                },
+                child: ListView.builder(
+                  itemCount: filteredPatients.length + 1, // +1 for loading indicator
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemBuilder: (context, index) {
+                    // Loading indicator at the end
+                    if (index == filteredPatients.length) {
+                      if (_currentPage < totalPages && _rowsPerPage != 0) {
+                        // Show loading indicator and load more data
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_currentPage < totalPages) {
+                            _currentPage++;
+                            _fetchPatients();
+                          }
+                        });
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.primary),
+                          ),
+                        );
+                      }
+                      return const SizedBox(); // No more data to load
+                    }
+
+                    final patient = filteredPatients[index];
+                    final _gender = patient['gender'] == 1 ? 'Male' : 'Female';
+
+                    return Card(
+                      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () async {
+                          // Navigate to patient details
+                          GlobalPatientData.firstName = patient['name'].split(' ')[0];
+                          GlobalPatientData.lastName = patient['name'].split(' ').length > 1
+                              ? patient['name'].split(' ')[1]
+                              : '';
+                          GlobalPatientData.phone = patient['phone'];
+                          Global.status = "2";
+                          GlobalPatientData.phid = patient['id'].toString();
+                          GlobalPatientData.patientId = patient['phid'];
+
+                          await GlobalPatientData.saveToPrefs();
+                          await GlobalPatientData.loadFromPrefs();
+                          Navigator.pushReplacementNamed(context, '/patientData');
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Patient Name and PHID
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      patient['name'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      _formatPhid(patient['phid'], patient['created_at']),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Patient Details in 2 columns
+                              Row(
+                                children: [
+                                  // Left column
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildDetailRow('Age', _formatAge(patient['age'])),
+                                        const SizedBox(height: 6),
+                                        _buildDetailRow('Gender', _gender),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Right column
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildDetailRow('Phone', patient['phone'] ?? 'N/A'),
+                                        const SizedBox(height: 6),
+                                        _buildDetailRow('Last Visit', _toCamelCase(patient['lastVisit']) ?? 'N/A'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Action Buttons
+                              if (PermissionService().canEditPatients || PermissionService().canDeletePatients)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (PermissionService().canEditPatients)
+                                      IconButton(
+                                        icon: Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                                        onPressed: () async {
+                                          GlobalPatientData.firstName = patient['name'].split(' ')[0];
+                                          GlobalPatientData.lastName = patient['name'].split(' ').length > 1
+                                              ? patient['name'].split(' ')[1]
+                                              : '';
+                                          GlobalPatientData.phone = patient['phone'];
+                                          Global.status = "2";
+                                          GlobalPatientData.phid = patient['id'].toString();
+                                          GlobalPatientData.patientId = patient['phid'];
+
+                                          await GlobalPatientData.saveToPrefs();
+                                          await GlobalPatientData.loadFromPrefs();
+                                          Navigator.pushReplacementNamed(context, '/patientData');
+                                        },
+                                        tooltip: 'Edit',
+                                      ),
+
+                                    if (PermissionService().canDeletePatients)
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                        onPressed: () {
+                                          _showDeleteDialog(context, patient['phid']);
+                                        },
+                                        tooltip: 'Delete',
+                                      ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
 
@@ -1176,680 +1620,37 @@ print(response.request);
       ),
 
     );
+
+
+
   }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFEAF2FF),
-
-
-      body: Row(
-        children: [
-
-          Sidebar(),
-          Expanded(
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 80),
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator(
-                      color: AppColors.primary))
-                      : errorMessage.isNotEmpty
-                      ? Center(child: Text(
-                      errorMessage, style: const TextStyle(color: Colors.red)))
-                      : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 16, bottom: 12, top: 12, right: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Patient List',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 26,
-                              ),
-                            ),
-                            Visibility(
-                              visible: PermissionService().canAddPatients,
-                              child: Center(
-                                child: Container(
-                                  margin: EdgeInsets.only(left: 16),
-                                  height: 50, // define desired button height
-                                  width: ResponsiveUtils.scaleWidth(
-                                      context, 160),
-                                  child: Animatedbutton(
-                                    title: '+ Add Patient',
-                                    isLoading: _isLoading,
-                                    onPressed: () {
-                                      _showAddPatientModal(context);
-                                    },
-                                    backgroundColor: AppColors.secondary,
-                                    shadowColor: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(12),
-
-                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: AppColors.hinttext.withOpacity(0.2)),
-                          ),
-                          child: Column(
-                            spacing: 10,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    flex: 3,
-                                    child: Row(
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Text('Show '),
-                                            const SizedBox(width: 8),
-                                            DropdownButton2<int>(
-                                              dropdownStyleData: DropdownStyleData(
-                                                  decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius
-                                                          .all(
-                                                          Radius.circular(12)))
-                                              ),
-                                              value: _rowsPerPage,
-                                              items: _rowsPerPageOptions.map((
-                                                  int value) {
-                                                return DropdownMenuItem<int>(
-                                                  value: value,
-                                                  child: Text(
-                                                      value == 0 ? 'ALL' : value
-                                                          .toString()),
-                                                );
-                                              }).toList(),
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _rowsPerPage = value!;
-                                                  _currentPage = 1;
-                                                  _fetchPatients();
-                                                });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-
-
-                                        /*  SizedBox(width: 10,),
-                                const Text('Sort By'),
-                                DropdownButton2<String>(
-                                  dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
-                                  hint: Text('Sort By'),
-                                  value: _sortBy,
-                                  items: [
-                                    DropdownMenuItem(value: 'first_name', child: Text('First Name')),
-                                    DropdownMenuItem(value: 'last_name', child: Text('Last Name')),
-                                    DropdownMenuItem(value: 'age', child: Text('Age')),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _sortBy = value;
-                                      _fetchPatients();
-                                    });
-                                  },
-                                ),
-                                SizedBox(width: 10),
-                                const Text('Order By'),
-                                DropdownButton2<String>(
-                                  dropdownStyleData: DropdownStyleData(decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)))),
-                                  hint: Text('Order By'),
-                                  value: _sortOrder,
-                                  items: [
-                                    DropdownMenuItem(value: 'asc', child: Text('Ascending')),
-                                    DropdownMenuItem(value: 'desc', child: Text('Descending')),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _sortOrder = value!;
-                                      _fetchPatients();
-                                    });
-                                  },
-                                ),
-
-                  */
-
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Flexible(
-                                    flex: 1,
-                                    child: CustomTextField(
-                                      controller: searchController,
-                                      onChanged: filterPatients,
-                                      hintText: "Search patient",
-                                      prefixIcon: Icons.search_rounded,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.1),),
-                                    borderRadius: const BorderRadius.only(
-                                      topRight: Radius.circular(12),
-                                      topLeft: Radius.circular(12),
-                                      bottomRight: Radius.circular(12),
-                                      bottomLeft: Radius.circular(12),
-
-                                    ),),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(
-                                              0.1),
-                                          borderRadius: const BorderRadius.only(
-                                            topRight: Radius.circular(12),
-                                            topLeft: Radius.circular(12),
-                                          ),
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 12),
-                                          child: Row(
-                                            children: [
-                                              Expanded(flex: 2,
-                                                  child: Text("PHID",
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold,
-                                                          color: AppColors
-                                                              .primary,
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 16)))),
-                                              Expanded(flex: 3, child: Row(
-                                                children: [
-                                                  Text(
-                                                    "Patient Name",
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight
-                                                          .bold,
-                                                      color: AppColors.primary,
-                                                      fontSize: ResponsiveUtils
-                                                          .fontSize(
-                                                          context, 16),
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        if (_sortBy == 'age') {
-                                                          // toggle order
-                                                          _sortOrder =
-                                                          _sortOrder == 'asc'
-                                                              ? 'desc'
-                                                              : 'asc';
-                                                        } else {
-                                                          // if changing sort field, start with ascending
-                                                          _sortBy = 'age';
-                                                          _sortOrder = 'asc';
-                                                        }
-                                                        _fetchPatients();
-                                                      });
-                                                    },
-                                                    icon: Icon(
-                                                      _sortBy == 'age'
-                                                          ? (_sortOrder == 'asc'
-                                                          ? Icons.arrow_upward
-                                                          : Icons
-                                                          .arrow_downward)
-                                                          : Icons
-                                                          .unfold_more_rounded,
-                                                      size: ResponsiveUtils
-                                                          .fontSize(
-                                                          context, 20),
-                                                      color: AppColors.primary,
-                                                    ),
-                                                  )
-                                                ],
-
-                                              )),
-                                              Expanded(flex: 2, child: Row(
-                                                children: [
-                                                  Text("Patient Age",
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold,
-                                                          color: AppColors
-                                                              .primary,
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 16))),
-
-                                                  IconButton(
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        if (_sortBy ==
-                                                            'first_name') {
-                                                          // toggle order
-                                                          _sortOrder =
-                                                          _sortOrder == 'asc'
-                                                              ? 'desc'
-                                                              : 'asc';
-                                                        } else {
-                                                          // if changing sort field, start with ascending
-                                                          _sortBy =
-                                                          'first_name';
-                                                          _sortOrder = 'asc';
-                                                        }
-                                                        _fetchPatients();
-                                                      });
-                                                    },
-                                                    icon: Icon(
-                                                      _sortBy == 'first_name'
-                                                          ? (_sortOrder == 'asc'
-                                                          ? Icons.arrow_upward
-                                                          : Icons
-                                                          .arrow_downward)
-                                                          : Icons
-                                                          .unfold_more_rounded,
-                                                      size: ResponsiveUtils
-                                                          .fontSize(
-                                                          context, 20),
-                                                      color: AppColors.primary,
-                                                    ),
-                                                  )
-                                                ],
-                                              )),
-                                              Expanded(flex: 2,
-                                                  child: Text("Patient Gender",
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold,
-                                                          color: AppColors
-                                                              .primary,
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 16)))),
-                                              Expanded(flex: 2,
-                                                  child: Text("Phone Number",
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold,
-                                                          color: AppColors
-                                                              .primary,
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 16)))),
-                                              Expanded(flex: 2,
-                                                  child: Text("Last Visit",
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold,
-                                                          color: AppColors
-                                                              .primary,
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 16)))),
-
-                                              if(PermissionService()
-                                                  .canEditPatients ||
-                                                  PermissionService()
-                                                      .canDeletePatients)
-                                                Expanded(flex: 1,
-                                                    child: Text("Actions",
-                                                        style: TextStyle(
-                                                            fontWeight: FontWeight
-                                                                .bold,
-                                                            color: AppColors
-                                                                .primary,
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context, 16)))),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: filteredPatients.isEmpty
-                                            ? Center(
-                                          child: Text(
-                                            'No patient found',
-                                            style: TextStyle(
-                                              fontSize: ResponsiveUtils
-                                                  .fontSize(context, 18),
-                                              color: AppColors.secondary,
-                                            ),
-                                          ),
-                                        )
-                                            : ListView.separated(
-                                          itemCount: filteredPatients.length,
-                                          separatorBuilder: (context, index) =>
-                                          const Divider(height: 1,
-                                              thickness: 1,
-                                              color: AppColors.backgroundColor),
-                                          itemBuilder: (context, index) {
-                                            final patient = filteredPatients[index];
-                                            final _gender = patient?['gender'] ==
-                                                1 ? 'Male' : 'Female';
-                                            print('patient');
-                                            print(patient['created_at']);
-                                            return Padding(
-                                              padding: const EdgeInsets
-                                                  .symmetric(vertical: 6.0,
-                                                  horizontal: 12),
-                                              child: Row(
-                                                children: [
-                                                  Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                      _formatPhid(
-                                                          patient['phid'],
-                                                          patient['created_at']),
-                                                      style: TextStyle(
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 14)),
-                                                    ),
-                                                  ),
-                                                  Expanded(flex: 3,
-                                                      child: Text(
-                                                        patient['name'] ?? '',
-                                                        style: TextStyle(
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                14)),)),
-                                                  Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                      _formatAge(
-                                                          patient['age']),
-                                                      // Use helper function
-                                                      style: TextStyle(
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 14)),
-                                                    ),
-                                                  ),
-                                                  Expanded(flex: 2,
-                                                      child: Text(_gender ?? '',
-                                                        style: TextStyle(
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                14)),)),
-                                                  Expanded(flex: 2,
-                                                      child: Text(
-                                                        patient['phone'] ?? '',
-                                                        style: TextStyle(
-                                                            fontSize: ResponsiveUtils
-                                                                .fontSize(
-                                                                context,
-                                                                14)),)),
-                                                  Expanded(flex: 2,
-                                                      child: Text(_toCamelCase(
-                                                          patient['lastVisit']) ??
-                                                          '', style: TextStyle(
-                                                          fontSize: ResponsiveUtils
-                                                              .fontSize(
-                                                              context, 14)),)),
-
-                                                  if(PermissionService()
-                                                      .canEditPatients ||
-                                                      PermissionService()
-                                                          .canDeletePatients)
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Wrap(
-                                                        children: [
-
-                                                          Visibility(
-                                                            visible: PermissionService()
-                                                                .canEditPatients,
-                                                            child: IconButton(
-                                                              icon: Icon(Icons
-                                                                  .edit_outlined,
-                                                                  color: AppColors
-                                                                      .primary,
-                                                                  size: ResponsiveUtils
-                                                                      .fontSize(
-                                                                      context,
-                                                                      22)),
-                                                              onPressed: () async {
-                                                                GlobalPatientData
-                                                                    .firstName =
-                                                                patient['name']
-                                                                    .split(
-                                                                    ' ')[0];
-                                                                GlobalPatientData
-                                                                    .lastName =
-                                                                patient['name']
-                                                                    .split(' ')
-                                                                    .length > 1
-                                                                    ? patient['name']
-                                                                    .split(
-                                                                    ' ')[1]
-                                                                    : '';
-                                                                GlobalPatientData
-                                                                    .phone =
-                                                                patient['phone'];
-                                                                GlobalPatientData
-                                                                    .patientExist =
-                                                                patient['patientExist'];
-
-
-                                                                Global.status =
-                                                                "2";
-                                                                GlobalPatientData
-                                                                    .phid =
-                                                                    patient['id']
-                                                                        .toString();
-                                                                GlobalPatientData
-                                                                    .patientId =
-                                                                patient['phid'];
-
-                                                                print(
-                                                                    "patient['patient_id']");
-                                                                print(
-                                                                    GlobalPatientData
-                                                                        .patientId);
-                                                                print(
-                                                                    GlobalPatientData
-                                                                        .phid);
-                                                                await GlobalPatientData
-                                                                    .saveToPrefs();
-                                                                await GlobalPatientData
-                                                                    .loadFromPrefs();
-                                                                Navigator
-                                                                    .pushReplacementNamed(
-                                                                    context,
-                                                                    '/patientData');
-                                                              },
-                                                            ),
-                                                          ),
-                                                          Visibility(
-                                                            visible: PermissionService()
-                                                                .canDeletePatients,
-                                                            child: IconButton(
-                                                              icon: Icon(Icons
-                                                                  .delete_outline,
-                                                                color: Colors
-                                                                    .red,
-                                                                size: ResponsiveUtils
-                                                                    .fontSize(
-                                                                    context,
-                                                                    22),),
-                                                              onPressed: () {
-                                                                _showDeleteDialog(
-                                                                    context,
-                                                                    patient['phid']);
-                                                              },
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment
-                                      .spaceBetween,
-                                  children: [
-                                    Text(
-                                        'Showing $fromRecord to $toRecord of $_totalRecords records'),
-                                    Row(
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment
-                                              .center,
-                                          children: [
-                                            // FIRST PAGE
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.first_page),
-                                              onPressed: _currentPage > 1
-                                                  ? () {
-                                                setState(() {
-                                                  _currentPage = 1;
-                                                });
-                                                _fetchPatients();
-                                              }
-                                                  : null,
-                                            ),
-                                            // PREVIOUS
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.chevron_left),
-                                              onPressed: _currentPage > 1
-                                                  ? () {
-                                                setState(() {
-                                                  _currentPage--;
-                                                });
-                                                _fetchPatients();
-                                              }
-                                                  : null,
-                                            ),
-
-                                            // PAGE NUMBERS
-                                            ..._buildPageButtons(),
-
-                                            // NEXT
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.chevron_right),
-                                              onPressed: _currentPage <
-                                                  totalPages
-                                                  ? () {
-                                                setState(() {
-                                                  _currentPage++;
-                                                });
-                                                _fetchPatients();
-                                              }
-                                                  : null,
-                                            ),
-
-                                            // LAST PAGE
-                                            IconButton(
-                                              icon: const Icon(Icons.last_page),
-                                              onPressed: _currentPage <
-                                                  totalPages
-                                                  ? () {
-                                                setState(() {
-                                                  _currentPage = totalPages;
-                                                });
-                                                _fetchPatients();
-                                              }
-                                                  : null,
-                                            ),
-
-                                            const SizedBox(width: 16),
-
-                                            // Jump-to-page box
-                                            SizedBox(
-                                              width: 50,
-                                              height: 30,
-                                              child: TextFormField(
-                                                initialValue: _currentPage
-                                                    .toString(),
-                                                textAlign: TextAlign.center,
-                                                keyboardType: TextInputType
-                                                    .number,
-                                                decoration: InputDecoration(
-                                                  isDense: true,
-                                                  contentPadding: EdgeInsets
-                                                      .symmetric(vertical: 6,
-                                                      horizontal: 8),
-                                                  border: OutlineInputBorder(),
-                                                ),
-                                                onFieldSubmitted: (value) {
-                                                  int? page = int.tryParse(
-                                                      value);
-                                                  if (page != null &&
-                                                      page >= 1 &&
-                                                      page <= totalPages) {
-                                                    setState(() {
-                                                      _currentPage = page;
-                                                    });
-                                                    _fetchPatients();
-                                                  }
-                                                },
-                                              ),
-                                            ),
-
-                                            SizedBox(width: 8),
-
-                                            Text("of $totalPages pages"),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Searchbar(),
-              ],
-            ),
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[700],
           ),
-        ],
-      ),
-
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Colors.black,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
-
-
-
   }
   String _formatPhid(String? phid, String? createdAt) {
     if (phid == null || phid == 'N/A') return 'N/A';

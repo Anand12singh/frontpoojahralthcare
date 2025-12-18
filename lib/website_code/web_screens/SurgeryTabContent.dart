@@ -29,7 +29,8 @@ import 'Patient_Registration.dart';
 
 class SurgeryTabContent extends StatefulWidget {
   final String patientId;
-  const SurgeryTabContent({super.key, required this.patientId});
+  final bool isMobile;
+  const SurgeryTabContent({super.key, required this.patientId, required this.isMobile});
 
   @override
   State<SurgeryTabContent> createState() => _SurgeryTabContentState();

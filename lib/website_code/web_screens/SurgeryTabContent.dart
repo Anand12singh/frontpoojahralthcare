@@ -583,10 +583,305 @@ class _SurgeryTabContentState extends State<SurgeryTabContent> {
   }
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 800;
     final formFieldWidth = responsiveWidth(context);
     final fieldSpacing = isLargeScreen ? 16.0 : 8.0;
+    if (isMobile) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Container(
+
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.Offwhitebackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.Containerbackground),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Text('1. Surgery Details', style: TextStyle(      fontSize: ResponsiveUtils.fontSize(context, 18), fontWeight: FontWeight.bold,)),
+              const SizedBox(height: 16),
+
+
+ /*             // Row 1 - Modified to be responsive
+              if (isLargeScreen) ...[
+                Row(
+                  children: [
+                    Expanded(child: _buildFormInput('Hospital', _locationController, maxLines: 1)),
+                    SizedBox(width: fieldSpacing),
+                    Expanded(child: _buildFormInput('Surgery', _surgeryController)),
+
+
+
+                  ],
+                ),
+              ] else ...[
+                Column(
+                  children: [
+                    _buildFormInput('Surgery', _surgeryController),
+                    SizedBox(height: fieldSpacing),
+                    DatePickerInput(
+                      label: 'Date',
+                      initialDate: _selectedDate,
+                      onDateSelected: (date) {
+                        setState(() => _selectedDate = date);
+                      },
+                      hintlabel: '',
+                    ),
+                    SizedBox(height: fieldSpacing),
+                    _buildFormInput('Surgeon', _surgeonController),
+                  ],
+                ),
+              ],
+              SizedBox(height: fieldSpacing),*/
+
+              // Row 2 - Modified to be responsive
+              if (isLargeScreen) ...[
+                LayoutBuilder(
+                  builder: (context,constraints) {
+                    double screenWidth = constraints.maxWidth;
+                    int itemsPerRow;
+
+                    if (screenWidth < 600) {
+                      itemsPerRow = 1; // mobile
+                    } else if (screenWidth < 1200) {
+                      itemsPerRow = 3; // tablet
+                    } else if (screenWidth < 1500) {
+                      itemsPerRow = 3; // small desktop
+                    } else {
+                      itemsPerRow = 4; // large desktop
+                    }
+
+                    double itemWidth = (screenWidth / itemsPerRow) - 16; // padding
+                    return Wrap(
+                      spacing: fieldSpacing,
+                      runSpacing: fieldSpacing,
+                      alignment: WrapAlignment.start,
+                      children: [
+                        DropdownInput<String>(
+                          label: 'Hospital Location',
+                          hintText:'Hospital Location' ,
+                          items: _locations.map((loc) {
+                            return DropdownMenuItem<String>(
+                              value: loc['id'].toString(),
+                              child: Text(loc['location'].toString(), style: TextStyle(fontSize:  ResponsiveUtils.fontSize(context, 16)),),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedLocationId = value;
+                              // Find the corresponding location name
+                              final selectedLoc = _locations.firstWhere(
+                                    (loc) => loc['id'].toString() == value,
+                                orElse: () => {'id': '2', 'location': 'Unknown'},
+                              );
+                              _selectedLocationName = selectedLoc['location'] ?? 'Unknown';
+                            });
+                          },
+                          value: _selectedLocationId,
+                        ),
+
+
+
+                        if(_selectedLocationName=="Others")
+                          FormInput(label: 'Other  Location',hintlabel: "Enter Other  Location",controller: _otherLocationController,),
+
+                       // _buildFormInput('Hospital', _locationController, maxLines: 1),
+
+                        _buildFormInput('Surgery', _surgeryController,maxLines: 3),
+
+                        _buildFormInput('Surgeon', _surgeonController,maxLines: 3),
+                        DropdownInput<String>(
+                          label: 'Surgery Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+                          hintText: 'Enter Surgery Type', // Changed label from 'Clinic Location' to 'Hernia Type'
+
+                          items: _hernia.map((loc) {
+                            return DropdownMenuItem<String>(
+                              value: loc['id'].toString(),
+                              child: Text(
+                                loc['hernia_name'].toString(), // Changed from 'location' to 'hernia_name'
+                                style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 16)),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOperationId = value;
+                              // Find the corresponding hernia name
+                              final selectedLoc = _hernia.firstWhere(
+                                    (loc) => loc['id'].toString() == value,
+                                orElse: () => {'id': '2', 'hernia_name': 'Femoral'}, // Updated default
+                              );
+                              _selectedOperationName = selectedLoc['hernia_name'] ?? 'Unknown'; // Changed to 'hernia_name'
+                              print(_selectedOperationName);
+                            });
+                          },
+                          value: _selectedOperationId,
+                        ),
+                        DatePickerInput(
+                          label: 'Date',
+                          initialDate: _selectedDate,
+                          onDateSelected: (date) {
+                            setState(() => _selectedDate = date);
+                          },
+                          hintlabel: 'Date',
+                        ),
+
+                        _buildFormInput('Assistant', _assistantController),
+                        _buildFormInput('Anaesthetist/s', _anaesthetistController),
+                        _buildFormInput('Anaesthesia', _anaesthesiaController),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Time taken:', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary, fontSize: ResponsiveUtils.fontSize(context, 14))),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  child: CustomTextField(
+                                    maxLength: 2,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                    ],
+                                    controller: _timetakenHrController,
+                                    hintText: '00',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Hr', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 60,
+                                  child: CustomTextField(
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                                    ],
+                                    maxLength: 2,
+                                    controller: _timetakenMinController,
+                                    hintText: '00',
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Min', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ].map((child) {
+                        return SizedBox(
+                          width: itemWidth,
+                          child: child,
+                        );
+                      }).toList(),
+                    );
+
+                  },
+                )
+              ] else ...[
+                Column(
+                  children: [
+                    _buildFormInput('Assistant', _assistantController),
+                    SizedBox(height: fieldSpacing),
+                    _buildFormInput('Anaesthetist/s', _anaesthetistController),
+                    SizedBox(height: fieldSpacing),
+                    _buildFormInput('Anaesthesia', _anaesthesiaController),
+                    SizedBox(height: fieldSpacing),
+
+                  ],
+                ),
+              ],
+              SizedBox(height: fieldSpacing),
+
+              // Row 3 - Modified to be responsive
+              if (isLargeScreen) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    Expanded(child: _buildFormInput('Findings', _findingsController, maxLines: 3)),
+                    SizedBox(width: fieldSpacing),
+
+                    Expanded(child: _buildFormInput('Procedure', _procedureController, maxLines: 3)),
+                  ],
+                ),
+              ] else ...[
+                Column(
+                  children: [
+                    _buildFormInput('Hospital', _locationController, maxLines: 1),
+                    SizedBox(height: fieldSpacing),
+                    _buildFormInput('Findings', _findingsController, maxLines: 3),
+                    SizedBox(height: fieldSpacing),
+                    _buildFormInput('Implants used, if any', _implantsController, maxLines: 3),
+                  ],
+                ),
+              ],
+              SizedBox(height: fieldSpacing),
+              _buildFormInput('Implants used, if any', _implantsController, maxLines: 3),
+              SizedBox(height: fieldSpacing),
+              _buildFormInput('Complications, if any', _complicationsController, maxLines: 3),
+              SizedBox(height: fieldSpacing),
+              // Implants Upload
+              _buildImageUploadField(),
+             // SizedBox(height: fieldSpacing),
+
+              // Row 4 - Modified to be responsive
+
+
+              // Procedure
+
+              SizedBox(height: fieldSpacing),
+
+              // Notes
+              _buildFormInput('Notes', _furtherPlanController, maxLines: 2),
+              SizedBox(height: 20),
+
+              // Buttons
+              Visibility(
+                visible:PermissionService().canEditPatients ,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: ResponsiveUtils.scaleWidth(context, 150),
+                      child: Animatedbutton(
+                        onPressed: () => Navigator.pop(context),
+                        shadowColor: Colors.white,
+                        titlecolor: AppColors.primary,
+                        backgroundColor: Colors.white,
+                        borderColor: AppColors.secondary,
+                        isLoading: false,
+                        title: 'Cancel',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: ResponsiveUtils.scaleWidth(context, 150),
+                      child: Animatedbutton(
+                        onPressed: _submitForm,
+                        shadowColor: Colors.white,
+                        backgroundColor: AppColors.secondary,
+                        isLoading: _isLoading,
+                        title: 'Save',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

@@ -922,7 +922,12 @@ print(response.request);
 
                                           await GlobalPatientData.saveToPrefs();
                                           await GlobalPatientData.loadFromPrefs();
-                                          Navigator.pushReplacementNamed(context, '/patientData');
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => PatientDataTabsScreen(),
+                                            ),
+                                          );
                                         },
                                         tooltip: 'Edit',
                                       ),

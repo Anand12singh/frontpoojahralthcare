@@ -48,6 +48,7 @@ class _DatePickerInputState extends State<DatePickerInput> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final isMobile = ResponsiveUtils.isMobile(context);
     if (!widget.enabled) return;
 
 
@@ -57,65 +58,124 @@ class _DatePickerInputState extends State<DatePickerInput> {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder( // ✅ To manage local state inside dialog
+        final isMobile = MediaQuery.of(context).size.width < 600;
+
+        return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  width: 700,
-                  height: 500,
+                  width: isMobile ? MediaQuery.of(context).size.width * 0.95 : 700,
+                  height: isMobile ? 450 : 500,
                   child: Column(
                     children: [
-                      // ✅ Custom Calendar Header
+                      // ✅ Responsive Custom Calendar Header
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 8 : 12,
+                          vertical: isMobile ? 6 : 8,
+                        ),
                         color: AppColors.primary.withOpacity(0.1),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            // Year Back Button
                             IconButton(
-                              icon:  Text("<<",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              padding: EdgeInsets.only(right: isMobile ? 0 : 4),
+                              constraints: BoxConstraints(
+                                minWidth: isMobile ? 36 : 48,
+                                minHeight: isMobile ? 36 : 48,
+                              ),
+                              icon: isMobile
+                                  ? Icon(Icons.skip_previous, size: 20)
+                                  : Text("<<", style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: isMobile ? 14 : 18,
+                              )),
                               onPressed: () {
                                 setDialogState(() {
-                                  _displayDate =
-                                      DateTime(_displayDate.year - 1, _displayDate.month);
+                                  _displayDate = DateTime(_displayDate.year - 1, _displayDate.month);
                                   _datePickerController.displayDate = _displayDate;
                                 });
                               },
                             ),
+
+                            // Month Back Button
                             IconButton(
-                              icon: const Text("<",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              padding: EdgeInsets.only(right: isMobile ? 0 : 4),
+                              constraints: BoxConstraints(
+                                minWidth: isMobile ? 36 : 48,
+                                minHeight: isMobile ? 36 : 48,
+                              ),
+                              icon: isMobile
+                                  ? Icon(Icons.chevron_left, size: 24)
+                                  : Text("<", style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: isMobile ? 14 : 18,
+                              )),
                               onPressed: () {
                                 setDialogState(() {
-                                  _displayDate =
-                                      DateTime(_displayDate.year, _displayDate.month - 1);
+                                  _displayDate = DateTime(_displayDate.year, _displayDate.month - 1);
                                   _datePickerController.displayDate = _displayDate;
                                 });
                               },
                             ),
-                            Text(
-                              DateFormat('MMMM yyyy').format(_displayDate),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
+
+                            // Month-Year Display
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  DateFormat('MMMM yyyy').format(_displayDate),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: isMobile ? 14 : 16,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
+
+                            // Month Forward Button
                             IconButton(
-                              icon: const Text(">",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              padding: EdgeInsets.only(left: isMobile ? 0 : 4),
+                              constraints: BoxConstraints(
+                                minWidth: isMobile ? 36 : 48,
+                                minHeight: isMobile ? 36 : 48,
+                              ),
+                              icon: isMobile
+                                  ? Icon(Icons.chevron_right, size: 24)
+                                  : Text(">", style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: isMobile ? 14 : 18,
+                              )),
                               onPressed: () {
                                 setDialogState(() {
-                                  _displayDate =
-                                      DateTime(_displayDate.year, _displayDate.month + 1);
+                                  _displayDate = DateTime(_displayDate.year, _displayDate.month + 1);
                                   _datePickerController.displayDate = _displayDate;
                                 });
                               },
                             ),
+
+                            // Year Forward Button
                             IconButton(
-                              icon:  Text(">>",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),),
+                              padding: EdgeInsets.only(left: isMobile ? 0 : 4),
+                              constraints: BoxConstraints(
+                                minWidth: isMobile ? 36 : 48,
+                                minHeight: isMobile ? 36 : 48,
+                              ),
+                              icon: isMobile
+                                  ? Icon(Icons.skip_next, size: 20)
+                                  : Text(">>", style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: isMobile ? 14 : 18,
+                              )),
                               onPressed: () {
                                 setDialogState(() {
-                                  _displayDate =
-                                      DateTime(_displayDate.year + 1, _displayDate.month);
+                                  _displayDate = DateTime(_displayDate.year + 1, _displayDate.month);
                                   _datePickerController.displayDate = _displayDate;
                                 });
                               },
@@ -134,12 +194,15 @@ class _DatePickerInputState extends State<DatePickerInput> {
                           controller: _datePickerController,
                           selectionColor: AppColors.secondary,
                           todayHighlightColor: AppColors.primary,
+                          showNavigationArrow: false, // Hide default arrows since we have custom ones
+                          monthViewSettings: DateRangePickerMonthViewSettings(
+                            dayFormat: isMobile ? 'E' : 'EEE', // Shorter day names on mobile
+                          ),
 
                           onSelectionChanged: (args) {
                             pickedDate = args.value as DateTime?;
                           },
                           onSubmit: (Object? val) {
-                            // 👇 ensure pickedDate is not null
                             if (pickedDate == null) {
                               pickedDate = DateTime.now();
                             }
@@ -150,7 +213,6 @@ class _DatePickerInputState extends State<DatePickerInput> {
                             Navigator.of(context).pop();
                           },
                         ),
-
                       ),
                     ],
                   ),

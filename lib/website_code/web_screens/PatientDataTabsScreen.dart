@@ -27,21 +27,12 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _loadPatientData(); // Load SharedPreferences
+    _loadPatientData();
   }
 
   Future<void> _loadPatientData() async {
     await GlobalPatientData.loadFromPrefs();
-
-    if (GlobalPatientData.patientId == null) {
-      // Handle null case (e.g., redirect or show message)
-      debugPrint("patientId is null after loading prefs");
-      return;
-    }
-
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -50,281 +41,115 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
     super.dispose();
   }
 
-  String _formatPhidForMobile(String? patientId, String? phid) {
-    if (patientId == null || patientId.isEmpty) return 'N/A';
-
-    String formattedId = patientId;
-    if (phid != null && phid.isNotEmpty && phid != 'N/A') {
-      formattedId = '$patientId/$phid';
-    }
-
-    // Truncate if too long for mobile display
-    if (formattedId.length > 15) {
-      return '${formattedId.substring(0, 12)}...';
-    }
-
-    return formattedId;
-  }
-
-  void _showPatientInfo(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Patient Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Display patient details from sidebar
-            PatientDetailsSidebar(
-              patientId: GlobalPatientData.patientId!,
-
-            ),
-
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
 
-    // Mobile View
     if (isMobile) {
-      return _buildMobileView(context);
+      return _buildMobileView();
     }
 
-    // Desktop View
-    return _buildDesktopView(context);
+    return _buildDesktopView();
   }
 
-  Widget _buildMobileView(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEAF2FF),
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 3,
-        titleSpacing: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              GlobalPatientData.firstName ?? 'Patient',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-            if (GlobalPatientData.lastName != null && GlobalPatientData.lastName!.isNotEmpty)
+  Widget _buildMobileView() {
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        backgroundColor:Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 1,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                GlobalPatientData.lastName!,
+                '${GlobalPatientData.firstName ?? ''} ${GlobalPatientData.lastName ?? ''}'
+                    .trim(),
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.white),
-            onPressed: () => _showPatientInfo(context),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Patient Info Card (Quick Summary)
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'PHID: ${_formatPhidForMobile(GlobalPatientData.patientId, GlobalPatientData.phid)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        GlobalPatientData.phone ?? 'N/A',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+              if (GlobalPatientData.patientId != null)
+                Text(
+                  'PHID: ${GlobalPatientData.patientId}',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
-
-
-              ],
-            ),
+            ],
           ),
-
-          // Mobile Tabs Section
-          Expanded(
-            child: DefaultTabController(
-              length: 4,
-              child: Column(
-                children: [
-                  // Mobile Tab Bar
-                  Container(
-                    color: Colors.white,
-                    child: TabBar(
-
-                      controller: _tabController,
-                      isScrollable: true,
-                      labelColor: AppColors.primary,
-                      unselectedLabelColor: Colors.grey[600],
-                      indicatorColor: AppColors.secondary,
-                      indicatorWeight: 3,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      labelStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      tabs: const [
-                        Tab(text: 'Onboarding'),
-                        Tab(text: 'Operation'),
-                        Tab(text: 'Discharge'),
-                        Tab(text: 'Follow Ups'),
-                      ],
-                    ),
-                  ),
-
-                  // Mobile Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        // Mobile Onboarding Tab
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: OnboardingForm(),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Mobile Operation Notes Tab
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: SurgeryTabContent(
-                            patientId: GlobalPatientData.patientId.toString(),
-                            isMobile: true,
-                          ),
-                        ),
-
-                        // Mobile Discharge Info Tab
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: DischargeTabContent(
-                            patientId: GlobalPatientData.patientId.toString(),
-                            isMobile: true,
-                          ),
-                        ),
-
-                        // Mobile Follow Ups Tab
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: FollowUpsTabContent(
-                            patientId: GlobalPatientData.patientId.toString(),
-                            isMobile: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: false,
+                labelColor: AppColors.secondary,
+                unselectedLabelColor: Colors.grey.shade600,
+                indicatorColor: AppColors.secondary,
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: const [
+                  Tab(text: 'Onboarding'),
+                  Tab(text: 'Operation'),
+                  Tab(text: 'Discharge'),
+                  Tab(text: 'Follow Ups'),
                 ],
               ),
             ),
           ),
-        ],
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+// Onboarding Tab - Direct form without extra scroll wrapper
+            OnboardingForm(),
+
+// Operation Tab
+            SingleChildScrollView(
+              //padding: const EdgeInsets.all(16),
+              child: SurgeryTabContent(
+                patientId: GlobalPatientData.patientId.toString(),
+                isMobile: true,
+              ),
+            ),
+
+// Discharge Tab
+            SingleChildScrollView(
+             // padding: const EdgeInsets.all(16),
+              child: DischargeTabContent(
+                patientId: GlobalPatientData.patientId.toString(),
+                isMobile: true,
+              ),
+            ),
+
+// Follow Ups Tab
+            SingleChildScrollView(
+             // padding: const EdgeInsets.all(16),
+              child: FollowUpsTabContent(
+                patientId: GlobalPatientData.patientId.toString(),
+                isMobile: true,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDesktopView(BuildContext context) {
+  Widget _buildDesktopView() {
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2FF),
       body: Row(
@@ -432,10 +257,20 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                KeepAlivePage(child: SingleChildScrollView(child: OnboardingForm())),
-                KeepAlivePage(child: SurgeryTabContent(patientId: GlobalPatientData.patientId.toString(), isMobile: false)),
-                KeepAlivePage(child: DischargeTabContent(patientId: GlobalPatientData.patientId.toString(), isMobile: false)),
-                KeepAlivePage(child: FollowUpsTabContent(patientId: GlobalPatientData.patientId.toString(), isMobile: false)),
+                KeepAlivePage(
+                    child: SingleChildScrollView(child: OnboardingForm())),
+                KeepAlivePage(
+                    child: SurgeryTabContent(
+                        patientId: GlobalPatientData.patientId.toString(),
+                        isMobile: false)),
+                KeepAlivePage(
+                    child: DischargeTabContent(
+                        patientId: GlobalPatientData.patientId.toString(),
+                        isMobile: false)),
+                KeepAlivePage(
+                    child: FollowUpsTabContent(
+                        patientId: GlobalPatientData.patientId.toString(),
+                        isMobile: false)),
               ],
             ),
           ),
@@ -451,7 +286,7 @@ class _PatientDataTabsScreenState extends State<PatientDataTabsScreen>
         width: ResponsiveUtils.scaleWidth(context, 144),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
           ),

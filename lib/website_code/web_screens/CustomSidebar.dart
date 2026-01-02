@@ -335,7 +335,7 @@ class _SidebarState extends State<Sidebar> {
                         children: [
                           if (isSidebarCollapsed)
                             Text(
-                              'V1.0.2',
+                              'V1.0.3',
                               style: TextStyle(
                                 fontSize: ResponsiveUtils.fontSize(context, 12),
                                 color: Colors.grey[600],
@@ -344,7 +344,7 @@ class _SidebarState extends State<Sidebar> {
                             )
                           else
                             Text(
-                              'Version V1.0.2',
+                              'Version V1.0.3',
                               style: TextStyle(
                                 fontSize: ResponsiveUtils.fontSize(context, 12),
                                 color: Colors.grey[600],
